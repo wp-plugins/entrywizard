@@ -96,6 +96,12 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
     1. All characters except letters, digits, underscores, dashes,  and all periods except the last,  are replaced by '_'. This ensures the filename is acceptable on most systems.
     2. If the base filename then ends with a digit, another '_' is appended.  This makes extra digits added by Wordpress in the case of duplicate filenames more legible. It also ensures that no filename is totally numeric - Wordpress handles files with completely numeric names differently in some cases.
   
+== Screenshots ==
+
+1. Setting up the fields for the webform.
+2. The webform in action.
+3. Error message shown to user ( in a recent version of Firefox ).
+4. Downloading the images and spreadsheet.
 
 == To Do ==
 
