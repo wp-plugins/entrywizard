@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.5.2
-Stable tag: trunk
+Stable tag: 0.9.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,15 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 2. The webform in action.
 3. Error message shown to user ( in a recent version of Firefox ).
 4. Downloading the images and spreadsheet.
+
+== Changelog ==
+
+= 0.9.1 =
+* fix a problem when deleting a field from a layout
+* fix "copy layout" to copy the correct layout
+* fix display of some error messages
+* only ask for confirmation of a deletion if the item has been saved
+* ensure an option field has at least 1 option before saving
 
 == To Do ==
 

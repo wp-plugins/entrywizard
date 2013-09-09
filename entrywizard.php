@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 0.9
+  Version: 0.9.1
   Author: Josie Stauffer
   Author URI:
   License: GPL2

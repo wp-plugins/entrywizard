@@ -573,8 +573,9 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
                 // error is stored here instead of being raised as an exception because older IE's dont allow
                 // checking dimensions on client.  We don't want to ignore the rest of the upload if one
                 // has a dimension error.
-                if( preg_match('/^___/', $uploaded_file ) ){                    
-                    $errs .= "\n" . preg_replace('/^___/', '', $uploaded_file );
+                if( preg_match('/^___/', $uploaded_file['fname'] ) ){  
+                    // i.e there was an error picked up by ewz_handle_img_upload in ewz_to_upload_arr
+                    $errs .= "\n" . preg_replace('/^___/', '', $uploaded_file['fname'] );
                     $data = NULL;
                 } else {
                     $data['item_files'][$field_id] = $uploaded_file;
