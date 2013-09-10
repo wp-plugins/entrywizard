@@ -81,8 +81,8 @@ function ewz_layout_menu()
         /**********************************************************/
         /*   Get all the layouts -- including the attached fields */
         /**********************************************************/
-
-        $editable_layouts = array_values(array_filter( Ewz_Layout::get_all_layouts(), "Ewz_Permission::can_edit_layout"));
+        // get editable layouts sorted by layout_id
+        $editable_layouts = array_values( Ewz_Layout::get_all_layouts( 'Ewz_Permission', 'can_edit_layout' ) );
         foreach ( $editable_layouts as $k => $layout ) {
             // add an "forder" ( array ) component to the layout to specify the field order
             // -- saves having to sort by pg_column in javascript
@@ -103,6 +103,8 @@ function ewz_layout_menu()
 
         $ewzG = array( 'layouts' => $layouts );
         $ewzG['can_do'] = Ewz_Permission::can_edit_all_layouts();
+
+        // get option list of editable layouts sorted by layout_id to match the order of the layout objects
         $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'Ewz_Permission', 'can_edit_layout' ) ) );
         $ewzG['nonce_string'] = $nonce_string;
         $ewzG['message'] = esc_html( $message );
@@ -150,6 +152,7 @@ function ewz_layout_menu()
             'optlabel' => 'Each option in an option list must have a label for the web page.' ,
             'optvalue' => 'Each option in an option list must have a value.' ,
             'option' => 'Options may consist only of letters, digits, dashes and underscores.' ,
+            'optioncount' => 'A drop-down selection must contain at least one option' ,
             'restrmsg' => 'A restriction must have a message to show the user.' ,
             'maxnumchar' => 'Each text entry must have a maximum number of characters.' ,
             'imgtypes' => 'Each image file must have a set of allowed image types.' ,

@@ -366,7 +366,7 @@ function delete_webform(button, itemcount){
     if( confirm( confirmstring ) ){
         thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
         id = thediv.find('input[name="webform_id"]').first().attr("value");
-        if(  '' === id || 'undefined' === id ){
+        if( '' === id || null === id || 'undefined' === typeof(id) ){
             thediv.remove();
         } else {
             ok = 'no';
@@ -381,7 +381,7 @@ function delete_webform(button, itemcount){
                                      },
                                      function (response) {
                                          jQuery("#temp_load").remove();
-                                         if( '1' === response ){
+                                         if( '1' == response ){
                                              thediv.remove();
                                          } else {
                                              alert( response );

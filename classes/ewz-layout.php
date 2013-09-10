@@ -143,17 +143,22 @@ class Ewz_Layout extends Ewz_Base
      * Return an array of all defined layouts
      *
      * @param   None
+     * @param   callback    $class_or_obj  Class of filter function that must return true for the layout_id
+     * @param   callback    $filter        Filter function that must return true for the layout_id
      * @return  array of all defined layouts visible to current user
      */
-    public static function get_all_layouts()
+    public static function get_all_layouts( $class_or_obj = 'self',
+                                            $filter = 'truefunc' )
     {
 	global $wpdb;
 
 	$list = $wpdb->get_col( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_id" );
 	$layouts = array();
 	foreach ( $list as $layout_id ) {
-	    $layout = new Ewz_Layout( $layout_id );
-            array_push( $layouts, $layout );
+	    if ( call_user_func( array( $class_or_obj,  $filter ), $layout_id ) ) {
+                $layout = new Ewz_Layout( $layout_id );
+                array_push( $layouts, $layout );
+            }
 	}
 	return $layouts;
     }
@@ -176,7 +181,7 @@ class Ewz_Layout extends Ewz_Base
 
     /**
      * Return a string consisting of the html options for selecting a layout
-     *
+     * NB: must return in layout_id order to match get_all_layouts
      * @param   callback    $class_or_obj  Class of filter function that must return true for the layout_id
      * @param   callback    $filter        Filter function that must return true for the layout_id
      * @param   int         $selected_id   Selected layout id, default 0
@@ -190,7 +195,7 @@ class Ewz_Layout extends Ewz_Base
         assert( Ewz_Base::is_nn_int( $selected_id ) );
 	$options = array();
 	$layouts = $wpdb->get_results( "SELECT layout_id, layout_name  FROM " .
-                EWZ_LAYOUT_TABLE . " ORDER BY layout_name" );
+                EWZ_LAYOUT_TABLE . " ORDER BY layout_id" );
 	foreach ( $layouts as $layout ) {
 	    if ( call_user_func( array( $class_or_obj,  $filter ), $layout->layout_id ) ) {
 		if ( $layout->layout_id == $selected_id ) {
@@ -408,6 +413,7 @@ class Ewz_Layout extends Ewz_Base
 	if ( $used > 0 ) {
             throw new EWZ_Exception( "Name '$this->layout_name' already in use for this layout"  );
 	}
+
 	// $field_id_arr = array_map( create_function('$v', 'return $v->field_id;' ), $this->fields );
 	// ewzdbg("field_id_arr", $field_id_arr);
 	// make sure restrictions apply to fields belonging to the layout
@@ -420,10 +426,19 @@ class Ewz_Layout extends Ewz_Base
 	    }
 	}
 	$seen = array();
+	// make sure pg_column is not the same in two different fields
+	foreach ( $this->fields as $key => $field ) {
+		if ( array_key_exists( $field->pg_column, $seen ) ) {
+                    throw new EWZ_Exception( 'Two or more fields have the same column ' . $field->pg_column );
+		} else {
+		    $seen[$field->pg_column] = true;
+		}
+	}
 
 	// make sure ss_column is not the same in two different fields
+	$seen = array();
 	foreach ( $this->fields as $key => $field ) {
-	    if ( isset( $field->ss_column ) && ( $field->ss_column > 0 ) ) {
+	    if ( isset( $field->ss_column ) && ( $field->ss_column >= 0 ) ) {
 		if ( array_key_exists( $field->ss_column, $seen ) ) {
                     throw new EWZ_Exception( 'Two or more fields have the same spreadsheet column ' .
                             $field->ss_column );
@@ -487,6 +502,7 @@ class Ewz_Layout extends Ewz_Base
 	    $field->layout_id = $this->layout_id;
 	    $field->save();
 	}
+
 	return true;
     }
 
@@ -511,7 +527,7 @@ class Ewz_Layout extends Ewz_Base
 	    }
 	}
 	if ( $field !== null ) {
-	    return $test_field->delete();
+	    return $field->delete();
 	} else {
             throw new EWZ_Exception( 'Failed to find field to delete', $field_id );
 	}
