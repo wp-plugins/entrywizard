@@ -101,7 +101,7 @@ function ewz_admin_init() {
                                'ewz-admin-layouts',
                                plugins_url( 'javascript/ewz-layouts.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-widget', 'jquery-ui-dialog',
-                                      'jquery-ui-position', 'ewz-common', 'jquery-ui-sortable' ),
+                                      'jquery-ui-position','ewz-common', 'jquery-ui-sortable' ),
                                false,
                                true         // in footer, so $ewzG has been defined
                                );

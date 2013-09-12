@@ -11,8 +11,6 @@ require_once( EWZ_PLUGIN_DIR . "/includes/ewz-common.php");
 
 class Ewz_Setup
 {
-    // Set this to true to go back to install state after each deactivate
-
     public static function activate_or_install_ewz()
     {
         global $wpdb;
