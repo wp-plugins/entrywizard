@@ -425,7 +425,7 @@ class Ewz_Webform extends Ewz_Base {
         }
         $dheads = Ewz_Layout::get_all_display_headers();
         foreach ( $extra_cols as $xcol => $sscol ) {
-            if ( $sscol >= 0 ) {
+            if ( $sscol >= 0 && isset( $dheads[$xcol] ) ) {
                 $hrow[$sscol] = $dheads[$xcol]['header'];
             }
         }
@@ -494,23 +494,26 @@ class Ewz_Webform extends Ewz_Base {
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
-                switch ( $display[$xcol]['dobject'] ) {
-                    case 'wform':
-                        $datasource = $wform;
-                        break;
-                    case 'user':
-                        $datasource = $user;
-                        break;
-                    case 'item':
-                        $datasource = $item;
-                        break;
-                    case 'custom':
-                        $datasource = $custom;
-                        break;
-                    default:
-                        throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                // dont crash on undefined custom data
+                if( isset( $display[$xcol] ) ){                
+                    switch ( $display[$xcol]['dobject'] ) {
+                        case 'wform':
+                            $datasource = $wform;
+                            break;
+                        case 'user':
+                            $datasource = $user;
+                            break;
+                        case 'item':
+                            $datasource = $item;
+                            break;
+                        case 'custom':
+                            $datasource = $custom;
+                            break;
+                        default:
+                            throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                    }
+                    $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
-                $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
             }
         }
         return $customrow;
