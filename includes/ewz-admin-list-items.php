@@ -164,7 +164,9 @@ function ewz_get_headers( $fields, $extra_cols )
     foreach ( $extra_cols as $xcol => $sscol ) {
         if ( $sscol >= 0 ) {
             $ssc = $sscol + 1;
-            $headers[$ssc] = $dheads[$xcol]['header'];
+            if( isset( $dheads[$xcol] ) ){
+                $headers[$ssc] = $dheads[$xcol]['header'];
+            }
         }
     }
     return $headers;
@@ -274,23 +276,26 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                 $ssc = $sscol + 1;
                 assert( !isset( $rows[$n][$ssc]) ||  !$rows[$n][$ssc] );
                 $datasource = '';
-                switch ( $display[$xcol]['dobject'] ) {
-                    case 'wform':
-                        $datasource = $wform;
-                        break;
-                    case 'user':
-                        $datasource = $user;
-                        break;
-                    case 'item':
-                        $datasource = $item;
-                        break;
-                    case 'custom':
-                        $datasource = $custom;
-                        break;
-                    default:
-                        throw new EWZ_Exception( 'Invalid data source ' .  $display[$xcol]['dobject'] );
+                // dont crash on undefined custom data
+                if( isset( $display[$xcol] ) ){
+                    switch ( $display[$xcol]['dobject'] ) {
+                        case 'wform':
+                            $datasource = $wform;
+                            break;
+                        case 'user':
+                            $datasource = $user;
+                            break;
+                        case 'item':
+                            $datasource = $item;
+                            break;
+                        case 'custom':
+                            $datasource = $custom;
+                            break;
+                        default:
+                            throw new EWZ_Exception( 'Invalid data source ' .  $display[$xcol]['dobject'] );
+                    }
+                    $rows[$n][$ssc] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
-                $rows[$n][$ssc] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
             }
         }
         ++$n;
@@ -333,6 +338,8 @@ function ewz_get_img_size_options() {
  * @return  array  validated data
  */
 function ewz_do_listpage_validation( $data ){
+    assert( is_array( $data ) );
+
     $requestdata = array();
     switch( $_POST['ewzmode'] ){
 
@@ -429,6 +436,8 @@ function ewz_list_items() {
  * @param   array   $requestdata   $_GET plus $_POST, validated
  */
 function  ewz_display_list_page( $message, $requestdata ){
+    assert( is_string( $message ) );
+    assert( is_array( $requestdata ) );
 
        if( isset( $_POST['ewzmode'] ) &&
             !in_array( $_POST['ewzmode'], array( 'list', 'listpage', 'ipp' ) ) ){

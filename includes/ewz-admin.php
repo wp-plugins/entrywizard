@@ -101,7 +101,7 @@ function ewz_admin_init() {
                                'ewz-admin-layouts',
                                plugins_url( 'javascript/ewz-layouts.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-widget', 'jquery-ui-dialog',
-                                      'jquery-ui-position', 'ewz-common', 'jquery-ui-sortable' ),
+                                      'jquery-ui-position','ewz-common', 'jquery-ui-sortable' ),
                                false,
                                true         // in footer, so $ewzG has been defined
                                );
@@ -231,6 +231,9 @@ function ewz_echo_data() {
             // 'page' is in GET
 
             $data = $input->get_input_data();
+            if(!isset($data['fopt'])){
+                $data['fopt'] = array();
+            }
             $webform = new Ewz_Webform( $data['webform_id'] );
 
             $items = Ewz_Item::filter_items(
@@ -359,6 +362,7 @@ add_action( 'wp_ajax_ewz_del_field', 'ewz_del_field_callback' );
  * if response is not '1 item deleted.', javascript caller alerts with error message.
  */
 function ewz_del_item_callback() {
+    //error_log("EWZ: deleting item (ajax) for " . $_SERVER["REMOTE_ADDR"]);
     if ( wp_verify_nonce( $_POST["ewzdelnonce"], 'ewzupload' ) ) {
         if ( ob_get_length() ) {
             ob_clean();
@@ -428,6 +432,8 @@ add_action( 'wp_ajax_ewz_del_webform', 'ewz_del_webform_callback' );
  * Calling page uses XMLHttpRequest, shows any text other than '1' as an alert
  */
 function ewz_upload_callback() {
+    //error_log("EWZ: uploading (ajax) for " . $_SERVER["REMOTE_ADDR"]);
+
     if ( wp_verify_nonce( $_POST["ewzuploadnonce"], 'ewzupload' ) ) {
         add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
         try {

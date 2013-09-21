@@ -365,12 +365,18 @@ class Ewz_Field extends Ewz_Base
         if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit the layout', $this->layout_id );
         }
-
+        $order = $wpdb->get_var( $wpdb->prepare( "SELECT pg_column  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
+                                                  $this->field_id ) ); 
+        
         $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_FIELD_TABLE . " where field_id = %d",
                                                $this->field_id ) );
         if ( $rowsaffected != 1 ) {
             throw new EWZ_Exception( 'Failed to delete field', $this->field_id );
         }
+        $rowsaffected = $wpdb->query( $wpdb->prepare( "UPDATE  " . EWZ_FIELD_TABLE . 
+                                                      " SET pg_column = pg_column - 1 " .
+                                                      " WHERE layout_id = %d AND  pg_column > %d",
+                                                      $this->layout_id, $order ) );
     }
 }
 

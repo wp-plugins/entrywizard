@@ -33,8 +33,8 @@ class Ewz_Custom_Data
      * SECTION 1: you need one line for each item
      *
      *************************************************/
-    public $custom1;
-    public $custom2;
+//    public $custom1;
+//    public $custom2;
 
     /* if needed, add more lines here for "$custom3", "$custom4", etc. */
 
@@ -47,11 +47,11 @@ class Ewz_Custom_Data
                *************************************************/
               /* Change 'Member Level' to whatever label you wish to use for your first piece of data */
               /* NO apostrophes or quotation marks                                                    */
-              'custom1' => 'Member Level',
+//                           'custom1' => 'Member Level',
 
               /* Change 'Membership Number' to whatever label you wish to use for your second piece of data */
               /* NO apostrophes or quotation marks                                                    */
-              'custom2' => 'Membership Number',
+//                           'custom2' => 'Membership Number',
 
               /* if needed, add more lines here for "custom3", "custom4", etc. */
 
@@ -64,13 +64,11 @@ class Ewz_Custom_Data
          * SECTION 3: you need one line for each item
          *
          *************************************************/
-        $this->custom1 =
-            get_cimyFieldValue( $user_id, 'COMPETITION_LEVEL' );   // This is the function that gets the "custom1" data for a member with id $user_id
-                                                                   //    -- change it as needed
+//        $this->custom1 =
+//            get_cimyFieldValue( $user_id, 'COMPETITION_LEVEL' );   // This is the function that gets the "custom1" data for a member with id $user_id  -- change it as needed
 
-        $this->custom2 =
-            get_cimyFieldValue( $user_id, 'MEMBER_NUMBER' );       // This is the function that gets the "custom2" data for a member with id $user_id
-                                                                   //    -- change it as needed
+//        $this->custom2 =
+//            get_cimyFieldValue( $user_id, 'MEMBER_NUMBER' );       // This is the function that gets the "custom2" data for a member with id $user_id -- change it as needed   
 
         /* if needed, add more lines here for "custom3", "custom4", etc. */
     }
