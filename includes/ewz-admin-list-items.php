@@ -338,6 +338,8 @@ function ewz_get_img_size_options() {
  * @return  array  validated data
  */
 function ewz_do_listpage_validation( $data ){
+    assert( is_array( $data ) );
+
     $requestdata = array();
     switch( $_POST['ewzmode'] ){
 
@@ -434,6 +436,8 @@ function ewz_list_items() {
  * @param   array   $requestdata   $_GET plus $_POST, validated
  */
 function  ewz_display_list_page( $message, $requestdata ){
+    assert( is_string( $message ) );
+    assert( is_array( $requestdata ) );
 
        if( isset( $_POST['ewzmode'] ) &&
             !in_array( $_POST['ewzmode'], array( 'list', 'listpage', 'ipp' ) ) ){

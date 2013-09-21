@@ -684,6 +684,8 @@ class Ewz_Setup
     }
 
     private static function rrmdir( $dir ) {
+        assert( is_string( $dir ) );
+
       error_log( "EWZ: removing directory $dir" );
       if ( is_dir( $dir ) ) {
          $objects = scandir( $dir );

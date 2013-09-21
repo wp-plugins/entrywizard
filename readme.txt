@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.5.2
-Stable tag: 0.9.2
+Stable tag: 0.9.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -104,6 +104,17 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+
+= 0.9.3 =
+* fixed a problem displaying webforms when the user does not have full permissions
+* make sure a new, unsaved layout can only delete itself, not the one it copied
+* help items for image size and dimensions
+* avoid a warning when there are no option-type fields in a layout
+* more informative error message for an invalid csv file upload
+* allow more time for the upload
+* remove the "<h2>" that was displaying in the "please wait" message when images are uploaded
+* do not ask for confirmation on deletion if webform was not saved
+
 
 = 0.9.2 =
 * dont use the get_cimyFieldValue when Cimy Extra Fields plugin not used

@@ -32,7 +32,7 @@ function ewz_process_uploaded_csv( $webform_id )
    $file_tmp_name = $csvfile_data['tmp_name'];
 
    if( 'text/csv' != $csvfile_data['type'] ){
-       throw new EWZ_Exception( 'File is not of type text/csv' );
+       throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
    }
    if( $csvfile_data['error'] ){
      throw new EWZ_Exception( 'Failed to upload .csv file' );
@@ -133,8 +133,8 @@ function ewz_webforms_menu()
 
         $user_options =  Ewz_User::get_user_opt_array();
 
-        $webforms = array_filter( Ewz_Webform::get_all_webforms(),
-                                  "Ewz_Permission::can_view_webform" );
+        $webforms = array_values(array_filter( Ewz_Webform::get_all_webforms(),
+                                               "Ewz_Permission::can_view_webform" ));
                  // list of users for whom the webform may be opened,
                  // or null if current user has no permission to list them
 
@@ -174,13 +174,12 @@ function ewz_webforms_menu()
                                                          'can_assign_layout',
                                                          $webform->layout_id );
             $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
-
+            $base_options = $webform->layouts_options;
         }
 
         /*******************************/
         /* Pass the data to Javascript */
         /*******************************/
-
         $ewzG = array( 'webforms' => $webforms );
         $ewzG['list_page'] = admin_url( 'admin.php?page=entrywizlist' );
 
@@ -194,7 +193,7 @@ function ewz_webforms_menu()
         }
         $ewzG['openform_id'] = $openwebform_id;
         $ewzG['message'] = esc_html( $message );
-        $ewzG['base_options'] = $webforms[0]->layouts_options;
+        $ewzG['base_options'] = $base_options;
 
 
         $ewzG['user_options'] = $user_options;

@@ -375,13 +375,13 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
         iObj = ewzG.empty_img;
     }
     var str = '';
-    str = '<tr><td width="60%">Maximum Image Width ( or max longest side if rotation is allowed )</td>';
+    str = '<tr><td width="60%"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgdim\')">&nbsp;Maximum Image Width ( or max longest side if rotation is allowed )</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_w_', fdld + '[max_img_w]', '5', iObj.max_img_w) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td>Spreadsheet Column for Image Width </td>';
     str += '    <td>' + colinput_str(fdid + 'ss_col_w_', fdld + '[ss_col_w]', iObj.ss_col_w, 'ssc' + lnum) + '</td>';
     str += '</tr>';
-    str += '<tr><td>Maximum Image Height( or max shorter side if rotation is allowed )</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgdim\')">&nbsp;Maximum Image Height( or max shorter side if rotation is allowed )</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_h_', fdld + '[max_img_h]', '5', iObj.max_img_h) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td>Spreadsheet Column for Image Height </td>';
@@ -393,10 +393,10 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
     str += '<tr><td>Spreadsheet Column for Image Orientation </td>';
     str += '    <td>' + colinput_str(fdid + 'ss_col_o_', fdld + '[ss_col_o]', iObj.ss_col_o, 'ssc' + lnum) + '</td>';
     str += '</tr>';
-    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgsize\')">&nbsp;Max image size (cannot be over ' + ewzG.maxUploadMb + 'M)</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgsize\')">&nbsp;Maximum image size (cannot be over ' + ewzG.maxUploadMb + 'M)</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_size_', fdld + '[max_img_size]', 10, iObj.max_img_size) + 'Megabytes</td>';
     str += '</tr>';
-    str += '<tr><td>Min image area</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgarea\')">&nbsp;Minimum image area</td>';
     str += '    <td>' + textinput_str(fdid + 'min_img_area_', fdld + '[min_img_area]', 10, iObj.min_img_area) + 'Square&nbsp;Pixels</td>';
     str += '</tr>';
     str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgtype\')">&nbsp;Allowed image types<br>(control-click to select more than one)</td>';
@@ -806,7 +806,10 @@ function add_layout_copy() {
     jQnew.find('button[id^="lsub_f"]').text("Save Changes to New Layout");
     var jdelbtn = jQnew.find('button[id^="ldel_f"]');
     jdelbtn.text("Delete New Layout");
-    jdelbtn.click("delete_layout(this, " + to_num + ", 0)" );
+    jdelbtn.attr('onclick', null);
+    jdelbtn.click(function() {
+        delete_layout(this, to_num, 0);
+    } );
     jQnew.insertAfter(layouts.last());
 
     enable_restricted_fields(to_num);

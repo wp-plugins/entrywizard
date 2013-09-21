@@ -196,9 +196,21 @@ function ewz_layout_menu()
         </div>
 
         <div id="help-text" style="display:none">
+            <!-- HELP POPUP image area -->
+            <div id="imgarea_help" class="wp-dialog" >
+                <p>The purpose of this setting is to disallow very small images when they could be enlarged within the maximum width and height limitations. </p>
+                <p>It has <b>no</b> effect if the image has width equal to the maximum width or height equal to the maximum height.</p>
+        
+            </div>
+            <!-- HELP POPUP image dimensions -->
+            <div id="imgdim_help" class="wp-dialog" >
+                 <p>A user attempting to upload an image with width or height greater than the maxima set here will receive an error message.</p>
+                 <p>See also the help items on Maximum image size and Minimum image area</p>                                   
+            </div>
+
             <!-- HELP POPUP image size -->
             <div id="imgsize_help" class="wp-dialog" >
-                <p>Your web hosting company puts three limits on uploaded items:<br>
+                <p>Your web hosting company also puts three limits on uploaded items:<br>
                     <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?></li>
                         <li>The total size of the whole upload including all items may not be bigger than
                             <?php print $ewzG['maxTotalMb']; ?></li>

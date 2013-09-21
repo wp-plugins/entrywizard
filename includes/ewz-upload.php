@@ -22,6 +22,7 @@ require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
  */
 function ewz_show_webform( $atts )
 {
+    //error_log("EWZ: showing webform for " . $_SERVER["REMOTE_ADDR"]);
     assert( is_array( $atts ) );
     try{
         ewz_check_upload_atts( $atts );
@@ -52,11 +53,12 @@ function ewz_show_webform( $atts )
     // in from old browsers that dont use ajax for the upload
     if ( $_POST && ( $_POST['identifier'] == $atts['identifier'] ) ) {
         try{
+            //error_log("EWZ: uploading (old form) for " . $_SERVER["REMOTE_ADDR"]);
             // had problems with more than 10 3M images
             $n = $webformdata['layout']->max_num_items;
             $timelimit = ini_get('max_execution_time');
-            if( 3 * $n > $timelimit ){
-                set_time_limit ( 3 * $n );
+            if( 10 * $n > $timelimit ){
+                set_time_limit ( 10 * $n );
             }
 
             $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
@@ -443,7 +445,7 @@ function ewz_get_layout_info( $layout )
     $ewzG['isize_err'] = "Sorry, this image will not be accepted.\nIt does not fit within the required bounds of: ";
     $ewzG['fsize_err'] = "Sorry, this file will not be accepted.\nIts size ( %d ) is greater than the limit of ";
 
-    $ewzG['wait'] = '<h2>Upload complete, processing takes a moment .... </h2>';
+    $ewzG['wait'] = 'Upload complete, processing takes a moment .... ';
     $ewzG['iBytesUploaded'] = 0;
     $ewzG['iBytesTotal'] = 0;
     $ewzG['iPreviousBytesLoaded'] = 0;
@@ -699,6 +701,10 @@ function ewz_upload_closed( $form_name )
  * @return  array  of  field_id,thumb_url,filename, type, width, height, orientation
  */
 function ewz_handle_img_upload( $filename,  $row,  $field ){
+    assert( is_string( $filename ) || is_null( $filename ) );
+    assert( is_int( $row ) );
+    assert( is_object( $field ) );
+
     if ( $filename ) {
         $filename = ewz_to_valid_fname( $filename );
         $field_id = $field->field_id;
@@ -836,14 +842,14 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 function ewz_validate_and_upload( )
 {
     $atts = array( 'identifier' => $_POST['identifier'] );
-        ewz_check_upload_atts( $atts );
+    ewz_check_upload_atts( $atts );
     $webformdata = ewz_get_webform_data( $atts );
 
     // had problems with more than 10 3M images
     $n = $webformdata['layout']->max_num_items;
     $timelimit = ini_get('max_execution_time');
-    if( 3 * $n > $timelimit ){
-        set_time_limit ( 3 * $n );
+    if( 10 * $n > $timelimit ){
+        set_time_limit ( 10 * $n );
     }
 
     $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );

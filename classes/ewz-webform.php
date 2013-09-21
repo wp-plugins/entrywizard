@@ -480,6 +480,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_custom_data_for_ss( $item, $extra_cols, $maxcol ) {
+        assert( is_object( $item ) );
+        assert( is_array( $extra_cols ) );
+        assert( is_int( $maxcol ) );
+
         $customrow = array_fill( 0, $maxcol + 1, '' );
         $user = get_userdata( $item->user_id );
         $display = Ewz_Layout::get_all_display_data();
@@ -520,6 +524,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_file_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $filerow = array_fill( 0, $maxcol + 1, '' );
         $custom1 = new Ewz_Custom_Data( $item->user_id );
         if ( $item->item_files ) {
@@ -563,6 +571,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_item_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $itemrow = array_fill( 0, $maxcol + 1, '' );
         foreach ( $item->item_data as $field_id => $field_value_arr ) {
             if ( array_key_exists( $field_id, $fields ) ) {
