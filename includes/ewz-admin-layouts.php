@@ -475,8 +475,8 @@ function ewz_layout_menu()
                          user, but there are plugins, like CIMI User Extra Fields,  that allow you
                          to add more information.
                          If you have such a plugin, and if it provides a function to access the
-                         information, you may tell EntryWizard about it in the "entrywizard-custom/ewz-custom-data.php"
-                         file in the wp-content folder.</li>
+                         information, you may tell EntryWizard about it in the "ewz-custom-data.php"
+                         file.</li>
                   </ul>
                </p>
             </div>
