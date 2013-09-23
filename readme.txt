@@ -78,7 +78,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
   
   5. Now you can experiment, changing the settings for your own layout and webform and checking the effect by reloading your test page. If it turns out badly, delete that layout and start over with a fresh copy of the sample one.
      
-* If you are using a plugin such as Cimy User Extra Fields, or S2Member, and wish your spreadsheet to contain some of the extra member information they create,  edit the file "entrywizard-custom/ewz-custom-data.php" in your wp-content folder.
+* If you are using a plugin such as Cimy User Extra Fields, or S2Member, and wish your spreadsheet to contain some of the extra member information they create,  edit the file "ewz-custom-data.php".
 
 * Most items in the EntryWizard admin pages have "help" icons beside them.  Clicking one of these should pop up a window with more detailed information. 
 
