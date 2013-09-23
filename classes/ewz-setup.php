@@ -708,7 +708,9 @@ class Ewz_Setup
     private static function create_custom_file()
     {
         if( !is_file( EWZ_CUSTOM_DIR . "ewz-custom-data.php" ) ){
-
+            if( !is_dir ( EWZ_CUSTOM_DIR ) ){
+                mkdir( EWZ_CUSTOM_DI );
+            }
             $out = fopen( EWZ_CUSTOM_DIR . "ewz-custom-data.php", 'w' );
 
             /*******************************************************/
