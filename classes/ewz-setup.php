@@ -1,8 +1,6 @@
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-require_once( EWZ_PLUGIN_DIR . "/classes/ewz-permission.php");
-require_once( EWZ_PLUGIN_DIR . "/includes/ewz-common.php");
 
 /** ***************************************************
  * static functions that run during activation/deactivation
@@ -21,6 +19,9 @@ class Ewz_Setup
         }
         
         self::create_custom_file();
+
+        require_once( EWZ_PLUGIN_DIR . "/classes/ewz-permission.php");
+        require_once( EWZ_PLUGIN_DIR . "/includes/ewz-common.php");
 
         $layout_table = EWZ_LAYOUT_TABLE;
         $field_table = EWZ_FIELD_TABLE;
