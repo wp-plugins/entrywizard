@@ -107,7 +107,6 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 = 0.9.4 =
 * stop users from uploading to a closed webform using an old page
-* put custom-fields code in wp-content directory so it wont get overwritten by an upgrade
 
 = 0.9.3 =
 * fixed a problem displaying webforms when the user does not have full permissions
