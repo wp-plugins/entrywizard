@@ -709,7 +709,7 @@ class Ewz_Setup
     {
         if( !is_file( EWZ_CUSTOM_DIR . "ewz-custom-data.php" ) ){
             if( !is_dir ( EWZ_CUSTOM_DIR ) ){
-                mkdir( EWZ_CUSTOM_DI );
+                mkdir( EWZ_CUSTOM_DIR );
             }
             $out = fopen( EWZ_CUSTOM_DIR . "ewz-custom-data.php", 'w' );
 
