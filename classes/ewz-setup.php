@@ -20,7 +20,7 @@ class Ewz_Setup
             ewz_init_globals();
         }
         
-        self::move_custom_file();
+        self::create_custom_file();
 
         $layout_table = EWZ_LAYOUT_TABLE;
         $field_table = EWZ_FIELD_TABLE;
