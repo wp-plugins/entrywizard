@@ -29,7 +29,7 @@
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'EWZ_CUSTOM_DIR', WP_CONTENT_DIR . '/entrywizard-custom/'  );
+define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
 define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
 

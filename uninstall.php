@@ -47,9 +47,6 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     $ewzdir = $updir_arr['basedir'] . '/ewz_img_uploads';
     ewz_rrmdir( $ewzdir );
  
-   // remove the entrywizard-custom folder
-    error_log( 'EWZ: removing entrywizard-custom' );
-    ewz_rrmdir( WP_CONTENT_DIR . '/entrywizard-custom' );
     
    function ewz_rrmdir( $dir ) {
       // no assert
