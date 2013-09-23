@@ -49,7 +49,7 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  
    // remove the entrywizard-custom folder
     error_log( 'EWZ: removing entrywizard-custom' );
-    ewz_rrmdir( WP_CONTENT_DIR . '/entrywizard-custom/ );
+    ewz_rrmdir( WP_CONTENT_DIR . '/entrywizard-custom' );
     
    function ewz_rrmdir( $dir ) {
       // no assert
