@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 0.9
+  Version: 0.9.4
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -25,10 +25,11 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_PLUGIN_DIR',    plugin_dir_path( __FILE__ ) );
-define( 'EWZ_VERSION', 0.9 );
+define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'EWZ_CUSTOM_DIR', WP_CONTENT_DIR . '/entrywizard-custom/'  );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
 define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
 

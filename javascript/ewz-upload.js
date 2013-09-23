@@ -174,7 +174,7 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
                 sel_val = fvalues[row][field_id][0];
                 if ( sel_val  ) {
                     textvals[ sel_val ] = fvalues[row][field_id][1];  // for display to user
-                    if (optcount[ sel_val ] === undefined) {
+                    if (typeof(optcount[ sel_val ]) === 'undefined') {
                         optcount[ sel_val ] = 1;
                     } else {
                         ++optcount[ sel_val ];
@@ -298,7 +298,7 @@ function delete_item(button, webform_id) {
               },
       function(response) {
          jQuery("#temp_load_" + webform_id).remove();
-         if (response === '1') {
+         if (response == '1') {
             clear_row(button, webform_id);
          } else {
             alert(response + "\n\nRefresh the page to see the current status.");
@@ -372,6 +372,7 @@ function fileSelected(field_id, input_id) {
 
          // remove any existing image thumbnail, create the new img
          jQuery('#' + input_id).closest('td').find('img').remove();
+
          jQuery('#dv_' + input_id).append('<img alt="" id="im_' + input_id + '" class="ewz_thumb" src="' + fileref.target.result + '">');
 
          var theImage = document.getElementById('im_' + input_id);
@@ -398,7 +399,7 @@ function fileSelected(field_id, input_id) {
        };
 
       files = document.getElementById(input_id).files;
-      if ( ( files == null ) || ( files[0] === 'undefined' ) || ( files[0] == null ) ) {
+      if ( ( files == null ) || ( typeof(files[0]) === 'undefined' ) || ( files[0] == null ) ) {
             jQuery('#dv_' + input_id).hide();
             jQuery('#nm_' + input_id).text('');
             jQuery('#sz_' + input_id).text('');
@@ -428,7 +429,6 @@ function fileSelected(field_id, input_id) {
          }
          freader.readAsDataURL(oFile);
       }
-
    }
 }
 
@@ -510,7 +510,7 @@ function startUploading(webform_id) {
       } else {
          // create XMLHttpRequest object, adding few event listeners, and POSTing our data
          xmlRequest = new XMLHttpRequest();
-         if (xmlRequest.upload === 'undefined') {
+         if (typeof(xmlRequest.upload) === 'undefined') {
              do_submit_form(jresponse, webform_id);
          } else {
              jresponse.hide();
