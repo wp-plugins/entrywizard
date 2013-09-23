@@ -375,9 +375,8 @@ function ewz_del_item_callback() {
             exit();
         }
         try {
-            $item = new Ewz_Item( $_POST['item_id'] );
-            $item->delete();
-            echo "1";
+            $status = ewz_user_delete_item( $_POST['item_id'] );
+            echo $status;
         } catch (Exception $e) {
             echo $e->getMessage();
             ob_flush();

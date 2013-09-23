@@ -6,7 +6,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-CSV-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-list-items.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**

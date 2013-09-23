@@ -6,7 +6,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-layout.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-layout-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**
@@ -472,11 +472,11 @@ function ewz_layout_menu()
                          via the WebForms page.  It is blank if you did not upload anything for the
                          item</li>
                      <li>"Custom data" is again optional. Wordpress stores some information about a
-                         user, but there are plugins, like CIMI User Extra Fields, that allow you
+                         user, but there are plugins, like CIMI User Extra Fields,  that allow you
                          to add more information.
                          If you have such a plugin, and if it provides a function to access the
-                         information, you may tell EntryWizard about it in the "ewz-custom-data.php"
-                         file at the top level of the EntryWizard folder.</li>
+                         information, you may tell EntryWizard about it in the "entrywizard-custom/ewz-custom-data.php"
+                         file in the wp-content folder.</li>
                   </ul>
                </p>
             </div>

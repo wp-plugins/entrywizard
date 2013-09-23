@@ -5,7 +5,7 @@ require_once( EWZ_PLUGIN_DIR . "classes/ewz-exception.php" );
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php" );
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-field.php" );
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-permission.php" );
-require_once( EWZ_PLUGIN_DIR . "ewz-custom-data.php" );
+require_once( EWZ_CUSTOM_DIR . "ewz-custom-data.php" );
 
 /********************************************************************************************
  * Interaction with the EWZ_LAYOUT table.

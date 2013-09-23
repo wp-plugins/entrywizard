@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file 
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-item.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-permission.php");
-require_once( EWZ_PLUGIN_DIR . "ewz-custom-data.php");
+require_once( EWZ_CUSTOM_DIR . "ewz-custom-data.php");
 
 /* * ***********************************************************
  * Interaction with the EWZ_WEBFORM table

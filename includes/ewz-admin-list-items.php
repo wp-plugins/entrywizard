@@ -8,7 +8,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-item-list.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**

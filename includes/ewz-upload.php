@@ -24,11 +24,6 @@ function ewz_show_webform( $atts )
 {
     //error_log("EWZ: showing webform for " . $_SERVER["REMOTE_ADDR"]);
     assert( is_array( $atts ) );
-    try{
-        ewz_check_upload_atts( $atts );
-    } catch( Exception $e ) {
-        wp_die( $e->getMessage() );
-    }
 
     try{
         // need webformdata whether or not we need to process an upload
@@ -36,15 +31,8 @@ function ewz_show_webform( $atts )
     } catch( Exception $e ) {
         return $e->getMessage();
     }
-
-    // not logged in - display the html failmsg
-    if ( array_key_exists( 'failmsg', $webformdata ) ) {
+    if(  array_key_exists( 'failmsg', $webformdata ) ) {
         return $webformdata['failmsg'];
-    }
-
-    // webform not open for user - display the html closed message
-    if ( !$webformdata['open_for_user'] ) {
-        return ewz_upload_closed( $webformdata['webform']->webform_title );
     }
 
     $errmsg = '';
@@ -117,6 +105,9 @@ function ewz_get_webform_data( $atts )
 {
     global $post;
     assert( is_array( $atts ) );
+
+    ewz_check_upload_atts( $atts );
+
     $data = array();
 
     /* ****************** */
@@ -124,23 +115,24 @@ function ewz_get_webform_data( $atts )
     /* ****************** */
     get_currentuserinfo();
     if ( !is_user_logged_in() ) {
-        $data['failmsg'] = '<h2>Sorry, you must be logged in to access this page.</h2>
-            <p> <a href="' . get_bloginfo( 'url' ) . '">
-                <-- Go to Home Page </a> &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp;
-            <a href="' . wp_login_url( get_permalink( $post->ID ) ) . '"> Log in --> </a> </p>';
+        $data['failmsg'] = 'Sorry, you must be logged in to access this page.';
         return $data;
     }
-
-    /*     * ******************* */
-    /* Collect some  data */
-    /*     * ******************* */
+  
+    /* ******************* */
+    /* Collect some  data  */
+    /* ******************* */
 
     $webform = new Ewz_Webform( $atts['identifier'] );
 
+    if( !$webform->open_for_current_user() ){
+        $data['failmsg'] = 'Sorry, the form is no longer open for uploads.';
+        return $data;
+    }
+       
     $data['user_id'] = get_current_user_id();
     $data['webform'] = $webform;
     $data['layout'] = new Ewz_Layout( $webform->layout_id );
-    $data['open_for_user'] = $webform->open_for_current_user();
     return $data;
 }
 
@@ -835,6 +827,23 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 
 
 /**
+ * User deletion of an item.
+ * Called using ajax via the 'Delete' button on the Upload page.
+ * Return '1' for success, message for error.
+ */
+function ewz_user_delete_item( $item_id ){
+    assert( is_int( $item_id ) );
+    $item = new Ewz_item( $item_id );
+    $webform = new Ewz_webform( $item->webform_id );
+    if( $webform->open_for_current_user() ){
+        $item->delete();
+        return '1';
+    } else {
+        return 'Sorry, this form is no longer open for uploads.';
+    }            
+}
+
+/**
  * Validate POST data and handle any uploads
  * Called using ajax via the 'Submit' button on the Upload page for newer browsers.
  * After this, the javascript controls re-load the page
@@ -842,8 +851,12 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 function ewz_validate_and_upload( )
 {
     $atts = array( 'identifier' => $_POST['identifier'] );
-    ewz_check_upload_atts( $atts );
     $webformdata = ewz_get_webform_data( $atts );
+
+    // not logged in or form not open - display the html failmsg
+    if ( array_key_exists( 'failmsg', $webformdata ) ) {
+        return $webformdata['failmsg'];
+    }
 
     // had problems with more than 10 3M images
     $n = $webformdata['layout']->max_num_items;
