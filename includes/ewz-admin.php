@@ -264,7 +264,7 @@ function ewz_echo_data() {
     return 1;
 }
 // need to make sure global constants are defined first
-add_action( 'plugins_loaded', 'ewz_echo_data', 20 );
+add_action( 'init', 'ewz_echo_data', 30 );
 
 
 /* * ************************  AJAX CALLS *************************** *

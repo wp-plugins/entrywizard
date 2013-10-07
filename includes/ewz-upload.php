@@ -12,6 +12,8 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-layout.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-upload-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
 
+
+
 /**
  * Display the upload form
  *
@@ -45,8 +47,8 @@ function ewz_show_webform( $atts )
             // had problems with more than 10 3M images
             $n = $webformdata['layout']->max_num_items;
             $timelimit = ini_get('max_execution_time');
-            if( 10 * $n > $timelimit ){
-                set_time_limit ( 10 * $n );
+            if( 15 * $n > $timelimit ){
+                set_time_limit ( 15 * $n );
             }
 
             $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
@@ -115,7 +117,7 @@ function ewz_get_webform_data( $atts )
     /* ****************** */
     get_currentuserinfo();
     if ( !is_user_logged_in() ) {
-        $data['failmsg'] = 'Sorry, you must be logged in to access this page.';
+        $data['failmsg'] = 'Sorry, you must be logged in to see this.';
         return $data;
     }
   
@@ -630,7 +632,7 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
                     try{
                         $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $filename, $row, $fields[$field_id] );
                     } catch( Exception $e ){
-                        $upload[$row]['files'][$field_id] = '___' . $e->getMessage();
+                        $upload[$row]['files'][$field_id]['fname'] = '___' . $e->getMessage();
                     } 
                 }
             }
@@ -770,8 +772,8 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 
     $upload_errors = array(
         UPLOAD_ERR_OK => "No errors.",
-        UPLOAD_ERR_INI_SIZE => "Larger than upload_max_filesize.",
-        UPLOAD_ERR_FORM_SIZE => "Larger than form MAX_FILE_SIZE.",
+        UPLOAD_ERR_INI_SIZE => "Larger than the maximum allowed by the system.",
+        UPLOAD_ERR_FORM_SIZE => "Larger than the maximum allowed by this application.",
         UPLOAD_ERR_PARTIAL => "Partial upload.",
         UPLOAD_ERR_NO_FILE => "No file.",
         UPLOAD_ERR_NO_TMP_DIR => "No temporary directory.",
@@ -832,7 +834,7 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
  * Return '1' for success, message for error.
  */
 function ewz_user_delete_item( $item_id ){
-    assert( is_int( $item_id ) );
+    assert( is_numeric( $item_id ) );
     $item = new Ewz_item( $item_id );
     $webform = new Ewz_webform( $item->webform_id );
     if( $webform->open_for_current_user() ){
@@ -861,8 +863,8 @@ function ewz_validate_and_upload( )
     // had problems with more than 10 3M images
     $n = $webformdata['layout']->max_num_items;
     $timelimit = ini_get('max_execution_time');
-    if( 10 * $n > $timelimit ){
-        set_time_limit ( 10 * $n );
+    if( 15 * $n > $timelimit ){
+        set_time_limit ( 15 * $n );
     }
 
     $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );

@@ -199,7 +199,7 @@ function ewz_get_img_cols( $fields )
  * @param $extra_cols   array of integers representing column numbers, indexed
  *                        by the extra_column abbreviations
  *                       ('dtu','iid','wft','wid','wfm','nam','fnm',
- *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2' )
+ *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2', ... )
  * @param $wform        Ewz_Webform
  *
  * @return 2-D array of strings containing the html content of the item table
@@ -221,7 +221,7 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
         // image columns from item_files
         if ( $item->item_files ) {
             foreach ( $item->item_files as $field_id => $item_file ) {
-                if( isset( $item_file['fname'] ) ){
+                if( isset( $item_file['fname'] ) && $item_file['fname'] ){
                     if ( array_key_exists( $field_id, $fields ) && $fields[$field_id]->ss_column >= 0 ) {
                         $col = $fields[$field_id]->ss_column + 1;
                         $basename = basename( $item_file['fname'] );

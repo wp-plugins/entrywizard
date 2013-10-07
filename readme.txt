@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.5.2
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,7 +78,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
   
   5. Now you can experiment, changing the settings for your own layout and webform and checking the effect by reloading your test page. If it turns out badly, delete that layout and start over with a fresh copy of the sample one.
      
-* If you are using a plugin such as Cimy User Extra Fields, or S2Member, and wish your spreadsheet to contain some of the extra member information they create,  edit the file "ewz-custom-data.php".
+* If you are using a plugin such as Cimy User Extra Fields, or S2Member, and wish your spreadsheet to contain some of the extra member information they create,  edit the file "ewz-extra.txt".  Save the result as "ewz-extra.php" in your plugins folder, and activate the new 'EWZ_EXTRA' plugin that it creates.  ( Do not make any changes to ewz-custom-data.php ).  Your code will then not be overwritten by subsequent upgrades to EntryWizard.
 
 * Most items in the EntryWizard admin pages have "help" icons beside them.  Clicking one of these should pop up a window with more detailed information. 
 
@@ -104,6 +104,12 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+
+= 0.9.5 =
+* changed method of handling custom data, to avoid having to edit the plugin's own files.
+* increased time limit for upload processing
+* fixed bug in display of some error messages in older browsers
+
 
 = 0.9.4 =
 * stop users from uploading to a closed webform using an old page
