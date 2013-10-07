@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file 
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-item.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-permission.php");
-require_once( EWZ_PLUGIN_DIR . "ewz-custom-data.php");
+require_once( EWZ_CUSTOM_DIR . "ewz-custom-data.php");
 
 /* * ***********************************************************
  * Interaction with the EWZ_WEBFORM table
@@ -425,7 +425,7 @@ class Ewz_Webform extends Ewz_Base {
         }
         $dheads = Ewz_Layout::get_all_display_headers();
         foreach ( $extra_cols as $xcol => $sscol ) {
-            if ( $sscol >= 0 ) {
+            if ( $sscol >= 0 && isset( $dheads[$xcol] ) ) {
                 $hrow[$sscol] = $dheads[$xcol]['header'];
             }
         }
@@ -480,6 +480,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_custom_data_for_ss( $item, $extra_cols, $maxcol ) {
+        assert( is_object( $item ) );
+        assert( is_array( $extra_cols ) );
+        assert( is_int( $maxcol ) );
+
         $customrow = array_fill( 0, $maxcol + 1, '' );
         $user = get_userdata( $item->user_id );
         $display = Ewz_Layout::get_all_display_data();
@@ -494,29 +498,36 @@ class Ewz_Webform extends Ewz_Base {
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
-                switch ( $display[$xcol]['dobject'] ) {
-                    case 'wform':
-                        $datasource = $wform;
-                        break;
-                    case 'user':
-                        $datasource = $user;
-                        break;
-                    case 'item':
-                        $datasource = $item;
-                        break;
-                    case 'custom':
-                        $datasource = $custom;
-                        break;
-                    default:
-                        throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                // dont crash on undefined custom data
+                if( isset( $display[$xcol] ) ){                
+                    switch ( $display[$xcol]['dobject'] ) {
+                        case 'wform':
+                            $datasource = $wform;
+                            break;
+                        case 'user':
+                            $datasource = $user;
+                            break;
+                        case 'item':
+                            $datasource = $item;
+                            break;
+                        case 'custom':
+                            $datasource = $custom;
+                            break;
+                        default:
+                            throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                    }
+                    $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
-                $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
             }
         }
         return $customrow;
     }
 
     private function get_file_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $filerow = array_fill( 0, $maxcol + 1, '' );
         $custom1 = new Ewz_Custom_Data( $item->user_id );
         if ( $item->item_files ) {
@@ -560,6 +571,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_item_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $itemrow = array_fill( 0, $maxcol + 1, '' );
         foreach ( $item->item_data as $field_id => $field_value_arr ) {
             if ( array_key_exists( $field_id, $fields ) ) {

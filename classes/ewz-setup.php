@@ -11,8 +11,6 @@ require_once( EWZ_PLUGIN_DIR . "/includes/ewz-common.php");
 
 class Ewz_Setup
 {
-    // Set this to true to go back to install state after each deactivate
-
     public static function activate_or_install_ewz()
     {
         global $wpdb;
@@ -686,6 +684,8 @@ class Ewz_Setup
     }
 
     private static function rrmdir( $dir ) {
+        assert( is_string( $dir ) );
+
       error_log( "EWZ: removing directory $dir" );
       if ( is_dir( $dir ) ) {
          $objects = scandir( $dir );

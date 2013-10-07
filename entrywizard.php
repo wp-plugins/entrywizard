@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 0.9
+  Version: 0.9.5
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -25,10 +25,11 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_PLUGIN_DIR',    plugin_dir_path( __FILE__ ) );
-define( 'EWZ_VERSION', 0.9 );
+define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
 define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
 
@@ -62,8 +63,6 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
 add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
 // in the admin area we add another function after this, so make sure we know its priority
 add_action( 'plugins_loaded', 'ewz_init_globals', 10 );
-
-
 
 /*
  * SHORTCODE
@@ -100,7 +99,7 @@ function ewz_add_stylesheet() {
 }
 
 function ewz_set_dev_env(){
-    if( is_dir( '/home/entrywizard' ) ){   // only true in development environment
+    if( is_file( plugin_dir_path( __FILE__ ). "DEVE_ENV" ) ){   // only true in development environment
         /*
          * ASSERT OPTIONS
          */
@@ -142,8 +141,10 @@ function ewz_set_dev_env(){
     }
 }
 
+
 function ewz_init_globals(){
     global $wpdb;
+
     define( 'EWZ_PREFIX', $wpdb->prefix );
 
     define( 'EWZ_LAYOUT_TABLE',  EWZ_PREFIX . 'ewz_layout' );
