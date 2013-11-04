@@ -181,8 +181,10 @@ function webform_data_str(evnum, eObj) {
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
-    str +=   '            <td> <input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '" size="15" maxlength="25"></td>';
-    str +=   '            <td></td>';
+    str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
+    str +=   '            <td>Apply the prefix to the file stored on the server &nbsp; ';
+    str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
+    str +=   '            </td>';
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'open\')">&nbsp;Open for Uploads:</td>';
@@ -357,6 +359,12 @@ function delete_webform(button, itemcount){
         confirmstring = '',
         thediv,id,ok,del_nonce,jqxhr;
 
+    thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
+    id = thediv.find('input[name="webform_id"]').first().attr("value");
+    if( '' === id || null === id || 'undefined' === typeof(id) ){
+        thediv.remove();
+        return;
+    }
     if(itemcount > 0){
         confirmstring +=  ewzG.errmsg.warn + "\n"  + ewzG.errmsg.hasitems + "\n\n";
     }
@@ -364,11 +372,6 @@ function delete_webform(button, itemcount){
     confirmstring += "\n" + ewzG.errmsg.noundo;
 
     if( confirm( confirmstring ) ){
-        thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
-        id = thediv.find('input[name="webform_id"]').first().attr("value");
-        if(  '' === id || 'undefined' === id ){
-            thediv.remove();
-        } else {
             ok = 'no';
             jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
             del_nonce = thediv.find('input[name="ewznonce"]').val();
@@ -381,14 +384,14 @@ function delete_webform(button, itemcount){
                                      },
                                      function (response) {
                                          jQuery("#temp_load").remove();
-                                         if( '1' === response ){
+                                         if( '1' == response ){
                                              thediv.remove();
                                          } else {
                                              alert( response );
                                          }
                                      }
                                    );
-        }
+        
     }
 }
 
@@ -410,6 +413,7 @@ function add_new_webform(){
     newform.webform_id = '';
     newform.webform_ident = '';
     newform.prefix = '';
+    newform.apply_prefix = true;
     jQnew = jQuery(ewz_management(num, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");
@@ -441,20 +445,19 @@ function ewz_check_csv_input(file_input_id){
     if(typeof window.FileReader !== 'undefined'){
 
         var reader = new FileReader(),
-            files = document.getElementById(file_input_id).files,
-            mb,
-            theFile;
-        if(files !== null){
+            theFile = document.getElementById(file_input_id).files[0],
+            mb;
+        if(theFile !== null){
             // get selected file element
-            theFile = files[0];
             mb =  Math.floor( theFile.size / 1048576 );
             if( mb > ewzG.maxUploadMb ){
 
                 alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
                 return false;
             }
-            if( theFile.type !== 'text/csv' ){
-                alert( 'Sorry, the file must be of type "text/csv"' );
+            var theType = theFile.type;
+            if( theType != "text/csv" ){
+                alert( theFile.name + ': File type: ' +  theType + '.  Sorry, the file must be of type "text/csv"' );
                 return false;
             }
         }

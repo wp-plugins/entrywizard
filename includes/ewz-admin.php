@@ -16,17 +16,14 @@ require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-list-items.php');
 /* * ****************   Functions to enqueue the scripts and styles ******************* */
 /*  Most scripts require data stored in a variable called 'ewzG', which must first be   */
 /*      generated. They are not enqueued until we know which are really needed       */
-/*      -- see   ewz_admin_actions                                                      */
 
 
 function ewz_enqueue_common_styles( ) {
-    // hooked in ewz_admin_actions
     wp_enqueue_style( 'jquery-ui-dialog' );
     wp_enqueue_style( 'ewz-admin-style' );
 }
 
 function ewz_enqueue_common_scripts( ) {
-    // hooked in ewz_admin_actions
     wp_enqueue_script( 'ewz-common' );
 }
 
@@ -101,7 +98,7 @@ function ewz_admin_init() {
                                'ewz-admin-layouts',
                                plugins_url( 'javascript/ewz-layouts.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-widget', 'jquery-ui-dialog',
-                                      'jquery-ui-position', 'ewz-common', 'jquery-ui-sortable' ),
+                                      'jquery-ui-position','ewz-common', 'jquery-ui-sortable' ),
                                false,
                                true         // in footer, so $ewzG has been defined
                                );
@@ -130,6 +127,7 @@ function ewz_admin_init() {
                                false,
                                true         // in footer, so $ewzG has been defined
                                );
+            ewz_enqueue_common_styles();
         }
     }
 }
@@ -231,6 +229,9 @@ function ewz_echo_data() {
             // 'page' is in GET
 
             $data = $input->get_input_data();
+            if(!isset($data['fopt'])){
+                $data['fopt'] = array();
+            }
             $webform = new Ewz_Webform( $data['webform_id'] );
 
             $items = Ewz_Item::filter_items(
@@ -261,7 +262,7 @@ function ewz_echo_data() {
     return 1;
 }
 // need to make sure global constants are defined first
-add_action( 'plugins_loaded', 'ewz_echo_data', 20 );
+add_action( 'init', 'ewz_echo_data', 30 );
 
 
 /* * ************************  AJAX CALLS *************************** *
@@ -359,6 +360,7 @@ add_action( 'wp_ajax_ewz_del_field', 'ewz_del_field_callback' );
  * if response is not '1 item deleted.', javascript caller alerts with error message.
  */
 function ewz_del_item_callback() {
+    //error_log("EWZ: deleting item (ajax) for " . $_SERVER["REMOTE_ADDR"]);
     if ( wp_verify_nonce( $_POST["ewzdelnonce"], 'ewzupload' ) ) {
         if ( ob_get_length() ) {
             ob_clean();
@@ -371,9 +373,8 @@ function ewz_del_item_callback() {
             exit();
         }
         try {
-            $item = new Ewz_Item( $_POST['item_id'] );
-            $item->delete();
-            echo "1";
+            $status = ewz_user_delete_item( $_POST['item_id'] );
+            echo $status;
         } catch (Exception $e) {
             echo $e->getMessage();
             ob_flush();
@@ -428,16 +429,23 @@ add_action( 'wp_ajax_ewz_del_webform', 'ewz_del_webform_callback' );
  * Calling page uses XMLHttpRequest, shows any text other than '1' as an alert
  */
 function ewz_upload_callback() {
+    //error_log("EWZ: uploading (ajax) for " . $_SERVER["REMOTE_ADDR"]);
+
+    require_once( EWZ_PLUGIN_DIR . 'includes/ewz-upload.php');
+
     if ( wp_verify_nonce( $_POST["ewzuploadnonce"], 'ewzupload' ) ) {
-        add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
+        // shortcode not defined within admin, need it here
         try {
-            // shortcode not defined within admin, need it here
-            ewz_validate_and_upload();
-            echo "1";
-            exit();
-                
+            add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
+            $errs = ewz_validate_and_upload();
+            if( $errs ){
+                echo $errs;
+            } else {
+                echo "1";
+            }
+            exit();  
         } catch (Exception $e) {
-            echo $e->getMessage();
+            echo "Upload error " . $e->getMessage();
             exit();
         }
     } else {

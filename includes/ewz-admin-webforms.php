@@ -6,7 +6,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-CSV-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-list-items.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**
@@ -32,7 +32,7 @@ function ewz_process_uploaded_csv( $webform_id )
    $file_tmp_name = $csvfile_data['tmp_name'];
 
    if( 'text/csv' != $csvfile_data['type'] ){
-       throw new EWZ_Exception( 'File is not of type text/csv' );
+       throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
    }
    if( $csvfile_data['error'] ){
      throw new EWZ_Exception( 'Failed to upload .csv file' );
@@ -133,8 +133,8 @@ function ewz_webforms_menu()
 
         $user_options =  Ewz_User::get_user_opt_array();
 
-        $webforms = array_filter( Ewz_Webform::get_all_webforms(),
-                                  "Ewz_Permission::can_view_webform" );
+        $webforms = array_values(array_filter( Ewz_Webform::get_all_webforms(),
+                                               "Ewz_Permission::can_view_webform" ));
                  // list of users for whom the webform may be opened,
                  // or null if current user has no permission to list them
 
@@ -174,13 +174,12 @@ function ewz_webforms_menu()
                                                          'can_assign_layout',
                                                          $webform->layout_id );
             $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
-
+            $base_options = $webform->layouts_options;
         }
 
         /*******************************/
         /* Pass the data to Javascript */
         /*******************************/
-
         $ewzG = array( 'webforms' => $webforms );
         $ewzG['list_page'] = admin_url( 'admin.php?page=entrywizlist' );
 
@@ -194,7 +193,7 @@ function ewz_webforms_menu()
         }
         $ewzG['openform_id'] = $openwebform_id;
         $ewzG['message'] = esc_html( $message );
-        $ewzG['base_options'] = $webforms[0]->layouts_options;
+        $ewzG['base_options'] = $base_options;
 
 
         $ewzG['user_options'] = $user_options;
@@ -342,9 +341,17 @@ function ewz_webforms_menu()
 
         <!-- HELP POPUP prefix -->
         <div id="prefix_help" class="wp-dialog" >
-            <p>If you wish, you may choose to add a prefix to each of the
-                downloaded image file names. <br>
-                This prefix may contain the  following expressions, which will
+            <p><u>If you wish</u>, you may choose to add a prefix to each of the
+                image file names.<br>  
+                The prefix may be applied either to each file as soon as it is uploaded to the server,<br>
+                or only to files which are downloaded using the Download Images buttons below.<br>
+            </p>
+             <p> Applying the prefix immediately on upload is safer if you download a lot of image files at once.
+                 If using the buttons below takes too long and times out, you may then use ftp to download the 
+                 files from the ewz_img_uploads folder in your wordpress uploads folder.
+             </p>
+             <p>
+                The prefix may contain the  following expressions, which will
                 be replaced as indicated:
             <table class="ewz_border">
                 <tbody><tr><th class="b">Expression</th><th class="b">Replacement</th></tr>
@@ -354,10 +361,6 @@ function ewz_webforms_menu()
                         <td class="b"> Identifier for this webform</td></tr>
                     <tr><td class="b">[~UID] </td>
                         <td class="b"> Submitter's Wordpress ID Number</td></tr>
-                    <tr><td class="b">[~ITM] </td>
-                        <td class="b"> Wordpress ID number of the uploaded item</td></tr>
-                    <tr><td class="b">[~ORD] </td>
-                        <td class="b"> Order of the item in the submitter's upload</td></tr>
                     <tr><td class="b">[~FLD] </td>
                         <td class="b"> Wordpress ID of the field the image was uploaded under<br>
                             (only useful if an item may contain more than one image)  </td></tr>
@@ -373,13 +376,13 @@ function ewz_webforms_menu()
             ?>
                 </tbody></table>
             For instance, suppose <ol><li> You set the identifier for this webform
-                    as "group1" and enter &nbsp; <b>"2012Jan-[~WFM]-[~UID]-[~ORD]"</b>
+                    as "group1" and enter &nbsp; <b>"2012Jan-[~WFM]-[~UID]"</b>
                     in the Optional Prefix box above</li>
-                <li> A member with wordpress id number <b>257</b> uploads 4 images</li>
-                <li> The third of these images has the filename <b>myimage.jpg</b></li>
+                <li> A member with wordpress id number <b>257</b> uploads images</li>
+                <li> One of these images has the filename <b>myimage.jpg</b></li>
             </ol>
-            Then the third image will be downloaded with the filename
-            &nbsp; <b>"2012Jan-group1-257-3-my_image.jpg".</b>.  This may be useful
+            Then the image will be downloaded with the filename
+            &nbsp; <b>"2012Jan-group1-257-my_image.jpg".</b>.  This may be useful
             if you wish the images to sort or group in a particular way.
             </p>
         </div>

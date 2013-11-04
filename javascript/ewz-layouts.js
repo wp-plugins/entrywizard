@@ -375,13 +375,13 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
         iObj = ewzG.empty_img;
     }
     var str = '';
-    str = '<tr><td width="60%">Maximum Image Width ( or max longest side if rotation is allowed )</td>';
+    str = '<tr><td width="60%"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgdim\')">&nbsp;Maximum Image Width ( or max longest side if rotation is allowed )</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_w_', fdld + '[max_img_w]', '5', iObj.max_img_w) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td>Spreadsheet Column for Image Width </td>';
     str += '    <td>' + colinput_str(fdid + 'ss_col_w_', fdld + '[ss_col_w]', iObj.ss_col_w, 'ssc' + lnum) + '</td>';
     str += '</tr>';
-    str += '<tr><td>Maximum Image Height( or max shorter side if rotation is allowed )</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgdim\')">&nbsp;Maximum Image Height( or max shorter side if rotation is allowed )</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_h_', fdld + '[max_img_h]', '5', iObj.max_img_h) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td>Spreadsheet Column for Image Height </td>';
@@ -393,11 +393,11 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
     str += '<tr><td>Spreadsheet Column for Image Orientation </td>';
     str += '    <td>' + colinput_str(fdid + 'ss_col_o_', fdld + '[ss_col_o]', iObj.ss_col_o, 'ssc' + lnum) + '</td>';
     str += '</tr>';
-    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgsize\')">&nbsp;Max image size (cannot be over ' + ewzG.maxUploadMb + 'M)</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgsize\')">&nbsp;Maximum image size (cannot be over ' + ewzG.maxUploadMb + 'M)</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_size_', fdld + '[max_img_size]', 10, iObj.max_img_size) + 'Megabytes</td>';
     str += '</tr>';
-    str += '<tr><td>Min image area</td>';
-    str += '    <td>' + textinput_str(fdid + 'min_img_area_', fdld + '[min_img_area]', 10, iObj.min_img_area) + 'Square&nbsp;Pixels</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'longestdim\')">&nbsp;Minimum Longest Dimension</td>';
+    str += '    <td>' + textinput_str(fdid + 'min_longest_dim_', fdld + '[min_longest_dim]', 10, iObj.min_longest_dim) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgtype\')">&nbsp;Allowed image types<br>(control-click to select more than one)</td>';
     str += '    <td>' + imgformat_input_str(fdid + 'allowed_image_types_', fdld + '[allowed_image_types][]', iObj.allowed_image_types) + '</td>';
@@ -436,14 +436,14 @@ function colinput_str(idstring, namestring, vval, uniq_class) {
     str = '<select id=' + qidstring + 'name=' + qnmstring + ' class="' + uniq_class + '" onChange="disable_ss_options(' + qclass + ')">';
     str += '      <option value="-1">None</option>';
     for (i = 0; i <= 25; ++i) {
-        sel = (i === vval) ? 'selected="selected"' : '';
+        sel = (i == vval) ? 'selected="selected"' : '';
         i1 = i + 1;
         display = i1 + '(' + String.fromCharCode(i + 65) + ')';
         str += '  <option value="' + i + '" ' + sel + '>' + display + '</option>';
     }
     for (i = 0; i <= 25; ++i) {
         j = 26 + i;
-        sel = (j === vval) ? 'selected="selected"' : '';
+        sel = (j == vval) ? 'selected="selected"' : '';
         j1 = j + 1;
         display = j1 + '(A' + String.fromCharCode(i + 65) + ')';
         str += '  <option value="' + j + '" ' + sel + '>' + display + '</option>';
@@ -803,6 +803,13 @@ function add_layout_copy() {
     jQnew.find('span[id^="lname_f"]').text('');
     jQnew.find('#add_restr_f' + to_num + '_').after(" &nbsp; <i>Restrictions may not be added until the layout has been saved.</i>");
     jQnew.find('#add_restr_f' + to_num + '_').prop("disabled", true);
+    jQnew.find('button[id^="lsub_f"]').text("Save Changes to New Layout");
+    var jdelbtn = jQnew.find('button[id^="ldel_f"]');
+    jdelbtn.text("Delete New Layout");
+    jdelbtn.attr('onclick', null);
+    jdelbtn.click(function() {
+        delete_layout(this, to_num, 0);
+    } );
     jQnew.insertAfter(layouts.last());
 
     enable_restricted_fields(to_num);
@@ -841,6 +848,13 @@ function delete_layout(button, nwebforms, nitems) {
     'use strict';
     var jbutton, lname, confirmstring, thediv, id, del_nonce, jqxhr;
 
+    jbutton = jQuery(button);
+    lname = jbutton.closest('div[id^="ewz_postbox-layout_f"]').find('h3[id^="tpg_header_f"]').text();
+    lname = lname.replace(/To make it permanent.*$/, '');
+
+    thediv = jbutton.closest('div[id^="ewz_admin_layouts_f"]');
+    id = thediv.find('input[name="layout_id"]').first().attr("value");
+
     if (jQuery('div[id^="ewz_postbox-layout_f"]').length < 2) {
         alert(ewzG.errmsg.onlylayout);
         return;
@@ -849,22 +863,17 @@ function delete_layout(button, nwebforms, nitems) {
         alert(ewzG.errmsg.deletehasitems);
         return;
     }
-    jbutton = jQuery(button);
-    lname = jbutton.closest('div[id^="ewz_postbox-layout_f"]').find('h3[id^="tpg_header_f"]').text();
-    lname = lname.replace(/To make it permanent.*$/, '');
+    if ('' == id || 'undefined' == id) {
+        delete_js_layout(id, thediv, lname);
+    } else {
 
-    confirmstring = '';
-    if (nwebforms > 0) {
-        confirmstring = ewzG.errmsg.deletehaswebforms + "\n\n";
-    }
-    confirmstring = confirmstring + ewzG.errmsg.deleteconfirm + "'" + lname + "'?";
+        confirmstring = '';
+        if (nwebforms > 0) {
+            confirmstring = ewzG.errmsg.deletehaswebforms + "\n\n";
+        }
+        confirmstring = confirmstring + ewzG.errmsg.deleteconfirm + "'" + lname + "'?";
 
-    if (confirm(confirmstring)) {
-        thediv = jbutton.closest('div[id^="ewz_admin_layouts_f"]');
-        id = thediv.find('input[name="layout_id"]').first().attr("value");
-        if ('' === id || 'undefined' === id) {
-            delete_js_layout(id, thediv, lname);
-        } else {
+        if (confirm(confirmstring)) {
             del_nonce = thediv.find('input[name="ewznonce"]').val();
             jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
             jqxhr = jQuery.post(ajaxurl,
@@ -875,7 +884,7 @@ function delete_layout(button, nwebforms, nitems) {
                     },
             function(response) {
                 jQuery("#temp_load").remove();
-                if ('1' === response) {
+                if ('1' == response) {
                     delete_js_layout(id, thediv, lname);
                 } else {
                     alert(response);
@@ -893,14 +902,14 @@ function delete_field(del_field_btn) {
     var jbutton, fname, jfield_div, jform_div, field_id, layout_id, del_nonce, jqxhr;
 
     jbutton = jQuery(del_field_btn);
-    fname = jbutton.closest('div[id$="field_mbox_"]').find('h3[id^="field_title"]').text();
-    if (confirm("Really delete the '" + fname + "' field?")) {
-        jfield_div = jbutton.closest('div[id$="field_mbox_"]');
-        jform_div = jbutton.closest('form[id^="cfg_form_f"]');
-        field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
-        if ('' === field_id || 'undefined' === field_id) {
-            jfield_div.remove();
-        } else {
+    jfield_div = jbutton.closest('div[id$="field_mbox_"]');
+    field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
+    if ('' == field_id || 'undefined' == field_id) {
+        jfield_div.remove();
+    } else {
+        fname = jbutton.closest('div[id$="field_mbox_"]').find('h3[id^="field_title"]').text();
+        if (confirm("Really delete the '" + fname + "' field?")) {
+            jform_div = jbutton.closest('form[id^="cfg_form_f"]');
             layout_id = jform_div.find('input[name="layout_id"]').first().attr("value");
 
             del_nonce = jform_div.find('input[name="ewznonce"]').val();
@@ -914,7 +923,7 @@ function delete_field(del_field_btn) {
                     },
             function(response) {
                 jQuery("#temp_load").remove();
-                if ('1' === response) {
+                if ('1' == response) {
                     delete_js_field(layout_id, field_id, jfield_div);
                 } else {
                     alert(response);
@@ -966,7 +975,7 @@ function ewz_check_layout_input(form, do_check) {
                 return false;
             }
             jform.find('input[id$="_field_header_"]').filter(function() {
-                return  ('' === jQuery(this).val().replace(/^\s+|\s+$/g, ''));
+                return  ('' == jQuery(this).val().replace(/^\s+|\s+$/g, ''));
             }).each(function() {
                 //alert("Empty: " + jQuery(this).attr("id"));
                 alert(ewzG.errmsg.colhead);
@@ -992,9 +1001,11 @@ function ewz_check_layout_input(form, do_check) {
                     ok = false;
                 }
             });
-            jform.find('input[id$="min_img_area_"]').each(function() {
-                if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
-                    alert(ewzG.errmsg.minimgarea);
+            jform.find('input[id$="min_longest_dim_"]').each(function() {
+                if( jQuery(this).val().match(/^ *$/)) {
+                     jQuery(this).val(0);
+                } else if (!jQuery(this).val().match(/^[0-9][0-9]*$/)) {
+                    alert(ewzG.errmsg.minlongestdim);
                     ok = false;
                 }
             });
@@ -1033,6 +1044,19 @@ function ewz_check_layout_input(form, do_check) {
                     alert(ewzG.errmsg.option);
                     ok = false;
                     return;
+                }
+            });
+
+            jform.find('select[id$="_field_type_"]').each(function(){
+                if( jQuery(this).val() === 'opt'){
+                    var jfield_table = jQuery(this).closest('table[class="ewz_field"]');
+                    var header = jfield_table.find('input[id$="_field_header_"]').val();
+                
+                    if(jfield_table.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').size() < 1 ){
+                        alert( header + ': ' +  ewzG.errmsg.optioncount );
+                        ok = false;
+                        return;
+                    }
                 }
             });
             jform.find('input[id$="_value_"]').each(function() {
@@ -1096,7 +1120,7 @@ function ewz_check_layout_input(form, do_check) {
             jQuery.post(ajaxurl,
                     jform.serialize(),
                     function(response) {
-                        if ('1' === response) {
+                        if ('1' == response) {
                             location.reload();
                         } else {
                             disable_ss_options('.ssc' + lnum);

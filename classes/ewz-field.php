@@ -49,6 +49,27 @@ class Ewz_Field extends Ewz_Base
     public static $col_max = 100;
 
     /**
+     * Change made in version 0.9.6 to use min longest dimension instead of min area
+     * Set min_longest_dim to square root of min_img_area, unset min_img_area
+     */
+    public static function change_min_area_to_dim( )
+    {
+        global $wpdb;
+        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id FROM " . EWZ_FIELD_TABLE . " WHERE field_type = 'img'" ) );
+        foreach ( $list as $field_id ) {
+            $field = new Ewz_Field( $field_id );
+            if( isset( $field->fdata['min_img_area'] ) ){
+                $area = $field->fdata['min_img_area'];
+                unset( $field->fdata['min_img_area'] );
+                $field->fdata['min_longest_dim'] = floor( sqrt( $area ) );
+                $field->save();
+            }
+        }
+    }
+
+
+
+    /**
      * Return an array of all the fields attached to the input layout_id
      *
      * @param   int     $layout_id
@@ -365,12 +386,18 @@ class Ewz_Field extends Ewz_Base
         if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit the layout', $this->layout_id );
         }
-
+        $order = $wpdb->get_var( $wpdb->prepare( "SELECT pg_column  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
+                                                  $this->field_id ) ); 
+        
         $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_FIELD_TABLE . " where field_id = %d",
                                                $this->field_id ) );
         if ( $rowsaffected != 1 ) {
             throw new EWZ_Exception( 'Failed to delete field', $this->field_id );
         }
+        $rowsaffected = $wpdb->query( $wpdb->prepare( "UPDATE  " . EWZ_FIELD_TABLE . 
+                                                      " SET pg_column = pg_column - 1 " .
+                                                      " WHERE layout_id = %d AND  pg_column > %d",
+                                                      $this->layout_id, $order ) );
     }
 }
 

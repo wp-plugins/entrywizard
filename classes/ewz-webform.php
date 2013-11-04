@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file 
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-item.php");
 require_once( EWZ_PLUGIN_DIR . "classes/ewz-permission.php");
-require_once( EWZ_PLUGIN_DIR . "ewz-custom-data.php");
+require_once( EWZ_CUSTOM_DIR . "ewz-custom-data.php");
 
 /* * ***********************************************************
  * Interaction with the EWZ_WEBFORM table
@@ -23,18 +23,13 @@ class Ewz_Webform extends Ewz_Base {
     public $upload_open;
     public $open_for;
     public $prefix;
+    public $apply_prefix;
     // extra
     public $can_download;
     public $can_edit_webform;
     public $can_manage_webform;
     public $itemcount;
     public $open_for_string = '';
-
-    public static function remove_prefix_subs( $string ) {
-        assert( is_string( $string ) );
-        $string2 = preg_replace( '/\[~UID\]|\[~WFM\]|\[~ITM\]|\[~ORD\]|\[~FLD\]/', '', $string );
-        return $string2;
-    }
 
     // keep list of db data names/types as a convenience for iteration and so we can easily add new ones.
     // Dont include webform_id
@@ -45,6 +40,7 @@ class Ewz_Webform extends Ewz_Base {
         'upload_open' => 'boolean',
         'open_for' => 'array',
         'prefix' => 'string',
+        'apply_prefix' => 'boolean',
     );
 
     /**
@@ -249,21 +245,26 @@ class Ewz_Webform extends Ewz_Base {
         // remove any other zip files from this webform
         array_map( "unlink", glob( $up['url'] . "/ewz_" . $this->webform_ident . "*.zip" ) );
 
-        // create a new archive
-        $this->make_zip_archive( $items, $archive_path, $include_ss );
-        // display it, making sure the redirect location is not cached
-        // Date in the past
-        header( "Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
-        // always modified
-        header( "Last-Modified: " . gmdate( "D, d M Y H:i:s" ) . " GMT" );
-        // HTTP/1.1
-        header( "Cache-Control: no-store, no-cache, must-revalidate" );
-        header( "Cache-Control: post-check=0, pre-check=0", false );
-        // HTTP/1.0
-        header( "Pragma: no-cache" );
 
-        header( "Location: $archive_url" );
-        exit;
+        // create a new archive
+        $errmsg = $this->make_zip_archive( $items, $archive_path, $include_ss );
+        if( $errmsg ){
+            throw new EWZ_Exception("EWZ: make_zip_archive returned: $msg");            
+        } else {
+            // display it, making sure the redirect location is not cached
+            // Date in the past
+            header( "Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
+            // always modified
+            header( "Last-Modified: " . gmdate( "D, d M Y H:i:s" ) . " GMT" );
+            // HTTP/1.1
+            header( "Cache-Control: no-store, no-cache, must-revalidate" );
+            header( "Cache-Control: post-check=0, pre-check=0", false );
+            // HTTP/1.0
+            header( "Pragma: no-cache" );
+            header( "Location: $archive_url" );
+
+            exit;
+        }
     }
 
     /**
@@ -295,9 +296,10 @@ class Ewz_Webform extends Ewz_Base {
                         continue;   // ignore items with no image file
                     }
                     ++$tmpn;
+                    
                     // a very rough-and-ready way to allow more time if there are a lot of image files
-                    // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 50 files.
-                    if ( $tmpn > 50 ) {
+                    // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 25 files.
+                    if ( $tmpn > 25 ) {
                         set_time_limit( EWZ_FILE_DOWNLOAD_TIME );
                         $tmpn = 0;
                     }
@@ -310,8 +312,13 @@ class Ewz_Webform extends Ewz_Base {
                         $subst_data[$custkey] = $custval;
                     }
                     if ( is_file( $item_file['fname'] ) ) {
-                        $zip->addFile( $item_file['fname'], $this->do_substitutions( $this->prefix, $subst_data ) . basename( $item_file['fname'] ) );
+                        if( $this->apply_prefix ){
+                            $zip->addFile( $item_file['fname'],  basename( $item_file['fname'] ) );
+                        } else {
+                            $zip->addFile( $item_file['fname'], $this->do_substitutions( $subst_data ) . basename( $item_file['fname'] ) );
+                        }
                     } else {
+                        error_log("EWZ: cant find " .  $item_file['fname'] ); 
                         $msg .= "\n\nUnable to find file " . basename( $item_file['fname'] );
                     }
                 }
@@ -325,9 +332,12 @@ class Ewz_Webform extends Ewz_Base {
                 }
             }
             if ( $msg ) {
+                error_log("EWZ: zip error: $msg");
                 $zip->addFromString( 'ERRORS.txt', "\nThe following errors were encountered while generating the zip archive: $msg" );
             }
-            $zip->close();
+            if( !$zip->close() ){
+                throw new EWZ_Exception( "Failed to close zip file" );
+            }
         } else {
             throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator." );
         }
@@ -425,7 +435,7 @@ class Ewz_Webform extends Ewz_Base {
         }
         $dheads = Ewz_Layout::get_all_display_headers();
         foreach ( $extra_cols as $xcol => $sscol ) {
-            if ( $sscol >= 0 ) {
+            if ( $sscol >= 0 && isset( $dheads[$xcol] ) ) {
                 $hrow[$sscol] = $dheads[$xcol]['header'];
             }
         }
@@ -480,6 +490,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_custom_data_for_ss( $item, $extra_cols, $maxcol ) {
+        assert( is_object( $item ) );
+        assert( is_array( $extra_cols ) );
+        assert( is_int( $maxcol ) );
+
         $customrow = array_fill( 0, $maxcol + 1, '' );
         $user = get_userdata( $item->user_id );
         $display = Ewz_Layout::get_all_display_data();
@@ -494,29 +508,36 @@ class Ewz_Webform extends Ewz_Base {
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
-                switch ( $display[$xcol]['dobject'] ) {
-                    case 'wform':
-                        $datasource = $wform;
-                        break;
-                    case 'user':
-                        $datasource = $user;
-                        break;
-                    case 'item':
-                        $datasource = $item;
-                        break;
-                    case 'custom':
-                        $datasource = $custom;
-                        break;
-                    default:
-                        throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                // dont crash on undefined custom data
+                if( isset( $display[$xcol] ) ){                
+                    switch ( $display[$xcol]['dobject'] ) {
+                        case 'wform':
+                            $datasource = $wform;
+                            break;
+                        case 'user':
+                            $datasource = $user;
+                            break;
+                        case 'item':
+                            $datasource = $item;
+                            break;
+                        case 'custom':
+                            $datasource = $custom;
+                            break;
+                        default:
+                            throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                    }
+                    $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
-                $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
             }
         }
         return $customrow;
     }
 
     private function get_file_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $filerow = array_fill( 0, $maxcol + 1, '' );
         $custom1 = new Ewz_Custom_Data( $item->user_id );
         if ( $item->item_files ) {
@@ -534,8 +555,12 @@ class Ewz_Webform extends Ewz_Base {
                 if ( $field->ss_column >= 0 ) {
                     assert( empty($filerow[$field->ss_column] ) );
                     if ( isset( $item_file['fname'] ) ) {
-                        $filerow[$field->ss_column] =
-                                $this->do_substitutions( $this->prefix, $subst_data ) . basename( $item_file['fname'] );
+                        if( $this->apply_prefix ){
+                            $filerow[$field->ss_column] = basename( $item_file['fname'] );
+                        } else {
+                            $filerow[$field->ss_column] =
+                                $this->do_substitutions( $subst_data ) . basename( $item_file['fname'] );
+                        }
                     } else {
                         $filerow[$field->ss_column] = '';
                     }
@@ -560,6 +585,10 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     private function get_item_data_for_ss( $fields, $item, $maxcol ) {
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_int( $maxcol ) );
+
         $itemrow = array_fill( 0, $maxcol + 1, '' );
         foreach ( $item->item_data as $field_id => $field_value_arr ) {
             if ( array_key_exists( $field_id, $fields ) ) {
@@ -635,26 +664,25 @@ class Ewz_Webform extends Ewz_Base {
         $this->items = Ewz_Item::get_items_for_webform( $this->webform_id, false );
     }
 
+
     /**
      * Make substitutions in the prefix for some expressions
      *
-     * @param   string  $prefix:  string to be changed
      * @param   array   $data:    data required to generate the substitute values
      * @return  changed $prefix
      */
-    public function do_substitutions( $in_prefix, $data ) {
-        assert( is_string( $in_prefix ) );
+    public function do_substitutions( $data ) {
         assert( is_array( $data ) );
-
-        $placeholders = array( '[~UID]',         '[~WFM]',             '[~ITM]',         '[~FLD]' );
-        $replacements = array( $data['user_id'], $this->webform_ident, $data['item_id'], $data['field_id'] );
+        $placeholders = array( '[~UID]',         '[~WFM]',                    '[~FLD]' );
+        $replacements = array( $data['user_id'], $this->webform_ident,  $data['field_id'] );
         for ( $n = 1; $n <= 9; ++$n ) {
             if ( isset( $data["custom$n"] ) ) {
                 array_push( $placeholders, '[~CD' . $n . ']' );
                 array_push( $replacements, $data['custom' . $n] );
             }
         }
-        $out_prefix = str_replace( $placeholders, $replacements, $in_prefix );
+        $out_prefix = str_replace( $placeholders, $replacements, $this->prefix );
+
         return $out_prefix;
     }
 
@@ -732,6 +760,7 @@ class Ewz_Webform extends Ewz_Base {
             'upload_open' => $this->upload_open ? 1 : 0,
             'open_for' => serialize( $this->open_for ),
             'prefix' => $this->prefix,
+            'apply_prefix' => $this->apply_prefix ? 1 : 0,
                 ) );
         $datatypes = array( '%d', '%s', '%s', '%d', '%s', '%s' );
 
