@@ -75,6 +75,9 @@ function textinput_str(idstring, namestring, mw, vval, func) {
    if ( typeof ( func ) !== 'undefined' ){
       retstr += ' ' + func + ' ';
    }
+    if( typeof ( vval ) == 'undefined' ){
+        vval = '';
+    }
    retstr += ' id=' + qqidstring + ' name=' + qqnmstring + ' maxlength=' + qqmw + ' value="' + vval + '">';
    return retstr;
 }

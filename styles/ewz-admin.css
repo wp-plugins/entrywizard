@@ -215,5 +215,5 @@ input[id^="webform_ident"] {
     width: 12em;
 }
 input[id^="prefix_"] {
-    width: 7em;
+    width: 15em;
 }

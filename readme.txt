@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.5.2
-Stable tag: 0.9.5
+Stable tag: 0.9.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,7 +56,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * The initial setup comes with two sample layouts and one sample webform.  The sample webform has been assigned the identifier "test".
   To show the sample webform on your page, simply include the shortcode
 
-       [ewz_show_webform identifier="test"]
+       [ewz_show_webform identifier="example"]
 
    in the page where you wish the form to appear.  
   
@@ -105,11 +105,23 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 == Changelog ==
 
+= 0.9.6 =
+* Changed to optionally add the prefix to the image file on upload instead of on download, making it easier to download image files with the correct prefix via ftp. This required the removal of the item_id substitution option in the prefix.
+* Changed to require a minimum longest dimension for uploaded images instead of a minimum area. Where a value was already set for the minimum area, set the minimum longest dimension to the square root of the minimum area.  This makes it possible to require the longest dimension to be within certain limits.  
+* Widened the text input field for the prefix.
+* Alert the user if no action is selected on the item list page.
+* Remember previously selected parameters on the item list page.
+* Move progess bar to above submit button on upload form.
+* Fixed bottom apply button not working on the item list page.
+* Fixed to work with a wordpress admin area that uses https.
+* Fixed an error in the custom field substitution code.
+* Improved some error message handling.
+* Fixed bad help display on admin item list page
+
 = 0.9.5 =
 * changed method of handling custom data, to avoid having to edit the plugin's own files.
 * increased time limit for upload processing
 * fixed bug in display of some error messages in older browsers
-
 
 = 0.9.4 =
 * stop users from uploading to a closed webform using an old page
@@ -124,7 +136,6 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * remove the "<h2>" that was displaying in the "please wait" message when images are uploaded
 * do not ask for confirmation on deletion if webform was not saved
 
-
 = 0.9.2 =
 * dont use the get_cimyFieldValue when Cimy Extra Fields plugin not used
 
@@ -134,6 +145,13 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * fix display of some error messages
 * only ask for confirmation of a deletion if the item has been saved
 * ensure an option field has at least 1 option before saving
+
+== Upgrade Notice ==
+
+= 0.9.6 =
+
+CHANGE: Optionally apply the prefix to the filenames on upload instead of on download, to facilitate download via ftp.
+CHANGE: Require a minimum longest dimension for uploaded images instead of a minimum area
 
 == To Do ==
 

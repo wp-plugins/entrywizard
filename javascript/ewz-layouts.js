@@ -396,8 +396,8 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
     str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgsize\')">&nbsp;Maximum image size (cannot be over ' + ewzG.maxUploadMb + 'M)</td>';
     str += '    <td>' + textinput_str(fdid + 'max_img_size_', fdld + '[max_img_size]', 10, iObj.max_img_size) + 'Megabytes</td>';
     str += '</tr>';
-    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgarea\')">&nbsp;Minimum image area</td>';
-    str += '    <td>' + textinput_str(fdid + 'min_img_area_', fdld + '[min_img_area]', 10, iObj.min_img_area) + 'Square&nbsp;Pixels</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'longestdim\')">&nbsp;Minimum Longest Dimension</td>';
+    str += '    <td>' + textinput_str(fdid + 'min_longest_dim_', fdld + '[min_longest_dim]', 10, iObj.min_longest_dim) + 'Pixels</td>';
     str += '</tr>';
     str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgtype\')">&nbsp;Allowed image types<br>(control-click to select more than one)</td>';
     str += '    <td>' + imgformat_input_str(fdid + 'allowed_image_types_', fdld + '[allowed_image_types][]', iObj.allowed_image_types) + '</td>';
@@ -1001,9 +1001,11 @@ function ewz_check_layout_input(form, do_check) {
                     ok = false;
                 }
             });
-            jform.find('input[id$="min_img_area_"]').each(function() {
-                if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
-                    alert(ewzG.errmsg.minimgarea);
+            jform.find('input[id$="min_longest_dim_"]').each(function() {
+                if( jQuery(this).val().match(/^ *$/)) {
+                     jQuery(this).val(0);
+                } else if (!jQuery(this).val().match(/^[0-9][0-9]*$/)) {
+                    alert(ewzG.errmsg.minlongestdim);
                     ok = false;
                 }
             });

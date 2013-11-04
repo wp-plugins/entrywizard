@@ -483,8 +483,12 @@ function  ewz_display_list_page( $message, $requestdata ){
         $formtitle = $webform->webform_title;
         $ipp = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
 
+        $selectedPage = isset( $requestdata['page'] ) ? $requestdata['page'] : -1; 
+        $selectedSize = isset( $requestdata['img_size']) ? $requestdata['img_size'] : -1; 
+        $commentChecked = isset( $requestdata['img_comment'] ) ? "checked" : '';
 
         // needed to generate html below: $webform_id; $image_columns; $ewz_item_list; $webformsurl; $formtitle; $ipp; $ewzG;
+        //   $selectedPage; $selectedSize; $commentChecked;
    ?>
 
     <div class="ewz_showlist">
@@ -515,14 +519,14 @@ function  ewz_display_list_page( $message, $requestdata ){
     	    <table class="ewz_buttonrow ewz_shaded">
     	        <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('dest');">&nbsp;
     		                Destination page when attaching images:</td>
-                    <td><?php wp_dropdown_pages(array('name'=>'ewz_page_sel')); ?></td></tr>
+                <td><?php wp_dropdown_pages(array('name'=>'ewz_page_sel'), array('selected'=>$selectedPage)); ?></td></tr>
                 <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('imgcomm');">&nbsp;
                                 Allow comments on attached images: </td>
-                        <td><input type="checkbox" id="img_comment" name="img_comment" ></td></tr>
+                <td><input type="checkbox" id="img_comment" name="img_comment" <?php print $commentChecked; ?>></td></tr>
                 <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('imgsize');">&nbsp;
                                 Resize image before attaching: </td>
                     <td><select id="img_size" name="img_size" >
-                        <?php print ewz_get_img_size_options(); ?></select></td></tr>
+                        <?php print ewz_get_img_size_options($selectedSize); ?></select></td></tr>
       <?php if ( count( $image_columns ) > 1 ) {
 	       foreach ( $image_columns as $fld_id => $fld_head ) {
       ?>

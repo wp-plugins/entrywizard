@@ -181,8 +181,10 @@ function webform_data_str(evnum, eObj) {
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
-    str +=   '            <td> <input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '" size="15" maxlength="25"></td>';
-    str +=   '            <td></td>';
+    str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
+    str +=   '            <td>Apply the prefix to the file stored on the server &nbsp; ';
+    str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
+    str +=   '            </td>';
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'open\')">&nbsp;Open for Uploads:</td>';
@@ -411,6 +413,7 @@ function add_new_webform(){
     newform.webform_id = '';
     newform.webform_ident = '';
     newform.prefix = '';
+    newform.apply_prefix = true;
     jQnew = jQuery(ewz_management(num, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");

@@ -257,8 +257,6 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     /* Submit button and progress area */
     /*     * ******************************** */
     $esc_wid = esc_attr( $webform_id );
-    $output .= '      <div class="ewz_pcentre"><button type="button" disabled="disabled" id="ewz_fsubmit_' . $esc_wid .
-            '" onclick="startUploading( ' . esc_js( $webform_id ) . ')" >Submit</button></div>';
     $output .= '      <div class="ewz_progress" >';
     $output .= '            <div id="progress_info_' . $esc_wid . '">';
     $output .= '                <div id="complete_' . $esc_wid . '">';
@@ -274,8 +272,13 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     $output .= '                </div>';
     $output .= '                <div id="upload_response_' . $esc_wid . '"></div>';
     $output .= '            </div>';
-    $output .= '       </div>';
+    $output .= '      </div>';
+    $output .= '      <div class="ewz_pcentre"><button type="button" disabled="disabled" id="ewz_fsubmit_' . $esc_wid;
+    $output .=             '" onclick="startUploading( ' . esc_js( $webform_id ) . ')" >Submit</button>';
+    $output .= '      </div>';
+
     $output .= '</div>';
+
     $output .= "</form>\n";
     $output .= "</div>\n";
 
@@ -425,8 +428,7 @@ function ewz_get_layout_info( $layout )
     $ewzG = array('layout' => $layout);
 
     // required for viewer-side ajax, automatically defined for admin
-    $ewzG['ajaxurl'] = admin_url( 'admin-ajax.php' );
-
+    $ewzG['ajaxurl'] = admin_url('admin-ajax.php', (is_ssl() ? 'https' : 'http'));
     $ewzG['uploadurl'] = get_permalink( $post );
     $ewzG['load_gif'] = plugins_url( 'images/loading.gif' , dirname(__FILE__) ) ;
 
@@ -434,8 +436,8 @@ function ewz_get_layout_info( $layout )
     $ewzG['abort_err'] = "Either you cancelled the upload, or your browser dropped the connection.";
     $ewzG['ftype_err'] = "Sorry, this image will not be accepted.\nEither it's type could not be detected " .
                            "or it is not an acceptable image type for this application.";
-    $ewzG['ismall_err'] = "Sorry, this image will not be accepted.\nIts area is smaller than the minimum of:" .
-                           "\n    %d square pixels.\n\nIt could be enlarged up to:\n";
+    $ewzG['ismall_err'] = "Sorry, this image will not be accepted.\nIts longest dimension is smaller than the minimum of:" .
+                           "\n    %d pixels.\n\nIt could be enlarged up to:\n";
     $ewzG['isize_err'] = "Sorry, this image will not be accepted.\nIt does not fit within the required bounds of: ";
     $ewzG['fsize_err'] = "Sorry, this file will not be accepted.\nIts size ( %d ) is greater than the limit of ";
 
@@ -623,14 +625,28 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
 
         // ensure the next uploaded items are stored in uploads/ewz_upload_dir
         add_filter( 'upload_dir', array( $webform, 'ewz_upload_dir' ) );
-
+        $subst_data = array();
+        if( $webform->apply_prefix ){
+            $user_id = get_current_user_id();
+            $customdata = new Ewz_Custom_Data( $user_id );
+            $subst_data = array(
+                                'user_id' => $user_id,
+                                );
+            foreach ( $customdata as $custkey => $custval ) {
+                $subst_data[$custkey] = $custval;
+            }
+        }
         foreach ( $_FILES['rdata']['name'] as $row => $fileset ) {
             // there is a $_FILES['rdata']['name'] for each "used" row with a file input, indexed on row number
             foreach ( $fileset as $field_id => $filename ) {
-                if( isset( $filename ) ){
-                    // $filename is null, and thus isset is false, if no file uploaded
+                if( isset( $filename ) && $filename ){
+                    $prefix = '';
+                    if( $webform->apply_prefix ){
+                        $subst_data['field_id'] = $field_id;
+                        $prefix = $webform->do_substitutions( $subst_data );
+                    }
                     try{
-                        $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $filename, $row, $fields[$field_id] );
+                        $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $prefix.$filename, $row, $fields[$field_id] );
                     } catch( Exception $e ){
                         $upload[$row]['files'][$field_id]['fname'] = '___' . $e->getMessage();
                     } 
@@ -660,7 +676,7 @@ function ewz_create_thumbfile( $img_filepath ){
 
     $image = wp_get_image_editor( $img_filepath );
     if ( is_wp_error( $image ) ) {
-        throw new EWZ_Exception( $image->get_error_message() );
+        throw new EWZ_Exception( 'error reading image: ' .$image->get_error_message() );
     } else {
         $image->resize( $dim['w'], $dim['h'], false );
         $image->save( $thumb_filepath );
@@ -762,7 +778,7 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
     $maxw = $field_data->fdata['max_img_w'];  // ['max_img_w'];
     $maxh = $field_data->fdata['max_img_h'];  // ['max_img_h'];
     $maxs = $field_data->fdata['max_img_size'] * 1048576;  // ['max_img_size'] * 1048576;
-    $mina = $field_data->fdata['min_img_area'];  // ['min_img_area'];
+    $minld = $field_data->fdata['min_longest_dim'];  // ['min_longest_dim'];
     $canrot = $field_data->fdata['canrotate'];
     $types = $field_data->fdata['allowed_image_types'];  // ['allowed_image_types'];
 
@@ -794,7 +810,7 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
         return "Image file is larger than the limit of " . $field_data->fdata['max_img_size'] . 'M';
     }
 
-    // ok, passed. Now check the size constraints
+    // ok, passed. Now check the dimension constraints
     $imgResource = wp_get_image_editor( $imgfile_data['tmp_name'] );
     if ( is_wp_error( $imgResource ) ) {
         return "Unable to read image file: " . $imgResource->get_error_message();
@@ -818,9 +834,9 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
         }
         return $msg;
     }
-    $area = $w * $h;
-    if ( ($area < $mina ) && ($w < $maxw ) && ($h < $maxh) ) {
-        return "Image size is less than $mina square pixels, which is too small for this application.\n\nIt can be enlarged up to " .
+    $longest = $w > $h ? $w : $h;
+    if ( ($longest < $minld ) ) {
+        return "Longest image dimension is $longest pixels, which is too small for this application.\n\nIt can be enlarged up to " .
                 esc_html( "$maxw pixels wide x $maxh pixels high" );
     }
 
@@ -857,7 +873,7 @@ function ewz_validate_and_upload( )
 
     // not logged in or form not open - display the html failmsg
     if ( array_key_exists( 'failmsg', $webformdata ) ) {
-        return $webformdata['failmsg'];
+        return "Failed to get form:  " . $webformdata['failmsg'];
     }
 
     // had problems with more than 10 3M images
@@ -869,7 +885,8 @@ function ewz_validate_and_upload( )
 
     $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
 
-    ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
+    // return error messages
+    return ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
                         $webformdata['webform']->webform_id );
 }
 

@@ -49,6 +49,27 @@ class Ewz_Field extends Ewz_Base
     public static $col_max = 100;
 
     /**
+     * Change made in version 0.9.6 to use min longest dimension instead of min area
+     * Set min_longest_dim to square root of min_img_area, unset min_img_area
+     */
+    public static function change_min_area_to_dim( )
+    {
+        global $wpdb;
+        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id FROM " . EWZ_FIELD_TABLE . " WHERE field_type = 'img'" ) );
+        foreach ( $list as $field_id ) {
+            $field = new Ewz_Field( $field_id );
+            if( isset( $field->fdata['min_img_area'] ) ){
+                $area = $field->fdata['min_img_area'];
+                unset( $field->fdata['min_img_area'] );
+                $field->fdata['min_longest_dim'] = floor( sqrt( $area ) );
+                $field->save();
+            }
+        }
+    }
+
+
+
+    /**
      * Return an array of all the fields attached to the input layout_id
      *
      * @param   int     $layout_id

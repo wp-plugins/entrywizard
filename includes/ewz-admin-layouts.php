@@ -113,7 +113,7 @@ function ewz_layout_menu()
                                     "max_img_h" => EWZ_DEFAULT_DIM,
                                     "canrotate" => false,
                                     "max_img_size" => EWZ_MAX_SIZE_MB,
-                                    "min_img_area" => EWZ_DEFAULT_MIN_AREA,
+                                    "min_longest_dim" => EWZ_DEFAULT_MIN_LONGEST,
                                     "allowed_image_types" => array( "image/jpeg", "image/pjpeg" ) );
         $ewzG['empty_str'] = array( "fieldwidth" => EWZ_MAX_FIELD_WIDTH,
                                     "maxstringchars" => EWZ_MAX_STRING_LEN,
@@ -141,7 +141,7 @@ function ewz_layout_menu()
                 "consists only of letters, digits, dashes and underscores.' ,
             'maximgw' => 'The max image width should consist of digits only.' ,
             'maximgh' => 'The max image height should consist of digits only.' ,
-            'minimgarea' => 'The minimum image area should consist of digits only.' ,
+            'minlongestdim' => 'The minimum longest dimension should consist of digits only.' ,
             'nomaximgsz' => 'Each image field must have a max image size.' ,
             'maximgsz' => 'The max image size should consist of digits only, " .
                 "representing the number of Megabytes allowed.' ,
@@ -196,16 +196,16 @@ function ewz_layout_menu()
         </div>
 
         <div id="help-text" style="display:none">
-            <!-- HELP POPUP image area -->
-            <div id="imgarea_help" class="wp-dialog" >
+            <!-- HELP POPUP image min dimensions -->
+            <div id="longestdim_help" class="wp-dialog" >
                 <p>The purpose of this setting is to disallow very small images when they could be enlarged within the maximum width and height limitations. </p>
-                <p>It has <b>no</b> effect if the image has width equal to the maximum width or height equal to the maximum height.</p>
-        
+                <p>If set to a few pixels less that the maximum longest dimension it may also be used to set a "target" dimension. 
+                <p>Some software may size an image 1 or 2 pixels smaller than the dimension requested, so this value should normally be at least 1 or 2 pixels smaller than the maximum dimension</p>    
             </div>
             <!-- HELP POPUP image dimensions -->
             <div id="imgdim_help" class="wp-dialog" >
                  <p>A user attempting to upload an image with width or height greater than the maxima set here will receive an error message.</p>
-                 <p>See also the help items on Maximum image size and Minimum image area</p>                                   
+                 <p>See also the help items on Maximum image size and Minimum longest dimension</p>                                   
             </div>
 
             <!-- HELP POPUP image size -->
