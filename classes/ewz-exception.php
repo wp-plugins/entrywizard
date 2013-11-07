@@ -24,7 +24,7 @@ class EWZ_Exception extends Exception {
         }
 
         // format in one line for error log. ~ is replaced with newline for js alerts
-        $logmsg = sprintf( "%s", $user_message, $data1 );
+        $logmsg = sprintf( "%s ;; %s", $user_message, $data1 );
 
         $file = str_replace( EWZ_PLUGIN_DIR, '', parent::getFile() );
 

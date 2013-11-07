@@ -8,7 +8,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-item-list.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**
@@ -164,7 +164,9 @@ function ewz_get_headers( $fields, $extra_cols )
     foreach ( $extra_cols as $xcol => $sscol ) {
         if ( $sscol >= 0 ) {
             $ssc = $sscol + 1;
-            $headers[$ssc] = $dheads[$xcol]['header'];
+            if( isset( $dheads[$xcol] ) ){
+                $headers[$ssc] = $dheads[$xcol]['header'];
+            }
         }
     }
     return $headers;
@@ -197,7 +199,7 @@ function ewz_get_img_cols( $fields )
  * @param $extra_cols   array of integers representing column numbers, indexed
  *                        by the extra_column abbreviations
  *                       ('dtu','iid','wft','wid','wfm','nam','fnm',
- *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2' )
+ *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2', ... )
  * @param $wform        Ewz_Webform
  *
  * @return 2-D array of strings containing the html content of the item table
@@ -219,7 +221,7 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
         // image columns from item_files
         if ( $item->item_files ) {
             foreach ( $item->item_files as $field_id => $item_file ) {
-                if( isset( $item_file['fname'] ) ){
+                if( isset( $item_file['fname'] ) && $item_file['fname'] ){
                     if ( array_key_exists( $field_id, $fields ) && $fields[$field_id]->ss_column >= 0 ) {
                         $col = $fields[$field_id]->ss_column + 1;
                         $basename = basename( $item_file['fname'] );
@@ -274,23 +276,26 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                 $ssc = $sscol + 1;
                 assert( !isset( $rows[$n][$ssc]) ||  !$rows[$n][$ssc] );
                 $datasource = '';
-                switch ( $display[$xcol]['dobject'] ) {
-                    case 'wform':
-                        $datasource = $wform;
-                        break;
-                    case 'user':
-                        $datasource = $user;
-                        break;
-                    case 'item':
-                        $datasource = $item;
-                        break;
-                    case 'custom':
-                        $datasource = $custom;
-                        break;
-                    default:
-                        throw new EWZ_Exception( 'Invalid data source ' .  $display[$xcol]['dobject'] );
+                // dont crash on undefined custom data
+                if( isset( $display[$xcol] ) ){
+                    switch ( $display[$xcol]['dobject'] ) {
+                        case 'wform':
+                            $datasource = $wform;
+                            break;
+                        case 'user':
+                            $datasource = $user;
+                            break;
+                        case 'item':
+                            $datasource = $item;
+                            break;
+                        case 'custom':
+                            $datasource = $custom;
+                            break;
+                        default:
+                            throw new EWZ_Exception( 'Invalid data source ' .  $display[$xcol]['dobject'] );
+                    }
+                    $rows[$n][$ssc] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
-                $rows[$n][$ssc] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
             }
         }
         ++$n;
@@ -333,6 +338,8 @@ function ewz_get_img_size_options() {
  * @return  array  validated data
  */
 function ewz_do_listpage_validation( $data ){
+    assert( is_array( $data ) );
+
     $requestdata = array();
     switch( $_POST['ewzmode'] ){
 
@@ -429,6 +436,8 @@ function ewz_list_items() {
  * @param   array   $requestdata   $_GET plus $_POST, validated
  */
 function  ewz_display_list_page( $message, $requestdata ){
+    assert( is_string( $message ) );
+    assert( is_array( $requestdata ) );
 
        if( isset( $_POST['ewzmode'] ) &&
             !in_array( $_POST['ewzmode'], array( 'list', 'listpage', 'ipp' ) ) ){
@@ -474,8 +483,12 @@ function  ewz_display_list_page( $message, $requestdata ){
         $formtitle = $webform->webform_title;
         $ipp = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
 
+        $selectedPage = isset( $requestdata['page'] ) ? $requestdata['page'] : -1; 
+        $selectedSize = isset( $requestdata['img_size']) ? $requestdata['img_size'] : -1; 
+        $commentChecked = isset( $requestdata['img_comment'] ) ? "checked" : '';
 
         // needed to generate html below: $webform_id; $image_columns; $ewz_item_list; $webformsurl; $formtitle; $ipp; $ewzG;
+        //   $selectedPage; $selectedSize; $commentChecked;
    ?>
 
     <div class="ewz_showlist">
@@ -506,14 +519,14 @@ function  ewz_display_list_page( $message, $requestdata ){
     	    <table class="ewz_buttonrow ewz_shaded">
     	        <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('dest');">&nbsp;
     		                Destination page when attaching images:</td>
-                    <td><?php wp_dropdown_pages(array('name'=>'ewz_page_sel')); ?></td></tr>
+                <td><?php wp_dropdown_pages(array('name'=>'ewz_page_sel'), array('selected'=>$selectedPage)); ?></td></tr>
                 <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('imgcomm');">&nbsp;
                                 Allow comments on attached images: </td>
-                        <td><input type="checkbox" id="img_comment" name="img_comment" ></td></tr>
+                <td><input type="checkbox" id="img_comment" name="img_comment" <?php print $commentChecked; ?>></td></tr>
                 <tr><td><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon'] ?>" onClick="ewz_help('imgsize');">&nbsp;
                                 Resize image before attaching: </td>
                     <td><select id="img_size" name="img_size" >
-                        <?php print ewz_get_img_size_options(); ?></select></td></tr>
+                        <?php print ewz_get_img_size_options($selectedSize); ?></select></td></tr>
       <?php if ( count( $image_columns ) > 1 ) {
 	       foreach ( $image_columns as $fld_id => $fld_head ) {
       ?>

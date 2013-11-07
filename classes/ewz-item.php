@@ -355,7 +355,6 @@ class Ewz_Item extends Ewz_Base {
             $data['item_files'] = serialize( $this->item_files ) ;
         }
 
-
         $datatypes = array( '%d', '%d', '%s', '%s' );
         if ( $this->item_id ) {
             $rows = $wpdb->update( EWZ_ITEM_TABLE,
@@ -363,7 +362,8 @@ class Ewz_Item extends Ewz_Base {
                     $datatypes, array( '%d' ) );
 
             if ( ( false === $rows ) || ( $rows > 1 ) ) {
-                throw new EWZ_Exception( 'Problem updating item', $this->item_id );
+                throw new EWZ_Exception( 'Problem updating item ' . basename( $item_file['fname'] ) . ', please reload the page to see your current status.' ,  
+                                         $this->item_id );
             }
             // only alter last_change if there really was a change
             if ( 1 == $rows ) {
@@ -374,20 +374,28 @@ class Ewz_Item extends Ewz_Base {
                         array( '%d' ) );
             }
         } else {
+            $errors = '';
             $num = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_ITEM_TABLE .
                                                    " WHERE user_id = %d AND webform_id = %d ",
                                                    $this->user_id, $this->webform_id ) );
             if( $this->get_num_items_allowed() < ( $num + 1 ) ){
-               throw new EWZ_Exception( 'Too many items' );
-            }
-            $data['last_change'] = current_time( 'mysql' );
-            array_push( $datatypes, '%s' );
+                foreach( $this->item_files as $item_file ){
+                    $errors .= $this->delete_file( $item_file );
+                }                
+                throw new EWZ_Exception( 'Too many items uploaded, no data saved for ' . basename( $item_file['fname'] ) . "\n", $errors );
+            } else {
+                $data['last_change'] = current_time( 'mysql' );
+                array_push( $datatypes, '%s' );
 
 
-            $wpdb->insert( EWZ_ITEM_TABLE, $data, $datatypes );
-            $inserted = $wpdb->insert_id;
-            if ( !$inserted ) {
-                throw new EWZ_Exception( 'Problem creating the item' );
+                $wpdb->insert( EWZ_ITEM_TABLE, $data, $datatypes );
+                $inserted = $wpdb->insert_id;
+                if ( !$inserted ) {
+                    foreach( $this->item_files as $item_file ){
+                        $errors .= $this->delete_file( $item_file );
+                    }
+                    throw new EWZ_Exception( 'Sorry, there was a problem creating the item '. basename( $item_file['fname'] ) . ", please refresh the page to see your current status.\n", $errors );
+                }
             }
         }
     }
@@ -400,51 +408,68 @@ class Ewz_Item extends Ewz_Base {
      */
     public function delete() {
         global $wpdb;
+
         if ( !( ( $this->user_id == get_current_user_id() )        // user can edit own data
                 ||
                 Ewz_Permission::can_manage_webform( $this->webform_id ) )   // admin can manage webform
         ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit item', "item $this->item_id in webform $this->webform_id" );
         }
+
         $errors = '';
         $rows_deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_ITEM_TABLE . " WHERE item_id = %d ", $this->item_id ) );
         assert( is_int($rows_deleted));
         if ( $rows_deleted > 1 ) {
-            $errors = "WARNING: Deleting items from database: $rows_deleted rows deleted.";
+            $errors = "WARNING: Deleting items from database: $rows_deleted rows deleted. ";
         } elseif ( 1 == $rows_deleted ) {
             $errors = '';
         } else {
-            $errors = "ERROR: Failed to delete item from database.";
+            $errors = "ERROR: Failed to delete item from database. ";
         }
 
-        if ( ( $rows_deleted >= 1 ) ) {
-            foreach ( $this->item_files as $item_file ) {
-                if( isset($item_file['fname']) ){  // will be null if no uploaded file for the field
-                    $fname = $item_file['fname'];
-                    if ( file_exists( $fname ) ) {
-                        $status = unlink( "$fname" );
-                        if ( !$status ) {
-                            $errors .= "WARNING: Failed to delete image file $fname.";
-                        }
-                    } else {
-                        $errors .= "WARNING: Attempted to delete file $fname, file not found. ";
-                    }
-
-                    $thumbname = ewz_url_to_file( $item_file['thumb_url'] );
-                    if ( file_exists( "$thumbname" ) ) {
-                        $status = unlink( "$thumbname" );
-                        if ( !$status ) {
-                            $errors .= "WARNING: Failed to delete thumbnail file $thumbname.";
-                        }
-                    } else {
-                        $errors .= "WARNING: Attempted to delete thumbnail file $thumbname, file not found. ";
-                    }
-                }
-            }
+        // Attempt to delete all files, don't just raise exception after first failure
+        foreach ( $this->item_files as $item_file ) {
+            $errors .= $this->delete_file( $item_file );
         }
         if ( $errors ) {
             throw new EWZ_Exception( "Problem deleting item:\n$errors" );
         }
+    }
+
+    /**
+     * Delete a file and its thumbnail
+     * 
+     * @param   $item_file  array   
+     * @return  
+     */
+    public function   delete_file( $item_file ){
+        assert( is_array( $item_file ) );
+
+        $errmsg = '';
+        if( isset( $item_file['fname']) && $item_file['fname'] ){
+            $fname = $item_file['fname'];
+            if ( file_exists( $fname ) ) {
+                $status = unlink( "$fname" );
+                if ( !$status ) {
+                    $errmsg = "Failed to delete image file: " . basename( $fname );
+                }
+            } else {
+                $errmsg = "Attempted to delete file " . basename( $fname ) . ", file not found.";
+            }
+        }
+
+        if( isset( $item_file['thumb_url'] ) && $item_file['thumb_url'] ){
+            $thumbname = ewz_url_to_file( $item_file['thumb_url'] );
+            if ( file_exists( "$thumbname" ) ) {
+                $status = unlink( "$thumbname" );
+                if ( !$status ) {
+                    $errmsg .= "\nFailed to delete thumbnail file for: " . basename( $fname );
+                }
+            } else {
+                $errmsg .=  "\nAttempted to delete thumbnail file for " . basename( $fname ) . ", file not found.";
+            }
+        }
+        return $errmsg;
     }
 }
 
