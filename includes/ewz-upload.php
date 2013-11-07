@@ -581,8 +581,12 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
             }
         }
         if( $data ){
-            $item_obj = new Ewz_Item( $data );
-            $item_obj->save();
+            try {
+                $item_obj = new Ewz_Item( $data );
+                $item_obj->save();
+            } catch( Exception $e ) {
+                $errs .= $e->getMessage();
+            }
         }
     }
     return $errs;
@@ -676,7 +680,7 @@ function ewz_create_thumbfile( $img_filepath ){
 
     $image = wp_get_image_editor( $img_filepath );
     if ( is_wp_error( $image ) ) {
-        throw new EWZ_Exception( 'error reading image: ' .$image->get_error_message() );
+        throw new EWZ_Exception( 'error reading image ' . basename( $img_filepath ) . ': ' . $image->get_error_message() );
     } else {
         $image->resize( $dim['w'], $dim['h'], false );
         $image->save( $thumb_filepath );
@@ -728,7 +732,7 @@ function ewz_handle_img_upload( $filename,  $row,  $field ){
 
         $errmsg = ewz_image_file_check( $file, $field );
         if ( $errmsg ) {
-            throw new EWZ_Exception( "Image '$filename' not uploaded:\n$errmsg" );
+            throw new EWZ_Exception( 'Image ' . basename( $filename) . " not uploaded:\n$errmsg" );
         } else {
             if ( !function_exists( 'wp_handle_upload' ) ) {
                 require_once( ABSPATH . 'wp-admin/includes/file.php' );
@@ -745,8 +749,7 @@ function ewz_handle_img_upload( $filename,  $row,  $field ){
                 $thumburl = ewz_file_to_url( $thumbfile );
 
                 if ( $thumbfile == $uploaded_file['file'] ) {
-                    throw new EWZ_Exception( "Thumb filename '$thumbfile'
-                                        is same as original filename" );
+                    throw new EWZ_Exception( "Thumb filename " . basename( $thumbfile ) . ' is same as original filename.' );
                 }
                 return  array( 'field_id'  => $field_id,
                                'thumb_url' => $thumburl,
@@ -757,7 +760,7 @@ function ewz_handle_img_upload( $filename,  $row,  $field ){
                                'orient'    => ( $size[0] > $size[1] ) ? 'L' : 'P',
                                );
             } else {
-                throw new EWZ_Exception( 'Error in file upload: ' . $uploaded_file['error'] );
+                throw new EWZ_Exception( 'Error in file upload for ' . basename( $filename ) . ': ' . $uploaded_file['error'] );
             }
         }
     }

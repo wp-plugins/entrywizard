@@ -213,6 +213,7 @@ function ewz_webforms_menu()
                 and consists only of lower case letters, digits, dashes and underscores.',
             'formPrefix' => 'The prefix may contain only letters, digits, dashes, underscores
                 and the special expressions listed in the help window.',
+            'prefixApply' => 'You have opted to apply a prefix without setting the prefix to be used.',
         );
         $ewzG['jsvalid'] = Ewz_Base::validate_using_javascript();
                            // normally true, set false to test server validation

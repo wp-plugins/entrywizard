@@ -55,7 +55,7 @@ class Ewz_Field extends Ewz_Base
     public static function change_min_area_to_dim( )
     {
         global $wpdb;
-        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id FROM " . EWZ_FIELD_TABLE . " WHERE field_type = 'img'" ) );
+        $list = $wpdb->get_col( "SELECT field_id FROM " . EWZ_FIELD_TABLE . " WHERE field_type = 'img'" );
         foreach ( $list as $field_id ) {
             $field = new Ewz_Field( $field_id );
             if( isset( $field->fdata['min_img_area'] ) ){

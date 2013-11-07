@@ -182,7 +182,7 @@ function webform_data_str(evnum, eObj) {
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
     str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
-    str +=   '            <td>Apply the prefix to the file stored on the server &nbsp; ';
+    str +=   '            <td>Apply this prefix to the file stored on the server &nbsp; ';
     str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
     str +=   '            </td>';
     str +=   '        </tr>';
@@ -471,6 +471,11 @@ function ewz_check_webform_input(form, do_js_check){
     if( do_js_check) {
         try{
             jform = jQuery(form);
+            if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
+                !jform.find('input[id^="prefix_"]').val().trim( ).length ){
+                alert(ewzG.errmsg.prefixApply);
+                return false;
+            }
             if(!jform.find('input[id^="webform_title_ev"]').val()){
                 alert(ewzG.errmsg.formTitle);
                 return false;

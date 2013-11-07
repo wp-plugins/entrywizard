@@ -72,7 +72,7 @@ function do_setup(ewzG) {
 
     // show the user any message coming from the server
     if (ewzG.errmsg) {
-        alert(ewzG.errmsg);
+        alert(ewzG.errmsg.replace(/;;.*?$/gm,'').replace(/~/g,"\n"));
     }
 }
 

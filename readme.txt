@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.5.2
-Stable tag: 0.9.6
+Stable tag: 0.9.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -104,6 +104,12 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+= 0.9.7 =
+* fixed image files not being deleted after a failed upload from an older browser
+* fixed warning appearing on upgrade
+* automatically remove old zipfiles when new ones created ( partial files from failed downloads will still need to be removed manually )
+* on webforms page, don't allow "apply prefix" if no prefix is set
+* improved some error messages
 
 = 0.9.6 =
 * Changed to optionally add the prefix to the image file on upload instead of on download, making it easier to download image files with the correct prefix via ftp. This required the removal of the item_id substitution option in the prefix.

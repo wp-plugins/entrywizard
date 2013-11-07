@@ -243,8 +243,10 @@ class Ewz_Webform extends Ewz_Base {
         $archive_url = $up['url'] . "/$archive_fname";
 
         // remove any other zip files from this webform
-        array_map( "unlink", glob( $up['url'] . "/ewz_" . $this->webform_ident . "*.zip" ) );
-
+        $zipfiles =  glob( $up['path'] . "/ewz_" . $this->webform_ident . "*.zip" );
+        if( $zipfiles ){
+            array_map( "unlink", $zipfiles );
+        }
 
         // create a new archive
         $errmsg = $this->make_zip_archive( $items, $archive_path, $include_ss );
