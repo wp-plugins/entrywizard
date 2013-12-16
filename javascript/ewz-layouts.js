@@ -260,7 +260,7 @@ function field_str(lnum, i, fObj) {
     str += '     <input type="hidden" name="forder[]" value="forder_f' + lnum + '_c' + i + '_">';
     str += '     <table  class="ewz_field">';
     str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'fhead\')">&nbsp;Column Header For Web Page: </td>';
-    str += '           <td>' + textinput_str(fid + 'field_header_', fld + '[field_header]', 20, fObj.field_header, 'onChange="update_title(this)"') + '</td>';
+    str += '           <td>' + textinput_str(fid + 'field_header_', fld + '[field_header]', 40, fObj.field_header, 'onChange="update_title(this)"') + '</td>';
     str += '           <td rowspan="5"  id="special_' + fid + '" > ' + type_data_field_str(lnum, fid, fld, fObj.field_type, fObj.fdata) + '</td>';
     str += '       </tr>';
     str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'ftype\')">&nbsp;Data Type: </td>';
@@ -502,7 +502,6 @@ function disable_and_flag(jElement) {
         jElement.wrap('<span  style="width: ' + w + 'px; height: ' + h + 'px;" class="ewz_disabled" >');
     }
 }
-
 
 
 /* Set up some onChange functions for a layout                              */
@@ -835,7 +834,7 @@ function delete_js_layout(id, thediv, lname) {
 function delete_js_field(layout_id, field_id, jdiv) {
     'use strict';
     var index = js_find_by_key(ewzG.layouts, 'layout_id', layout_id);
-
+    jdiv.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
     delete ewzG.layouts[index].fields[field_id];
     jdiv.remove();
     jQuery('#ewz_addlayout').html(ewzG.layouts_options);
@@ -905,6 +904,10 @@ function delete_field(del_field_btn) {
     jfield_div = jbutton.closest('div[id$="field_mbox_"]');
     field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
     if ('' == field_id || 'undefined' == field_id) {
+        jfield_div.find('select[id$="_maxnum_"]').prop("selectedIndex", 0);
+        jfield_div.find('select[id$="_maxnum_"]').change();
+        jfield_div.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
+        jfield_div.find('select[onchange^="disable_ss_options"]').change();
         jfield_div.remove();
     } else {
         fname = jbutton.closest('div[id$="field_mbox_"]').find('h3[id^="field_title"]').text();
@@ -989,7 +992,15 @@ function ewz_check_layout_input(form, do_check) {
                 ok = false;
             });
 
-            jform.find('input[id$="_max_img_w_"]').each(function() {
+            jform.find('input[id$="field_ident_"]').filter(function() {
+                return( 'followupQ' == jQuery(this).val() );
+            }).filter(function() {
+                return ( 'img' == jQuery(this).closest('tbody').find('select[id$="_field_type_"]').val());
+            }).each(function() {
+                alert( ewzG.errmsg.followimg);
+                ok = false;
+            });
+           jform.find('input[id$="_max_img_w_"]').each(function() {
                 if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
                     alert(ewzG.errmsg.maximgw);
                     ok = false;

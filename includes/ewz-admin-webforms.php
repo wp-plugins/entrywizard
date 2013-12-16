@@ -46,27 +46,30 @@ function ewz_process_uploaded_csv( $webform_id )
 
    $f_h = fopen($file_tmp_name, "r");
    $n = 0;
-   $ok = '';
+   $errs = '';
    while (( $data = fgetcsv($f_h, 1000 ))){
 
        if( isset( $data[0] ) ){
            $item_id = array_shift( $data );
-           if( !is_numeric( $item_id ) ){
-               throw new EWZ_Exception( "File is not in correct format - please read help." );
-           }
-           $item = new Ewz_Item( $item_id );
-           if( $item->webform_id == $webform_id ){
-               $item->set_uploaded_info( array_pad( $data, 4, '' ) );
-               ++$n;
-               $ok .= "$item_id, ";
-           } else {
-               // item_id is part of user-generated input, so include it in error message
-               throw new EWZ_Exception( "Item $item_id does not belong to this webform" );
+           try{
+               if( !is_numeric( $item_id ) ){
+                   throw new EWZ_Exception( "File is not in correct format - please read help." );
+               }
+               $item = new Ewz_Item( $item_id );
+               if( $item->webform_id == $webform_id ){
+                   $item->set_uploaded_info( array_pad( $data, 4, '' ) );
+                   ++$n;
+               } else {
+                   // item_id is part of user-generated input, so include it in error message
+                   throw new EWZ_Exception( "Item $item_id not found in this webform" );
+               }
+           } catch( Exception $e ) {
+               $errs .= "Item $item_id: ". $e->getMessage() . "\n";
            }
        }
    }
    fclose( $f_h );
-   return "Data for $n items successfully saved";
+   return $errs . "Data for $n items successfully saved";
 }
 
 /**************************** Main Webforms Function ********************************
@@ -112,13 +115,13 @@ function ewz_webforms_menu()
                // upload a csv of titles, content, etc for images
                // first validate $_POST, $_GET - raises exceptions on problems
                $input = new Ewz_CSV_Input( array_merge( $_POST, $_GET ) );
-
+               $data = $input->get_input_data();
                // then process $_FILES
-               $message = ewz_process_uploaded_csv( $_POST['webform_id'] );
+               $message = ewz_process_uploaded_csv( $data['webform_id'] );
                break;
 
            default:
-               throw new EWZ_Exception( "Invalid mode " . $_POST['ewzmode'] );
+               throw new EWZ_Exception( 'Invalid Input ', 'mode=' . $_POST['ewzmode'] );
            }
        } catch( Exception $e ) {
           $message .= $e->getMessage();
@@ -131,7 +134,7 @@ function ewz_webforms_menu()
         /* Format the data for html output where necessary    */
         /******************************************************/
 
-        $user_options =  Ewz_User::get_user_opt_array();
+        $user_info =  Ewz_User::get_user_opt_array();
 
         $webforms = array_values(array_filter( Ewz_Webform::get_all_webforms(),
                                                "Ewz_Permission::can_view_webform" ));
@@ -144,7 +147,7 @@ function ewz_webforms_menu()
         $nonce_string = wp_nonce_field( 'ewzadmin', 'ewznonce', true, false );
 
         foreach ( $webforms as $webform ) {
-            $webform->user_options = $user_options;
+            $webform->user_options = $user_info;
             foreach ( $webform->open_for as $user ) {
                 foreach( $webform->user_options as $u_options ){
                     if( $u_options['value'] == $user ){
@@ -192,11 +195,13 @@ function ewz_webforms_menu()
             }
         }
         $ewzG['openform_id'] = $openwebform_id;
-        $ewzG['message'] = esc_html( $message );
+        $ewzG['message'] = wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
         $ewzG['base_options'] = $base_options;
 
+        $ewzG['ipp'] = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
 
-        $ewzG['user_options'] = $user_options;
+
+        $ewzG['user_options'] = $user_info;
         $ewzG['nonce_string'] = $nonce_string;
         $ewzG['can_edit_all'] = $can_edit_all_webforms;
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname(__FILE__) ) ;
@@ -213,7 +218,6 @@ function ewz_webforms_menu()
                 and consists only of lower case letters, digits, dashes and underscores.',
             'formPrefix' => 'The prefix may contain only letters, digits, dashes, underscores
                 and the special expressions listed in the help window.',
-            'prefixApply' => 'You have opted to apply a prefix without setting the prefix to be used.',
         );
         $ewzG['jsvalid'] = Ewz_Base::validate_using_javascript();
                            // normally true, set false to test server validation
@@ -223,16 +227,33 @@ function ewz_webforms_menu()
     ?>
     <div class="wrap">
         <h2>EntryWizard Web Form Management</h2>
-         <i>Last Changed Jul 18, 02:45 pm</i>
-         <p>A webform may be inserted into any page using the shortcode &nbsp;
-             <span style="font-size: 120%;">
-                 <b>&#91;ewz_show_webform &nbsp; identifier="xxx"&#93;</b></span>
+         <p><img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon']; ?>" onClick="ewz_help('shortcode');">
+            &nbsp; A regular webform may be inserted into any page using the shortcode &nbsp;
+                 <b>&#91;ewz_show_webform&nbsp;&nbsp;identifier="xxx"&#93;</b>
              &nbsp; where xxx is the identifier you created for the form</p>
         <div id="ewz_management"> </div>
 
         <div id="help-text" style="display:none">
 
         <!-- HELP POPUP -->
+        <div id="shortcode_help" class="wp-dialog" >
+         <p>The shortcode <b>&nbsp; &#91;ewz_show_webform &nbsp; identifier="xxx"&#93;</b> &nbsp; inserts the 
+            webform identified by "xxx" into your page.</p>
+         <p>It is also possible to display a read-only summary of all the  data uploaded 
+            by the user, possibly in several different webforms, using the shortcode<br>
+            <b>&#91;ewz_followup &nbsp; webforms="ident1,ident2,ident3" &nbsp; show="excerpt,content"&#93;</b>
+          </p>
+         <p>This will display, in read-only form, all data uploaded by the user via the webforms
+             with identifiers "ident1","ident2" or "ident3".  If the administrator uploaded extra  
+            data ( using the upload facility in the Data Management area of the webforms page ), 
+            the uploaded excerpt and content data will be also be displayed.</p>
+         <p><i>If the webforms all contain the same special field with identifier "followupQ" </i>,
+             the followup display will become a form with this field as an input for each item.
+            Data entered in it will be stored and may be downloaded as usual. </p>
+          <p>A "followupQ" field may not be of "Image File" type.</p> 
+          <p>Restrictions will not be enforced on followup fields.</p>
+        </div>
+
         <div id="wlayout_help" class="wp-dialog" >
             <p>The layouts are created in the Layouts admin page.
                 You select one here. It determines what information is required,

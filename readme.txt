@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 3.5.2
-Stable tag: 0.9.7
+Tested up to: 3.8
+Stable tag: 0.9.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * There is a fine-grained permissions system allowing administrators to grant an individual user various levels of control over the webforms and layouts.
   Only logged-in users may see the webform.
 
+* ( Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow of the downloaded images using the information in the spreadsheet. )
 
 == Installation ==
 
@@ -104,6 +105,14 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+= 0.9.8 =
+* added an experimental facility for a "followup" form that displays the results of several webforms with the same layout, and allows users to add one more piece of information to each item, without being able to edit the previously uploaded data.
+* improvements to the item-list admin page: Settings for attaching images to pages are now remembered, and the selection data used for the display are shown at the top of the page. 
+* improved handling of duplicate filenames when attaching images to pages.
+* in extra data uploaded by admin: allow html <b> and <br>, and some improvement in error handling.
+* removed visible empty column in webform 
+
+ 
 = 0.9.7 =
 * fixed image files not being deleted after a failed upload from an older browser
 * fixed warning appearing on upgrade

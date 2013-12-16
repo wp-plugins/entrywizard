@@ -10,7 +10,6 @@ require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-permissions.php');
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-list-items.php');
 
 
-
 // File that is included with any admin entrywizard call. Delegates all admin code.
 
 /* * ****************   Functions to enqueue the scripts and styles ******************* */
@@ -146,7 +145,7 @@ add_action( 'admin_init', 'ewz_admin_init' );
  *
  */
 function ewz_admin_menu() {
-    /* NB: all slugs must include "entrywiz" to force load of styles and scripts */
+    /* NB: all slugs must include "entrywiz" to force load of translated strings */
     if ( Ewz_Permission::has_ewz_cap() ) {
 
        // MENU ITEMS
@@ -173,6 +172,7 @@ function ewz_admin_menu() {
                                                     'entrywizard', 'EntryWizard Web Forms', 'WebForms', 'read',
                                                     'entrywizard', 'ewz_webforms_menu' );
             add_action( 'admin_print_scripts-' . $webform_hook_suffix, 'ewz_enqueue_webform_scripts' );
+
         }
         if ( isset( $_REQUEST['webform_id'] ) &&
              ( Ewz_Base::is_nn_int( $_REQUEST['webform_id'] ) ) &&
@@ -221,8 +221,8 @@ add_action( 'admin_menu', 'ewz_admin_menu' );
 function ewz_echo_data() {
 
     // Rest is only run if we are in the right mode
-    if ( isset( $_POST["ewzmode"] ) &&
-            ( in_array( $_POST["ewzmode"], array( 'spread', 'download', 'images' ) ) ) ) {
+    if ( isset( $_GET["ewzmode"] ) &&
+            ( in_array( $_GET["ewzmode"], array( 'spread', 'download', 'images' ) ) ) ) {
         try {
             // validate
             $input = new Ewz_Webform_Data_Input( array_merge( $_POST, $_GET ) );
@@ -351,10 +351,10 @@ function ewz_del_field_callback() {
 add_action( 'wp_ajax_ewz_del_field', 'ewz_del_field_callback' );
 
 /**
- * Delete an Item - handle ajax call
+ * User Delete an Item - handle ajax call
  *
  * Called via one of the "Delete" buttons on the UPLOAD page
- *     ( dont confuse with admin delete from the list page, which is NOT an ajax call )
+ *     ( dont confuse with admin delete from the list page )
  * NB: action name is generated from the jQuery post, must match.
  *
  * if response is not '1 item deleted.', javascript caller alerts with error message.
@@ -366,7 +366,7 @@ function ewz_del_item_callback() {
             ob_clean();
         }
         if ( !(isset( $_POST['item_id'] ) && is_numeric( $_POST['item_id'] )) ) {
-            error_log( 'EWZ:  ewz_admin_del_item_callback - ' .
+            error_log( 'EWZ:  ewz_del_item_callback - ' .
                     'no item_id or not numeric' );
             echo 'Missing or non-numeric item id';
             ob_flush();
@@ -386,7 +386,6 @@ function ewz_del_item_callback() {
     }
     exit();
 }
-
 add_action( 'wp_ajax_ewz_del_item', 'ewz_del_item_callback' );
 
 /**
@@ -449,7 +448,7 @@ function ewz_upload_callback() {
             exit();
         }
     } else {
-        echo "No updates - authorization expired";
+        echo "No updates - page may have expired, or upload size may have been over the limit of " . ini_get( 'post_max_size' );
         error_log( "EWZ: ewz_upload_callback verify_nonce failed" );
         exit();
     }
@@ -482,6 +481,56 @@ function ewz_attach_imgs_callback() {
 }
 
 add_action( 'wp_ajax_ewz_attach_imgs', 'ewz_attach_imgs_callback' );
+
+
+/**
+ * Reset Items Per Page - handle ajax call
+ *
+ * Called via the (items)Apply button on the List page
+ * Javascript ajax handler displays the returned message always
+ */
+function ewz_set_ipp_callback() {
+    if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+        try {
+            $done = ewz_set_ipp();
+            echo $done;
+        } catch (Exception $e) {
+            error_log( "EWZ: ewz_set_ipp_callback " . $e->getMessage() );
+            echo $e->getMessage();
+        }
+    } else {
+        error_log( "EWZ:  ewz_set_ipp_callback check_admin_referer failed" );
+        echo "Insufficient permissions - may have expired";
+    }
+    exit();
+}
+add_action( 'wp_ajax_ewz_set_ipp', 'ewz_set_ipp_callback' );
+
+
+/**
+ * Delete Items Via List Page - handle ajax call
+ *
+ * Called via the Apply button on the List page
+ * Javascript ajax handler displays the returned message always
+ */
+function ewz_batch_delete_callback() {
+    if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+        try {
+            $done = ewz_batch_delete_items() ;
+            echo $done;
+            exit();
+        } catch (Exception $e) {
+            error_log( "EWZ: ewz_admin_del_items_callback " . $e->getMessage() );
+            echo $e->getMessage();
+            exit();
+        }
+    } else {
+        error_log( "EWZ:  ewz_admin_del_items check_admin_referer failed" );
+        echo "Insufficient permissions - may have expired";
+    }
+}
+add_action( 'wp_ajax_ewz_batch_delete', 'ewz_batch_delete_callback' );
+
 
 /**
  * Process layout changes

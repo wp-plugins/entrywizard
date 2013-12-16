@@ -111,11 +111,11 @@ function data_management_str( evnum, eObj ){
     if(eObj.can_manage_webform){
         str +=  xtra_data_upload_str(  evnum, eObj );
     }
-    /**** NB: action is item_list, not webform here, and requires the webform_id in the url ********/
-    str +=   '<form method="post" action="' + ewzG.list_page + '&webform_id=' + eObj.webform_id + '" id="data_form_ev' + evnum + '_">';
+    /**** NB: action is item_list, not webform here, and requires 'get' method for pagination ********/
+    str +=   '<form method="GET" action="' + ewzG.list_page  + '" id="data_form_ev' + evnum + '_">';
     str += '  <div class="ewzform">';
-    str +=   '    <div class="ewz_numc"></div>';
     str +=   '    <input type="hidden" name="page" value="entrywizlist">';
+    str +=   '    <input type="hidden" name="ewzmode" value="list">';
     str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
     str +=   '    <br><br><br><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'datasel\')"> &nbsp; With selected items:';
 
@@ -127,8 +127,8 @@ function data_management_str( evnum, eObj ){
 
     str +=   '    <TABLE class="ewz_buttonrow">';
     if( eObj.itemcount > 0 && eObj.can_manage_webform ){
-        str +=   '  <TR><TD><button type="button" onClick="set_mode(this,\'list\')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
-        str +=   '     <TD></TD><TD></TD>';
+        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
+        str +=   '     <TD></TD>';
         str +=   '  </TR>';
     }
     if(eObj.can_download){
@@ -140,6 +140,7 @@ function data_management_str( evnum, eObj ){
     }
     str +=   '  </TABLE>';
     str +=   ' </div>';
+    str +=   ' <div class="ewz_numc"></div>';
     str +=   '</form>';
 
     return str;
@@ -147,7 +148,7 @@ function data_management_str( evnum, eObj ){
 
 function set_mode(button, mode){
     jform = jQuery( button ).closest('form');
-    jform.append('<input type="hidden" name="ewzmode" value="' + mode + '">' );
+    jform.find('input[name="ewzmode"]').val(mode);
     jform.submit();
 }
 
@@ -340,6 +341,7 @@ function select_layout_str( evnum, eObj ){
 }
 /************************ Functions That Change The Page  ****************************************/
 
+
 function user_select(id){
     'use strict';
    if(jQuery('#' + id ).is(':visible')){
@@ -473,8 +475,7 @@ function ewz_check_webform_input(form, do_js_check){
             jform = jQuery(form);
             if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
                 !jform.find('input[id^="prefix_"]').val().trim( ).length ){
-                alert(ewzG.errmsg.prefixApply);
-                return false;
+                jform.find('input[id^="apply_prefix"]').prop('checked', false );
             }
             if(!jform.find('input[id^="webform_title_ev"]').val()){
                 alert(ewzG.errmsg.formTitle);
@@ -503,12 +504,4 @@ function ewz_check_webform_input(form, do_js_check){
     }
 }
 
-function set_list_url( evnum, webform_id ){
-    'use strict';
-    var qstring = '&ewzmode=list',
-        jform = jQuery('#data_form_ev' + evnum + '_'),
-        act = jform.attr('action');
-    jform.attr('action', act + qstring);
-    return true;
-}
 

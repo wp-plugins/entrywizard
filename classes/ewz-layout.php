@@ -261,11 +261,11 @@ class Ewz_Layout extends Ewz_Base
      * @param  mixed $init  layout_id or array of data
      * @return none
      */
-    public function __construct( $init )
+    public function __construct( $init, $inc_followup = 1 )
     {
         // no assert
 	if ( is_numeric( $init ) ) {
-	    $this->create_from_id( $init );
+	    $this->create_from_id( $init, $inc_followup );
 	} elseif ( is_array( $init ) ) {
 	    if ( array_key_exists( 'layout_id', $init ) && $init['layout_id'] ) {
 		$this->update_from_data( $init );
@@ -283,11 +283,11 @@ class Ewz_Layout extends Ewz_Base
      * @param  int  $id: the layout id
      * @return none
      */
-    protected function create_from_id( $id )
+    protected function create_from_id( $id, $inc_followup = true )
     {
 	global $wpdb;
         assert( Ewz_Base::is_pos_int( $id ) );
-
+        assert( is_bool( $inc_followup ) ||  $inc_followup == 1 ||  $inc_followup == 0 );
 	$dblayout = $wpdb->get_row( $wpdb->prepare(
                 "SELECT layout_id, " .
                 implode( ',', array_keys( self::$varlist ) ) .
@@ -297,7 +297,7 @@ class Ewz_Layout extends Ewz_Base
             throw new EWZ_Exception( 'Unable to find layout', $id );
 	}
 	$this->set_data( $dblayout );
-	$this->fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'pg_column' );
+	$this->fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'pg_column', $inc_followup );
 
 	$this->set_usage_counts( false );
     }
@@ -388,6 +388,16 @@ class Ewz_Layout extends Ewz_Base
                     " WHERE frm.layout_id = %d AND frm.webform_id = itm.webform_id",
                     $this->layout_id ) );
 	}
+    }
+
+    /*     * ******************  Object Functions  *************** */
+    public function contains_followup(){
+        foreach( $this->fields as $field ){
+            if( $field->field_ident == 'followupQ' ){
+                return $field->field_id;
+            }
+        }
+        return 0;
     }
 
     /*     * ******************  Validation  *************** */

@@ -76,13 +76,18 @@ class Ewz_Field extends Ewz_Base
      * @param   string  $orderby   column to sort by - either 'ss_column' or 'pg_column'
      * @return  array   of Ewz_Fields
      */
-    public static function get_fields_for_layout( $layout_id, $orderby )
+    public static function get_fields_for_layout( $layout_id, $orderby, $inc_followup = true )
     {
         global $wpdb;
         assert( Ewz_Base::is_pos_int( $layout_id ) );
+        assert( is_bool( $inc_followup )  ||  $inc_followup == 1 ||  $inc_followup == 0);
         assert( 'ss_column' == $orderby || 'pg_column' == $orderby );
 
-        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id  FROM " . EWZ_FIELD_TABLE . " WHERE layout_id = %d ORDER BY $orderby",
+        $incfollow = '';
+        if( ! $inc_followup ){
+            $incfollow = ' AND  field_ident != "followupQ" ';
+        }
+        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id  FROM " . EWZ_FIELD_TABLE . " WHERE layout_id = %d $incfollow ORDER BY $orderby",
                                          $layout_id ) );
         $fields = array();
         foreach ( $list as $field_id ) {

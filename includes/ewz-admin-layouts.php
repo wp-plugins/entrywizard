@@ -107,7 +107,7 @@ function ewz_layout_menu()
         // get option list of editable layouts sorted by layout_id to match the order of the layout objects
         $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'Ewz_Permission', 'can_edit_layout' ) ) );
         $ewzG['nonce_string'] = $nonce_string;
-        $ewzG['message'] = esc_html( $message );
+        $ewzG['message'] =  wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname( __FILE__ ) );
         $ewzG['empty_img'] = array( "max_img_w" => EWZ_DEFAULT_DIM,
                                     "max_img_h" => EWZ_DEFAULT_DIM,
@@ -139,6 +139,7 @@ function ewz_layout_menu()
             'colhead' => 'Each field in a layout must have a column header.' ,
             'ident' => 'Each field must have an identifier that starts with a letter and " .
                 "consists only of letters, digits, dashes and underscores.' ,
+            'followimg' => 'A followup field (i.e. one with the identifier "followQ") may not have type "Image File"',
             'maximgw' => 'The max image width should consist of digits only.' ,
             'maximgh' => 'The max image height should consist of digits only.' ,
             'minlongestdim' => 'The minimum longest dimension should consist of digits only.' ,
@@ -338,7 +339,7 @@ function ewz_layout_menu()
                 </p>
             </div>
 
-            <!-- HELP POPUP spreadsheet header -->
+            <!-- HELP POPUP field identifier -->
             <div id="sshead_help" class="wp-dialog" >
                 <p>This identifier is used for the header that appears at the top of the column
                     if this field is included in your spreadsheet.
@@ -350,6 +351,12 @@ function ewz_layout_menu()
                     underscores - no spaces or special characters.
                     This makes sure that a filename containing it should be accepted by most
                     systems.
+                </p>
+                <p>( If the identifier has the special value 'followQ', the field is treated as a  
+                     followup field, which is not displayed by the 'ewz_show_webform' shortcode.
+                     It is the only input field shown by the 'ewz_followup' shortcode.<br>
+                     There is a more detailed explanation of the 'ewz_followup' shortcode at the 
+                      top of the Webforms page. )
                 </p>
             </div>
 

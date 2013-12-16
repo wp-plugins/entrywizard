@@ -1,6 +1,7 @@
 jQuery(document).ready(function() {
     init_ewz_upload(window);
 });
+
 /* To stop IE from generating errors if a console.log call was left in */
 function fixConsole()
 {
@@ -66,8 +67,8 @@ function do_setup(ewzG) {
     // ewzG is null if not logged in
     // make any change in any input enable the "submit" button
     jQuery("#ewz_form_" + ewzG.webform_id).on("change", ":input:not(:button)",
-                                              function() {
-                                                  do_changed(jQuery(this), ewzG.webform_id);
+                                              function() { 
+                                                  do_changed( jQuery(this), ewzG.webform_id);
                                               });
 
     // show the user any message coming from the server
@@ -78,16 +79,20 @@ function do_setup(ewzG) {
 
 
 /* After a change, enable Submit and create the Clear button for the row if it doesnt exist */
-function do_changed(jitem, webform_id) {
+function do_changed( jitem, webform_id) {
     'use strict';
-    jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
-
-    var jrow = jitem.closest('tr'),
-    jlastcol = jrow.children().last(),
-    jrownum;
+    var btn = jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
+    var jrow = jitem.closest('tr');
+    var jbody = jrow.closest('tbody');
+    if( jbody.find('td[class="btn"]').length == 0  ){
+        jbody.children().has('th').append('<th class="btn"></th>');
+        jbody.children().has('td').append( '<td class="btn"></td>' );
+    }
+    var    jlastcol = jrow.children().last();
+    var    jrownum;
     if (jlastcol.find('button').length === 0) {
         jrownum = jrow.attr("id").replace("row", "").replace(/_\d*$/, '');
-        jlastcol.append('<button  type="button"  id="clear' + jrownum +
+        jlastcol.append('<button  type="button" id="clear' + jrownum +
                         '"  onClick="clear_row(this, ' + webform_id + ' )">Clear</button>');
     }
 }
@@ -318,7 +323,7 @@ function clear_row(button, webform_id) {
         var oldid = jQuery(this).attr("id"),
         oldname = jQuery(this).attr("name"),
         jcell = jQuery(this).closest('td');
-        jcell.html(empty_img_info(oldid, oldname));
+        jcell.html(empty_img_info(oldid, oldname,webform_id ));
     });
 
     jrow.find("img").remove();
@@ -328,6 +333,10 @@ function clear_row(button, webform_id) {
     jrow.find(":button").remove();
 
     jform = jrow.closest('form');
+    if (jform.find('tr td:last-child').has('button').size() === 0) {
+        jform.find('tr td:last-child').remove();
+        jform.find('tr th:last-child').remove();
+    }
     if (jform.find(":input[class='dirty']").size() === 0) {
         jQuery("#ewz_fsubmit_" + webform_id).prop({
             disabled: true
@@ -353,11 +362,9 @@ function show_modify(button, webform_id) {
 ////////////////// Image File Info ////////////////
 
 // an image file has been selected, display it's thumbnail and info
-function fileSelected(field_id, input_id) {
+function fileSelected(field_id, input_id, webform_id) {
     'use strict';
-    var re = /__([0-9]+)$/,
-        pathre = /([^\\\/:]+)$/,
-        webform_id = input_id.match(re)[1],
+    var pathre = /([^\\\/:]+)$/,
         ewzG = window['ewzG_' + webform_id],
         freader,
         files,oFile,fields,limits,rFilter;
@@ -694,7 +701,7 @@ function isblank(string)
     return (blankre.test(string));
 }
 
-function empty_img_info(idstr, namestr) {
+function empty_img_info(idstr, namestr, webform_id) {
     'use strict';
     if (typeof namestr === 'undefined') {
         namestr = idstr.replace(/_\d+$/, '').replace('__', '][').replace('_', '[').replace('_', ']');
@@ -702,7 +709,7 @@ function empty_img_info(idstr, namestr) {
     var re = /__([0-9]*)__/,
     field = idstr.match(re)[1],
     qid = "'" + idstr + "'",
-    ret = '<input type="file" name="' + namestr + '" id="' + idstr + '" onchange="fileSelected(' + field + ', ' + qid + ')">';
+    ret = '<input type="file" name="' + namestr + '" id="' + idstr + '" onchange="fileSelected(' + field + ', ' + qid + ', ' + webform_id + ')">';
 
     if (typeof window.FileReader !== 'undefined') {
         ret += '<div id="dv_' + idstr + '" style="display:none">';

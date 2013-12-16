@@ -103,7 +103,8 @@ class Ewz_Setup
                                                 prefix char(25) NULL,
                                                 apply_prefix tinyint(1) NULL,
                                                 upload_open tinyint(1) NOT NULL,
-                                                open_for varchar(1000) NOT NULL
+                                                open_for varchar(1000) NOT NULL,
+                                                attach_prefs varchar(1000) NULL
                                                ); ";
 
 

@@ -306,12 +306,12 @@ class Ewz_Item extends Ewz_Base {
             if ( !isset( $content ) ) {
                 throw new EWZ_Exception( "Missing field content in row $row of .csv file" );
             }
-
             // sanitize_text_field checks for invalid UTF-8, converts single < characters to entities,
-            // strips all html tags, removes line breaks, tabs and extra white space, strips octets.
+            // *** strips all html tags ***, removes line breaks, tabs and extra white space, strips octets.
             $this->item_data[$field_id]['ptitle'] = sanitize_text_field( $title );
             $this->item_data[$field_id]['pexcerpt'] = sanitize_text_field( $excerpt );
             $this->item_data[$field_id]['pcontent'] = sanitize_text_field( $content );
+
         }
         $this->save();
     }

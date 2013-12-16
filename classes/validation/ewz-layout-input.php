@@ -18,17 +18,17 @@ class Ewz_Layout_Input extends Ewz_Input {
                              $customvars );
         
         $this->rules = array(
-            'fields' => array( 'type' => 'v_fields', 'req' => true, 'val' => '' ),
-            'forder' => array( 'type' => 'v_forder', 'req' => true, 'val' => '' ),
-            'layout_id' => array( 'type' => 'seq', 'req' => false, 'val' => '' ),
-            'layout_name' => array( 'type' => 'string', 'req' => true, 'val' => '' ),
-            'max_num_items' => array( 'type' => 'seq', 'req' => true, 'val' => '' ),
-            'ewzmode' => array( 'type' => 'fixed', 'req' => true, 'val' => 'layout' ),
-            'ewznonce' => array( 'type' => 'anonce', 'req' => true, 'val' => '' ),
-            'restrictions' => array( 'type' => 'v_restrictions', 'req' => false, 'val' => $form_data['fields'] ),
-            'action' => array( 'type' => 'fixed', 'req' => false, 'val' => 'ewz_layout_changes' ),
-            '_wp_http_referer' => array( 'type' => 'string', 'req' => false, 'val' => '' ),
-            'extra_cols' => array( 'type' => 'v_extra_cols', 'req' => false, 'val' => $xcols ),
+            'fields'        => array( 'type' => 'v_fields',       'req' => true,  'val' => '' ),
+            'forder'        => array( 'type' => 'v_forder',       'req' => true,  'val' => '' ),
+            'layout_id'     => array( 'type' => 'seq',            'req' => false, 'val' => '' ),
+            'layout_name'   => array( 'type' => 'string',         'req' => true,  'val' => '' ),
+            'max_num_items' => array( 'type' => 'seq',            'req' => true,  'val' => '' ),
+            'ewzmode'       => array( 'type' => 'fixed',          'req' => true,  'val' => 'layout' ),
+            'ewznonce'      => array( 'type' => 'anonce',         'req' => true,  'val' => '' ),
+            'restrictions'  => array( 'type' => 'v_restrictions', 'req' => false, 'val' => $form_data['fields'] ),
+            'action'        => array( 'type' => 'fixed',          'req' => false, 'val' => 'ewz_layout_changes' ),
+            '_wp_http_referer' => array( 'type' => 'string',      'req' => false, 'val' => '' ),
+            'extra_cols'    => array( 'type' => 'v_extra_cols',   'req' => false, 'val' => $xcols ),
         );
         $this->validate();
     }

@@ -128,7 +128,7 @@ function ewz_help(help_id) {
    }).dialog('open');
 }
 
-function ewz_info(infostring) {
+function ewz_info(infostring) { 
    'use strict';
    jQuery("#info-text").html(infostring);
    jQuery("#info-text").dialog({

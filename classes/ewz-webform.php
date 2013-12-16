@@ -24,6 +24,7 @@ class Ewz_Webform extends Ewz_Base {
     public $open_for;
     public $prefix;
     public $apply_prefix;
+    public $attach_prefs;
     // extra
     public $can_download;
     public $can_edit_webform;
@@ -218,6 +219,7 @@ class Ewz_Webform extends Ewz_Base {
         $this->check_errors();
     }
 
+
     /*     * ******************  Download Functions ********************* */
 
     /**
@@ -384,7 +386,7 @@ class Ewz_Webform extends Ewz_Base {
             $filename = 'webdata_' . date( 'Ymd' ) . '.csv';
 
             header( "Content-Disposition: attachment; filename=\"$filename\"" );
-            header( "Content-Type: application/octet-stream" );
+            header( "Content-Type: text/csv" );
             header( "Cache-Control: no-cache" );
 
             $out = fopen( "php://output", 'w' );  // write directly to php output, not to a file
@@ -723,7 +725,35 @@ class Ewz_Webform extends Ewz_Base {
         return true;
     }
 
+    public function get_attach_prefs() {
+        global $wpdb;
+
+        $prefs = array();
+        if ( $this->webform_id ) {
+
+            $prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE . 
+                                                                  " WHERE  webform_id = %d", $this->webform_id ) ) );
+        }
+        return $prefs;
+    }
+
+
     /*     * ******************  Database Updates ********************* */
+
+    public function save_attach_prefs( $prefs ) {
+        assert( is_array( $prefs ) );
+        global $wpdb;
+
+        if ( $this->webform_id ) {
+
+            $data = stripslashes_deep( array( 'attach_prefs' => serialize( $prefs ) ) );
+
+            $rows = $wpdb->update( EWZ_WEBFORM_TABLE, $data, array( 'webform_id' => $this->webform_id ), array( '%s' ), array( '%d' ) );
+            if ( $rows > 1 ) {
+                throw new EWZ_Exception( "Problem setting attach options for the webform '$this->webform_title'" );
+            }
+        }
+    }
 
     /**
      * Save the webform to the database

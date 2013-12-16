@@ -67,7 +67,8 @@ table.ewz_border{ border-collapse: collapse;
                                  vertical-align:middle;
                              }
 
-.ewz_shaded{ vertical-align:middle;
+.ewz_shaded{
+             vertical-align:middle;
              background: #F5F5F5;
              border-color: #EEEEEE;
           }
@@ -118,6 +119,11 @@ table.ewz_border{ border-collapse: collapse;
               float:right;
               clear:right;
               margin-right:10px;
+            }
+.ewz_params { display:block;
+              float:right;
+              margin-right:15px;
+              margin-bottom:15px;
             }
 
 .wp-dialog .ui-dialog-content{ padding: 10px !important; }

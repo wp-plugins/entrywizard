@@ -41,7 +41,7 @@ function ewz_show_webform( $atts )
 
     // Now we have the webform data, process any changes  coming
     // in from old browsers that dont use ajax for the upload
-    if ( $_POST && ( $_POST['identifier'] == $atts['identifier'] ) ) {
+    if ( $_POST && isset( $_POST['identifier'] ) && ( $_POST['identifier'] == $atts['identifier'] ) ) {
         try{
             //error_log("EWZ: uploading (old form) for " . $_SERVER["REMOTE_ADDR"]);
             // had problems with more than 10 3M images
@@ -75,6 +75,8 @@ function ewz_show_webform( $atts )
     $ewzG = ewz_get_layout_info( $webformdata['layout'] );  // grabs all required layout data
     $ewzG['webform_id'] = $webform_id;
     $ewzG['errmsg'] = $errmsg;
+    $ewzG['has_data'] = ( count( $stored_items ) > 0 );
+
 
     // this passes ewzG to Javascript
     wp_localize_script( "ewz-upload", "ewzG_$webform_id",  $ewzG );
@@ -128,13 +130,13 @@ function ewz_get_webform_data( $atts )
     $webform = new Ewz_Webform( $atts['identifier'] );
 
     if( !$webform->open_for_current_user() ){
-        $data['failmsg'] = 'Sorry, the form is no longer open for uploads.';
+        $data['failmsg'] = 'Sorry, this form is not currently open for uploads.';
         return $data;
     }
        
     $data['user_id'] = get_current_user_id();
     $data['webform'] = $webform;
-    $data['layout'] = new Ewz_Layout( $webform->layout_id );
+    $data['layout'] = new Ewz_Layout( $webform->layout_id, false );
     return $data;
 }
 
@@ -188,7 +190,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
 
     //  autocomplete="off"  required for FF, otherwise it saves old values and uses them
     //  after an upload
-    $output .= '<form autocomplete="off" id="ewz_form_' . esc_attr( $webform_id ) .
+    $output .= '<form  autocomplete="off" id="ewz_form_' . esc_attr( $webform_id ) .
             '" method="POST" action="' . esc_js( $form_action ) . '" ';
     $output .= ' enctype="multipart/form-data"  encoding="multipart/form-data" >';
     $output .= '<div class="ewzform">';
@@ -209,7 +211,9 @@ function ewz_upload_form( $stored_items, $layout, $webform )
         $reqflag = $field->required ? '*' : ' ';
         $output .= "   <th>$reqflag" . esc_html( $field->field_header ) . '</th>';
     }
-    $output .= "     <th></th>";
+    if( $has_data ){
+        $output .= '     <th class="btn"></th>';
+    }
     $output .= "   </tr>\n";
 
     // item rows
@@ -218,17 +222,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
         assert( $p<count($stored_items ) );
         $output .='<tr id="row' . $row . '_' . esc_attr( $webform_id ) . '">';
         foreach ( $fields_arr as $field ) {
-            $savedval = '';
-            if ( 'img' == $field->field_type ) {
-                if ( array_key_exists( $field->field_id, $item->item_files ) ) {
-                    $savedval = $item->item_files[$field->field_id]['thumb_url'];
-                }
-            } else {
-                if ( isset( $item->item_data[$field->field_id]['value'] ) ) {
-                    $savedval = $item->item_data[$field->field_id]['value'];
-                }
-            }
-
+            $savedval = ewz_get_saved_value( $field, $item );
             $output .= '<td>' . ewz_display_webform_field( $row, $webform_id, $savedval, $field ) . '</td>';
         }
         $output .= '<td><input type="hidden"   name="item_id[' . $row . ']" value="' .
@@ -246,7 +240,11 @@ function ewz_upload_form( $stored_items, $layout, $webform )
         foreach ( $fields_arr as $field ) {
             $output .= '<td>' . ewz_display_webform_field( $row, $webform_id, '', $field ) . '</td>';
         }
-        $output .= "<td></td></tr>\n";
+        if( $has_data ){
+             $output .= '<td class="btn"></td>';
+        }
+        $output .= "</tr>\n";
+
         ++$row;
     }
 
@@ -256,18 +254,19 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     /*     * ******************************** */
     /* Submit button and progress area */
     /*     * ******************************** */
+    // progress bar above submit button so visible after submit is clicked.
     $esc_wid = esc_attr( $webform_id );
     $output .= '      <div class="ewz_progress" >';
     $output .= '            <div id="progress_info_' . $esc_wid . '">';
     $output .= '                <div id="complete_' . $esc_wid . '">';
     $output .= '                   <div id="progress_bar_' . $esc_wid . '"></div>';
     $output .= '                </div>';
-    $output .= '                <div id="progress_percent_' . $esc_wid . '">&nbsp;</div>';
-    $output .= '                <div class="ewz_clear_both_' . $esc_wid . '"></div>';
+    $output .= '                <div id="progress_percent_' . $esc_wid . '"></div>';
+    $output .= '                <div class="ewz_clear_both"></div>';
     $output .= '                <div>';
-    $output .= '                    <div id="speed_' . $esc_wid . '">&nbsp;</div>';
-    $output .= '                    <div id="remaining_' . $esc_wid . '">&nbsp;</div>';
-    $output .= '                    <div id="b_transfered_' . $esc_wid . '">&nbsp;</div>';
+    $output .= '                    <div id="speed_' . $esc_wid . '"></div>';
+    $output .= '                    <div id="remaining_' . $esc_wid . '"></div>';
+    $output .= '                    <div id="b_transfered_' . $esc_wid . '"></div>';
     $output .= '                    <div class="ewz_clear_both"></div>';
     $output .= '                </div>';
     $output .= '                <div id="upload_response_' . $esc_wid . '"></div>';
@@ -296,12 +295,13 @@ function ewz_upload_form( $stored_items, $layout, $webform )
  */
 function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
 {
-    assert( Ewz_Base::is_nn_int( $rownum ) );
+    assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( in_array( $field->field_type, array( 'str', 'opt', 'img' ) ) );
     assert( is_string( $savedval ) || $savedval === null );
 
     $name = "rdata[$rownum][" . $field->field_id . "]";
+    
     $display = '';
 
     switch ( $field->field_type ) {
@@ -316,6 +316,30 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
     }
     return $display;
 }
+
+/**
+ * Return the value saved on the database for the item
+ * 
+ * @param  $field
+ * @param  $item
+ * @return string
+ */
+function ewz_get_saved_value( $field, $item ){
+    assert( is_object( $field ) );
+    assert( is_object( $item ) );
+    $savedval = '';
+    if ( 'img' == $field->field_type ) {
+        if ( array_key_exists( $field->field_id, $item->item_files ) ) {
+            $savedval = $item->item_files[$field->field_id]['thumb_url'];
+        }
+    } else {
+        if ( isset( $item->item_data[$field->field_id]['value'] ) ) {
+            $savedval = $item->item_data[$field->field_id]['value'];
+        }
+    }
+    return $savedval;
+}
+
 
 /**
  * Return the html for displaying a single text-input field
@@ -371,7 +395,7 @@ function ewz_display_img_form_field( $name, $webform_id, $savedval, $field )
         $qname = "'" . $iname . "_$esc_wid'";
         $fid = esc_attr( $field->field_id );
         $imginfo = '<input type="file"  name="' . $ename .  '" id="' . $iname . '_' . $esc_wid .
-                           '" onchange="fileSelected(' . $fid . ', ' . $qname . ' )">';
+                           '" onchange="fileSelected(' . $fid . ', ' . $qname . ', ' . $webform_id . ' );">';
         // watch no spaces here - they put newlines between the divs
         $imginfo .= '<div id="dv_' . $iname . '_' . $esc_wid . '" style="display:none">';
         $imginfo .= '<div id="nm_' . $iname . '_' . $esc_wid . '"></div>';
@@ -540,7 +564,7 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
     /*     * ************************** */
     /* Get the field information */
     /*     * ************************** */
-    $layout = new Ewz_Layout( $postdata['layout_id'] );
+    $layout = new Ewz_Layout( $postdata['layout_id'], false );
 
     // Reformat the post data to a more usable form,  upload any files,
     // and add the uploaded file data to the item data
@@ -871,26 +895,30 @@ function ewz_user_delete_item( $item_id ){
  */
 function ewz_validate_and_upload( )
 {
-    $atts = array( 'identifier' => $_POST['identifier'] );
-    $webformdata = ewz_get_webform_data( $atts );
+    if ( $_POST && isset( $_POST['identifier'] ) && is_string( $_POST['identifier'] ) ) {
+        $atts = array( 'identifier' => $_POST['identifier'] );
+        $webformdata = ewz_get_webform_data( $atts );
 
-    // not logged in or form not open - display the html failmsg
-    if ( array_key_exists( 'failmsg', $webformdata ) ) {
-        return "Failed to get form:  " . $webformdata['failmsg'];
+        // not logged in or form not open - display the html failmsg
+        if ( array_key_exists( 'failmsg', $webformdata ) ) {
+            return "Failed to get form:  " . $webformdata['failmsg'];
+        }
+
+        // had problems with more than 10 3M images
+        $n = $webformdata['layout']->max_num_items;
+        $timelimit = ini_get('max_execution_time');
+        if( 15 * $n > $timelimit ){
+            set_time_limit ( 15 * $n );
+        }
+
+        $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
+
+        // return error messages
+        return ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
+                                   $webformdata['webform']->webform_id );
+    } else {
+        return "Invalid upload form.";
     }
-
-    // had problems with more than 10 3M images
-    $n = $webformdata['layout']->max_num_items;
-    $timelimit = ini_get('max_execution_time');
-    if( 15 * $n > $timelimit ){
-        set_time_limit ( 15 * $n );
-    }
-
-    $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
-
-    // return error messages
-    return ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
-                        $webformdata['webform']->webform_id );
 }
 
 /**
