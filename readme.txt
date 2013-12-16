@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 3.5.2
-Stable tag: trunk
+Tested up to: 3.8
+Stable tag: 0.9.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * There is a fine-grained permissions system allowing administrators to grant an individual user various levels of control over the webforms and layouts.
   Only logged-in users may see the webform.
 
+* ( Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow of the downloaded images using the information in the spreadsheet. )
 
 == Installation ==
 
@@ -56,7 +57,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * The initial setup comes with two sample layouts and one sample webform.  The sample webform has been assigned the identifier "test".
   To show the sample webform on your page, simply include the shortcode
 
-       [ewz_show_webform identifier="test"]
+       [ewz_show_webform identifier="example"]
 
    in the page where you wish the form to appear.  
   
@@ -78,7 +79,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
   
   5. Now you can experiment, changing the settings for your own layout and webform and checking the effect by reloading your test page. If it turns out badly, delete that layout and start over with a fresh copy of the sample one.
      
-
+* If you are using a plugin such as Cimy User Extra Fields, or S2Member, and wish your spreadsheet to contain some of the extra member information they create,  edit the file "ewz-extra.txt".  Save the result as "ewz-extra.php" in your plugins folder, and activate the new 'EWZ_EXTRA' plugin that it creates.  ( Do not make any changes to ewz-custom-data.php ).  Your code will then not be overwritten by subsequent upgrades to EntryWizard.
 
 * Most items in the EntryWizard admin pages have "help" icons beside them.  Clicking one of these should pop up a window with more detailed information. 
 
@@ -102,6 +103,70 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 2. The webform in action.
 3. Error message shown to user ( in a recent version of Firefox ).
 4. Downloading the images and spreadsheet.
+
+== Changelog ==
+= 0.9.8 =
+* added an experimental facility for a "followup" form that displays the results of several webforms with the same layout, and allows users to add one more piece of information to each item, without being able to edit the previously uploaded data.
+* improvements to the item-list admin page: Settings for attaching images to pages are now remembered, and the selection data used for the display are shown at the top of the page. 
+* improved handling of duplicate filenames when attaching images to pages.
+* in extra data uploaded by admin: allow html <b> and <br>, and some improvement in error handling.
+* removed visible empty column in webform 
+
+ 
+= 0.9.7 =
+* fixed image files not being deleted after a failed upload from an older browser
+* fixed warning appearing on upgrade
+* automatically remove old zipfiles when new ones created ( partial files from failed downloads will still need to be removed manually )
+* on webforms page, don't allow "apply prefix" if no prefix is set
+* improved some error messages
+
+= 0.9.6 =
+* Changed to optionally add the prefix to the image file on upload instead of on download, making it easier to download image files with the correct prefix via ftp. This required the removal of the item_id substitution option in the prefix.
+* Changed to require a minimum longest dimension for uploaded images instead of a minimum area. Where a value was already set for the minimum area, set the minimum longest dimension to the square root of the minimum area.  This makes it possible to require the longest dimension to be within certain limits.  
+* Widened the text input field for the prefix.
+* Alert the user if no action is selected on the item list page.
+* Remember previously selected parameters on the item list page.
+* Move progess bar to above submit button on upload form.
+* Fixed bottom apply button not working on the item list page.
+* Fixed to work with a wordpress admin area that uses https.
+* Fixed an error in the custom field substitution code.
+* Improved some error message handling.
+* Fixed bad help display on admin item list page
+
+= 0.9.5 =
+* changed method of handling custom data, to avoid having to edit the plugin's own files.
+* increased time limit for upload processing
+* fixed bug in display of some error messages in older browsers
+
+= 0.9.4 =
+* stop users from uploading to a closed webform using an old page
+
+= 0.9.3 =
+* fixed a problem displaying webforms when the user does not have full permissions
+* make sure a new, unsaved layout can only delete itself, not the one it copied
+* help items for image size and dimensions
+* avoid a warning when there are no option-type fields in a layout
+* more informative error message for an invalid csv file upload
+* allow more time for the upload
+* remove the "<h2>" that was displaying in the "please wait" message when images are uploaded
+* do not ask for confirmation on deletion if webform was not saved
+
+= 0.9.2 =
+* dont use the get_cimyFieldValue when Cimy Extra Fields plugin not used
+
+= 0.9.1 =
+* fix a problem when deleting a field from a layout
+* fix "copy layout" to copy the correct layout
+* fix display of some error messages
+* only ask for confirmation of a deletion if the item has been saved
+* ensure an option field has at least 1 option before saving
+
+== Upgrade Notice ==
+
+= 0.9.6 =
+
+CHANGE: Optionally apply the prefix to the filenames on upload instead of on download, to facilitate download via ftp.
+CHANGE: Require a minimum longest dimension for uploaded images instead of a minimum area
 
 == To Do ==
 

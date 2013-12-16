@@ -56,7 +56,7 @@ function numinput_str(idstring, namestring, nosel, start, end, vval)
         code = code + '<option value="0">' + nosel + '</option>';
     }
    for ( i = start; i <= end; ++i) {
-      sel = (i === vval) ? 'selected="selected"' : '';
+      sel = (i == vval) ? 'selected="selected"' : '';
       code = code + '<option value="' + i + '" ' + sel + ">" + i + "</option>";
    }
    code = code + "</select>";
@@ -75,6 +75,9 @@ function textinput_str(idstring, namestring, mw, vval, func) {
    if ( typeof ( func ) !== 'undefined' ){
       retstr += ' ' + func + ' ';
    }
+    if( typeof ( vval ) == 'undefined' ){
+        vval = '';
+    }
    retstr += ' id=' + qqidstring + ' name=' + qqnmstring + ' maxlength=' + qqmw + ' value="' + vval + '">';
    return retstr;
 }
@@ -125,7 +128,7 @@ function ewz_help(help_id) {
    }).dialog('open');
 }
 
-function ewz_info(infostring) {
+function ewz_info(infostring) { 
    'use strict';
    jQuery("#info-text").html(infostring);
    jQuery("#info-text").dialog({

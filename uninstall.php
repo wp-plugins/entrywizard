@@ -41,6 +41,12 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
       delete_metadata_by_mid( 'user', $umeta_id );
    }
 
+   $options = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . " WHERE option_name in ('ewz_data_version', 'ewz_db_version')" );
+   foreach ( $options as $option_name ) {
+      delete_option( $option_name );
+   }
+
+
    // remove the uploaded images folder
     error_log( 'EWZ: removing images' );
     $updir_arr = wp_upload_dir();

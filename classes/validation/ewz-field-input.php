@@ -120,7 +120,7 @@ class Ewz_Field_Input extends Ewz_Input
         assert( is_array( $field ) );
 
         $imgtypes = array( 'image/jpeg', 'image/pjpeg', 'image/gif', 'image/png' );
-        $req_field_data = array( 'max_img_w', 'max_img_h', 'ss_col_w', 'ss_col_h', 'ss_col_o', 'max_img_size', 'min_img_area', 'allowed_image_types' );
+        $req_field_data = array( 'max_img_w', 'max_img_h', 'ss_col_w', 'ss_col_h', 'ss_col_o', 'max_img_size', 'min_longest_dim', 'allowed_image_types' );
         $opt_field_data = array( 'canrotate' );
 
         foreach ( $req_field_data as $req ) {
@@ -146,7 +146,7 @@ class Ewz_Field_Input extends Ewz_Input
                 }
                 $field[$name] = ( int ) $val;
                 
-            } elseif ( $name == 'min_img_area' ) {
+            } elseif ( $name == 'min_longest_dim' ) {
                 if( !is_string( $val ) ){
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
@@ -154,7 +154,7 @@ class Ewz_Field_Input extends Ewz_Input
                     throw new EWZ_Exception( "Invalid value '$val' for $name" );
                 }
                 if( !$val ){
-                    $val = EWZ_DEFAULT_MIN_AREA;
+                    $val = EWZ_DEFAULT_MIN_LONGEST;
                 }
                 $val = ( int ) $val;
             } elseif ( $name == 'max_img_size' ) {

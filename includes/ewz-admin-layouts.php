@@ -6,7 +6,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-layout.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-layout-input.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
-require_once( EWZ_PLUGIN_DIR . 'ewz-custom-data.php' );
+require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 
 /**
@@ -81,8 +81,8 @@ function ewz_layout_menu()
         /**********************************************************/
         /*   Get all the layouts -- including the attached fields */
         /**********************************************************/
-
-        $editable_layouts = array_values(array_filter( Ewz_Layout::get_all_layouts(), "Ewz_Permission::can_edit_layout"));
+        // get editable layouts sorted by layout_id
+        $editable_layouts = array_values( Ewz_Layout::get_all_layouts( 'Ewz_Permission', 'can_edit_layout' ) );
         foreach ( $editable_layouts as $k => $layout ) {
             // add an "forder" ( array ) component to the layout to specify the field order
             // -- saves having to sort by pg_column in javascript
@@ -103,15 +103,17 @@ function ewz_layout_menu()
 
         $ewzG = array( 'layouts' => $layouts );
         $ewzG['can_do'] = Ewz_Permission::can_edit_all_layouts();
+
+        // get option list of editable layouts sorted by layout_id to match the order of the layout objects
         $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'Ewz_Permission', 'can_edit_layout' ) ) );
         $ewzG['nonce_string'] = $nonce_string;
-        $ewzG['message'] = esc_html( $message );
+        $ewzG['message'] =  wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname( __FILE__ ) );
         $ewzG['empty_img'] = array( "max_img_w" => EWZ_DEFAULT_DIM,
                                     "max_img_h" => EWZ_DEFAULT_DIM,
                                     "canrotate" => false,
                                     "max_img_size" => EWZ_MAX_SIZE_MB,
-                                    "min_img_area" => EWZ_DEFAULT_MIN_AREA,
+                                    "min_longest_dim" => EWZ_DEFAULT_MIN_LONGEST,
                                     "allowed_image_types" => array( "image/jpeg", "image/pjpeg" ) );
         $ewzG['empty_str'] = array( "fieldwidth" => EWZ_MAX_FIELD_WIDTH,
                                     "maxstringchars" => EWZ_MAX_STRING_LEN,
@@ -137,9 +139,10 @@ function ewz_layout_menu()
             'colhead' => 'Each field in a layout must have a column header.' ,
             'ident' => 'Each field must have an identifier that starts with a letter and " .
                 "consists only of letters, digits, dashes and underscores.' ,
+            'followimg' => 'A followup field (i.e. one with the identifier "followQ") may not have type "Image File"',
             'maximgw' => 'The max image width should consist of digits only.' ,
             'maximgh' => 'The max image height should consist of digits only.' ,
-            'minimgarea' => 'The minimum image area should consist of digits only.' ,
+            'minlongestdim' => 'The minimum longest dimension should consist of digits only.' ,
             'nomaximgsz' => 'Each image field must have a max image size.' ,
             'maximgsz' => 'The max image size should consist of digits only, " .
                 "representing the number of Megabytes allowed.' ,
@@ -150,6 +153,7 @@ function ewz_layout_menu()
             'optlabel' => 'Each option in an option list must have a label for the web page.' ,
             'optvalue' => 'Each option in an option list must have a value.' ,
             'option' => 'Options may consist only of letters, digits, dashes and underscores.' ,
+            'optioncount' => 'A drop-down selection must contain at least one option' ,
             'restrmsg' => 'A restriction must have a message to show the user.' ,
             'maxnumchar' => 'Each text entry must have a maximum number of characters.' ,
             'imgtypes' => 'Each image file must have a set of allowed image types.' ,
@@ -193,9 +197,21 @@ function ewz_layout_menu()
         </div>
 
         <div id="help-text" style="display:none">
+            <!-- HELP POPUP image min dimensions -->
+            <div id="longestdim_help" class="wp-dialog" >
+                <p>The purpose of this setting is to disallow very small images when they could be enlarged within the maximum width and height limitations. </p>
+                <p>If set to a few pixels less that the maximum longest dimension it may also be used to set a "target" dimension. 
+                <p>Some software may size an image 1 or 2 pixels smaller than the dimension requested, so this value should normally be at least 1 or 2 pixels smaller than the maximum dimension</p>    
+            </div>
+            <!-- HELP POPUP image dimensions -->
+            <div id="imgdim_help" class="wp-dialog" >
+                 <p>A user attempting to upload an image with width or height greater than the maxima set here will receive an error message.</p>
+                 <p>See also the help items on Maximum image size and Minimum longest dimension</p>                                   
+            </div>
+
             <!-- HELP POPUP image size -->
             <div id="imgsize_help" class="wp-dialog" >
-                <p>Your web hosting company puts three limits on uploaded items:<br>
+                <p>Your web hosting company also puts three limits on uploaded items:<br>
                     <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?></li>
                         <li>The total size of the whole upload including all items may not be bigger than
                             <?php print $ewzG['maxTotalMb']; ?></li>
@@ -323,7 +339,7 @@ function ewz_layout_menu()
                 </p>
             </div>
 
-            <!-- HELP POPUP spreadsheet header -->
+            <!-- HELP POPUP field identifier -->
             <div id="sshead_help" class="wp-dialog" >
                 <p>This identifier is used for the header that appears at the top of the column
                     if this field is included in your spreadsheet.
@@ -335,6 +351,12 @@ function ewz_layout_menu()
                     underscores - no spaces or special characters.
                     This makes sure that a filename containing it should be accepted by most
                     systems.
+                </p>
+                <p>( If the identifier has the special value 'followQ', the field is treated as a  
+                     followup field, which is not displayed by the 'ewz_show_webform' shortcode.
+                     It is the only input field shown by the 'ewz_followup' shortcode.<br>
+                     There is a more detailed explanation of the 'ewz_followup' shortcode at the 
+                      top of the Webforms page. )
                 </p>
             </div>
 
@@ -457,11 +479,11 @@ function ewz_layout_menu()
                          via the WebForms page.  It is blank if you did not upload anything for the
                          item</li>
                      <li>"Custom data" is again optional. Wordpress stores some information about a
-                         user, but there are plugins, like CIMI User Extra Fields, that allow you
+                         user, but there are plugins, like CIMI User Extra Fields,  that allow you
                          to add more information.
                          If you have such a plugin, and if it provides a function to access the
                          information, you may tell EntryWizard about it in the "ewz-custom-data.php"
-                         file at the top level of the EntryWizard folder.</li>
+                         file.</li>
                   </ul>
                </p>
             </div>
