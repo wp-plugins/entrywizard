@@ -211,14 +211,28 @@ abstract class Ewz_Input {
     }
 
     protected function bool( &$value, $arg  ) {
-        assert( is_string( $value )  );
+        assert( is_string( $value ) || $value == null );
         assert( isset( $arg ) );
-        if( !is_string( $value )){
+        if( !( in_array( $value, array( '1', 1, 'on', 0, '0', 'off' ) ) ) ){
+            $value = 0;
             return false;
         }
-        $ok = preg_match( self::REGEX_BOOL, $value );
-        $value = (bool)$value;
-        return $ok;
+        switch( $value ){
+        case 1:
+        case '1':
+        case 'on':
+            $value = 1;
+            return true;
+            break;
+        case 0:
+        case '0':
+        case 'off':
+            $value = 0;
+            return true;
+            break;
+        default:
+            return false;
+        }
 
     }
 

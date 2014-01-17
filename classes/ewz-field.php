@@ -45,7 +45,7 @@ class Ewz_Field extends Ewz_Base
     public $Xmaxnums;           // maxnums for an option field - max allowed for each option
     public $Xlabels;            // labels  for an option field
 
-    public static $typelist = array( "img", "opt", "str" );
+    public static $typelist = array( "img", "opt", "str", "rad", "chk" );
     public static $col_max = 100;
 
     /**
@@ -164,6 +164,10 @@ class Ewz_Field extends Ewz_Base
             foreach ( $this->fdata['options'] as $dat ) {
                 array_push( $list, array( 'value'=>$dat['value'], 'display'=> $dat['label'] ) );
             }
+        } elseif( 'rad' == $this->field_type || 'chk' == $this->field_type ) {
+                array_push( $list, array( 'value'=>'~*~', 'display'=> 'Any', 'selected' => true ) );
+                array_push( $list, array( 'value'=>'~-~', 'display'=> 'Not Checked' ) );
+                array_push( $list, array( 'value'=>'~+~', 'display'=> 'Checked' ) );            
         } else {
             if ( !$this->required ) {
                 array_push( $list, array( 'value'=>'~*~', 'display'=> 'Any', 'selected' => true ) );
@@ -321,6 +325,11 @@ class Ewz_Field extends Ewz_Base
         if ( $this->pg_column < 0 || $this->pg_column > self::$col_max ) {
             throw new EWZ_Exception( 'Invalid value ' . $this->pg_column  . ' for web page column' );
         }
+
+        // checkboxes and radio buttons cannot be required
+        if( ( $this->field_type == 'chk' || $this->field_type == 'rad' ) &&  $this->required ){
+             throw new EWZ_Exception( 'Checkbox and Radio Button fields may not be "required"' );
+        }
     }
 
     /*     * ******************  Database Updates ***************** */
@@ -329,9 +338,10 @@ class Ewz_Field extends Ewz_Base
      * Save the field to the database
      *
      * Check for permissions, then update or insert the data
+     * Return the field id if field is new -- needed for adding field to restrictions
      *
      * @param none
-     * @return none
+     * @return field id if this is a new field, otherwise 0  
      */
     public function save()
     {
@@ -364,6 +374,7 @@ class Ewz_Field extends Ewz_Base
             if ( $rows > 1 ) {
                 throw new EWZ_Exception( 'Failed to update field', $this->field_id );
             }
+            return 0;
         } else {
            $layout_ok = $wpdb->get_var( $wpdb->prepare( "SELECT count(*) FROM " . EWZ_LAYOUT_TABLE . " WHERE layout_id = %d",
                                                   $this->layout_id ) );
@@ -372,10 +383,11 @@ class Ewz_Field extends Ewz_Base
             }
 
             $wpdb->insert( EWZ_FIELD_TABLE, $data, $datatypes );
-            $inserted = $wpdb->insert_id;
-            if ( !$inserted ) {
-                throw new EWZ_Exception( 'Failed to create new field', $this->field_id );
+            $this->field_id = $wpdb->insert_id;
+            if ( !$this->field_id ) {
+                throw new EWZ_Exception( 'Failed to create new field', $this->field_ident );
             }
+            return $this->field_id;
         }
     }
 
@@ -391,6 +403,16 @@ class Ewz_Field extends Ewz_Base
         if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit the layout', $this->layout_id );
         }
+        $webforms = Ewz_Webform::get_webforms_for_layout( $this->layout_id );
+        foreach($webforms as $webform){
+            foreach( Ewz_Item::get_items_for_webform( $webform->webform_id, false ) as $item ){
+                if( isset( $item->item_data[$this->field_id] ) ){
+                    unset( $item->item_data[$this->field_id] );
+                    $item->save();
+                }
+            }
+        }
+
         $order = $wpdb->get_var( $wpdb->prepare( "SELECT pg_column  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
                                                   $this->field_id ) ); 
         

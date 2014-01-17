@@ -48,7 +48,7 @@ function ewz_check_and_attach_imgs()
     } catch (Exception $e) {
         return $e->getMessage();
     }
-            
+
     if( !Ewz_Permission::can_manage_webform( $requestdata['webform_id'] ) ) {
         throw new EWZ_Exception( 'Attempt to attach items without permission to manage webform' );
     }
@@ -87,22 +87,27 @@ function ewz_check_and_attach_imgs()
 }
 
 /**
- * Attach a single item to a page 
- * 
- * 
+ * Attach a single item to a page
+ *
+ *
  * @param  $item_id          item to be attached
  * @param  $requestdata      parameters for attachment: destination page, image size, coments allowed
  * @return error message or empty string
  */
 function ewz_attach_item( $item_id, $requestdata ){
-    assert( is_int( $item_id ) );
+    assert( Ewz_Base::is_pos_int( $item_id ) );
     assert( is_array( $requestdata ) );
     $msg = '';
-    try{ 
+    try{
         $item = new Ewz_Item( $item_id );
-
+        if( !count( $item->item_files ) || !array_key_exists( $requestdata['ifield'], $item->item_files ) ){
+            $msg .= "No image file for item with id $item->item_id.\n";
+        }
         foreach ( $item->item_files as $field_id => $file ) {
-            if( ( $requestdata['ifield'] == $field_id ) && isset( $file['fname'] ) ) {
+            if( ( $requestdata['ifield'] == $field_id ) ) {
+                if( !isset( $file['fname'] ) ){
+                    throw new EWZ_Exception( "No image file found" );
+                }   
                 $orig_file = wp_check_filetype_and_ext( $file['fname'],  basename( $file['fname'] ) );
                 $filename = ewz_create_attachment_file( $file['fname'], $requestdata['img_size'] );
                 $attachment = array(
@@ -133,11 +138,12 @@ function ewz_attach_item( $item_id, $requestdata ){
                 $attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
 
                 wp_update_attachment_metadata( $attach_id, $attach_data );
+                $item->record_attachment( $requestdata['ewz_page_sel'] );
             }
         }
     } catch( Exception $e ) {
         $msg .= "\nItem $item_id: " . $e->getMessage();
-    }    
+    }
     return $msg;
 }
 
@@ -186,7 +192,7 @@ function ewz_create_attachment_file( $fpath, $size_string ){
  */
 function ewz_batch_delete_items(  )
 {
-    $data = array_merge( $_POST, $_GET );   
+    $data = array_merge( $_POST, $_GET );
     if ( !( isset( $data['webform_id'] ) &&
             Ewz_Permission::can_manage_webform( $data['webform_id'] ) ) ){
         throw new EWZ_Exception( 'Insufficient Permissions To Modify Data' );
@@ -195,7 +201,7 @@ function ewz_batch_delete_items(  )
         $input = new Ewz_Item_List_Input( $data );
         $requestdata  = $input->get_input_data();
     } catch( Exception $e ){
-        return $e->getMessage();        
+        return $e->getMessage();
     }
 
     $items_for_deletion = $requestdata['ewz_check'];
@@ -268,7 +274,7 @@ function ewz_get_img_cols( $fields )
  * @param $fields       array of Ewz_Fields, indexed on field_id
  * @param $extra_cols   array of integers representing column numbers, indexed
  *                        by the extra_column abbreviations
- *                       ('dtu','iid','wft','wid','wfm','nam','fnm',
+ *                       ('att','aat','aae','aac','dlc','dtu','iid','wft','wid','wfm','nam','fnm',
  *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2', ... )
  * @param $wform        Ewz_Webform
  *
@@ -316,7 +322,11 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                 if ( $field->field_type != 'img' ) {
                     // image columns have already been set
                     assert(  !isset( $rows[$n][$col] ) ||  !$rows[$n][$col] );
-                    $rows[$n][$col] = ( string ) $field_value_arr['value'];
+                    if( in_array( $field->field_type, array( 'rad', 'chk' ) ) ){
+                        $rows[$n][$col] =  $field_value_arr['value'] ? 'checked' : '';
+                    } else {
+                        $rows[$n][$col] = ( string ) $field_value_arr['value'];
+                    }
                 }
                 // append the uploaded info from the .csv file if it exists
                 $info = '';
@@ -329,13 +339,12 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                 if ( isset( $item->item_data[$field_id]['pcontent'] ) ) {
                     $info .= "<p><b>Content:</b> " . wp_kses( $item->item_data[$field_id]['pcontent'], array( 'br' => array(), 'b' => array() ) ) . "</p>";
                 }
-                if ( $info ) { 
+                if ( $info ) {
                     // this gets passed through echo, so needs extra escaping for single quotes (?)
                     $info = str_replace( '&#039;', '\\&#039;', $info);
-                    $info = str_replace( "'", '\\&#039;', $info);
-                    $rows[$n][$col] .= '<br>' .
-                        '<a href="#" onClick="ewz_info(' . "'" . $info . "'" . ')">' .
-                            'Item Info</a>';
+                    $info =  '&#039;'. str_replace( "'", '&#039;', $info) . '&#039;';
+                    // return false to stop it going to top of page when popup is closed
+                    $rows[$n][$col] .= "<br><a href='#' onClick='ewz_info( $info ); return false;'>Item Info</a>";
                 }
             }
         }
@@ -400,7 +409,7 @@ function ewz_get_img_sizes() {
 function ewz_get_img_size_options( $selected ) {
     assert( is_string( $selected )|| $selected == null );
     $options = '';
-    foreach ( ewz_get_img_sizes() as $size ) {  
+    foreach ( ewz_get_img_sizes() as $size ) {
         $sel = '';
         if( $size == $selected ){
             $sel = ' selected="selected"';
@@ -436,7 +445,7 @@ function ewz_list_items() {
     } catch( Exception $e ){
         wp_die( $e->getMessage() );
     }
-         
+
     // Messages from exceptions generated here are  are shown to user
     $message = '';
     // if errors here stop processing
@@ -448,8 +457,8 @@ function ewz_list_items() {
 }
 
 /**
- * Return the html for the display of the criteria used to select the items 
- * 
+ * Return the html for the display of the criteria used to select the items
+ *
  * @param    $field_opt   array of fields and their selected values
  * @param    $uploaddays  show only items uploaded within the last $uploaddays
  * @return   html
@@ -468,14 +477,14 @@ function  ewz_get_opt_display_string( $field_opts, $extra_opts ){
         }
     }
     $str ="<ul>\n";
-    foreach ( $optname as $f => $name ) { 
+    foreach ( $optname as $f => $name ) {
         $str .= "<li>$name = $optval[$f]</li>\n";
-    } 
-    foreach ( $extra_opts as $nm => $val ) { 
+    }
+    foreach ( $extra_opts as $nm => $val ) {
         if( $nm == 'uploaddays' && $val > 0 ){
             $str .=  "<li>Uploaded in the last $val days</li>\n";
         }
-    } 
+    }
     $str .= "</ul>\n";
     return $str;
 }
@@ -489,7 +498,7 @@ function  ewz_get_opt_display_string( $field_opts, $extra_opts ){
 function ewz_get_ipp_form( $url, $ipp ){
     assert( is_string ( $url ) );
     assert( Ewz_Base::is_nn_int( $ipp ) || empty( $ipp ) );
-    
+
     $str = '<form id="ipp_form" class="ewz_shaded" action="$url" method="POST" >';
     $str .= 'Show on screen ';
     $str .= wp_nonce_field( 'ewzadmin', 'ewznonce', true, false );
@@ -501,7 +510,7 @@ function ewz_get_ipp_form( $url, $ipp ){
     // processIPP does an ajax post call followed by a document reload
     $str .= '    <button  type="submit" id="ewz-ipp-apply"  onClick="return processIPP(\'ipp_form\')" class="button action">Apply</button>';
     $str .= "</form>\n";
-    
+
     return $str;
 }
 
@@ -528,20 +537,20 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
             <td><select id="img_size" name="img_size" >$size_args</select></td></tr>
 EOF;
      if ( count( $image_columns ) > 1 ) {
-	foreach ( $image_columns as $fld_id => $fld_head ) { 
+	foreach ( $image_columns as $fld_id => $fld_head ) {
             $eschead = esc_html( $fld_head );
             $str .= '<tr><td>Attach images from column $eschead</td>';
 	    $str .= '    <td><input type="radio" name="ifield" value="' . $fld_id . '"></td>';
 	    $str .= '</tr>';
-        }	    
+        }
         $str .= '</table>';
 
      } else {
          $str .= '</table>';
-         foreach ( $image_columns as $fld_id => $fld_head ) { 
+         foreach ( $image_columns as $fld_id => $fld_head ) {
              $eschead = esc_html( $fld_head );
 	     $str .= '<input type="hidden" name="ifield" value="' . esc_attr( $fld_id ) . '">';
-         } 
+         }
      }
      return $str;
 }
@@ -557,7 +566,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     assert( is_array( $requestdata ) );
 
     $webform_id = $requestdata['webform_id'];
-            
+
     $webform = new Ewz_Webform( $webform_id );
     $fields = Ewz_Field::get_fields_for_layout( $webform->layout_id, 'ss_column' );
 
@@ -565,7 +574,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     if ( isset( $requestdata['fopt'] ) ) {
         $field_opts = $requestdata['fopt'];
     }
-    
+
     $extra_opts = array();             // this is set up to allow for other options than just uploaddays
     if( isset( $requestdata['uploaddays'] ) ){
         $extra_opts['uploaddays'] = $requestdata['uploaddays'];
@@ -609,7 +618,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     <div class="ewz_showlist">
         <h2>Images and Stored Information for "<?php print $formtitle; ?>"</h2>
      <div id="info-text" class="wp-dialog"> </div>
-     
+
      <div class="ewz_params">
           <br>
           <?php print ewz_get_ipp_form( $listurl, $ipp ); ?>
@@ -619,7 +628,7 @@ function  ewz_display_list_page( $message, $requestdata ){
      <form id="list_form" action="<?php print $listurl; ?>" method="POST" onSubmit="return processForm('list_form');">
         <div class="ewzform">
            <?php wp_nonce_field( 'ewzadmin', 'ewznonce' ); ?>
-           <input type="hidden" name="webform_id" id="webform_id" value="<?php print $webform_id; ?>">             
+           <input type="hidden" name="webform_id" id="webform_id" value="<?php print $webform_id; ?>">
 
            <?php print ewz_attach_options_string( $help_icon, $attach_prefs, $fields ); ?>
 

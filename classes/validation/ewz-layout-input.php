@@ -14,7 +14,7 @@ class Ewz_Layout_Input extends Ewz_Input {
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $customvars = array_keys( Ewz_Custom_Data::$data );
-        $xcols = array_merge( array( 'dtu', 'iid', 'wft', 'wid', 'wfm', 'nam', 'fnm', 'lnm', 'mnm', 'mem', 'mid', 'mli' ),
+        $xcols = array_merge( array( 'att','aat','aae','aac', 'dlc', 'dtu', 'iid', 'wft', 'wid', 'wfm', 'nam', 'fnm', 'lnm', 'mnm', 'mem', 'mid', 'mli' ),
                              $customvars );
         
         $this->rules = array(

@@ -52,6 +52,7 @@ function ewz_show_webform( $atts )
             }
 
             $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
+
             $errmsg .= ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
                                 $webformdata['webform']->webform_id );
 
@@ -75,7 +76,9 @@ function ewz_show_webform( $atts )
     $ewzG = ewz_get_layout_info( $webformdata['layout'] );  // grabs all required layout data
     $ewzG['webform_id'] = $webform_id;
     $ewzG['errmsg'] = $errmsg;
+    $ewzG['thumb_height'] = 100;        // TODO - make this configurable
     $ewzG['has_data'] = ( count( $stored_items ) > 0 );
+    $ewzG['jsvalid'] = Ewz_Base::validate_using_javascript();     // this is set to false for testing server validation
 
 
     // this passes ewzG to Javascript
@@ -107,7 +110,6 @@ function ewz_show_webform( $atts )
  */
 function ewz_get_webform_data( $atts )
 {
-    global $post;
     assert( is_array( $atts ) );
 
     ewz_check_upload_atts( $atts );
@@ -122,7 +124,7 @@ function ewz_get_webform_data( $atts )
         $data['failmsg'] = 'Sorry, you must be logged in to see this.';
         return $data;
     }
-  
+
     /* ******************* */
     /* Collect some  data  */
     /* ******************* */
@@ -130,10 +132,12 @@ function ewz_get_webform_data( $atts )
     $webform = new Ewz_Webform( $atts['identifier'] );
 
     if( !$webform->open_for_current_user() ){
-        $data['failmsg'] = 'Sorry, this form is not currently open for uploads.';
+        $data['failmsg'] = '<div class="ewz-err"><h2>' . 
+            $webform->webform_title . 
+            '</h2><p>Sorry, this form is not currently open for uploads.</p></div>';
         return $data;
     }
-       
+
     $data['user_id'] = get_current_user_id();
     $data['webform'] = $webform;
     $data['layout'] = new Ewz_Layout( $webform->layout_id, false );
@@ -152,6 +156,7 @@ function ewz_get_webform_data( $atts )
  * user_id
  * webform_id
  * last_change
+ * upload_date
  * item_files:
  *   ( "444" => (field_id => 444, thumb_url => ..., fname => ..., type=>jpg, width=>.., height=>.., orient=>...  )
  *     "544" => (field_id => 544, thumb_url => ..., fname => ..., type=>jpg),
@@ -297,11 +302,11 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
 {
     assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( in_array( $field->field_type, array( 'str', 'opt', 'img' ) ) );
-    assert( is_string( $savedval ) || $savedval === null );
+    assert( in_array( $field->field_type, array( 'str', 'opt', 'img', 'rad', 'chk' ) ) );
+    assert( is_string( $savedval ) || $savedval === null || $savedval === 1 || $savedval === 0 );
 
-    $name = "rdata[$rownum][" . $field->field_id . "]";
-    
+    $name    = "rdata[$rownum][" . $field->field_id . "]";
+
     $display = '';
 
     switch ( $field->field_type ) {
@@ -311,6 +316,10 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
             break;
     case 'img': $display = ewz_display_img_form_field( $name, $webform_id, $savedval, $field );
             break;
+    case 'rad': $display = ewz_display_rad_form_field( $name, $webform_id, $savedval, $field );
+            break;
+    case 'chk': $display = ewz_display_chk_form_field( $name, $webform_id, $savedval );
+            break;
     default:
         throw new EWZ_Exception( "Invalid field type " . $field->field_type );
     }
@@ -319,7 +328,7 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
 
 /**
  * Return the value saved on the database for the item
- * 
+ *
  * @param  $field
  * @param  $item
  * @return string
@@ -437,6 +446,50 @@ function ewz_display_opt_form_field( $name, $webform_id, $savedval, $field )
     }
     $txt .= '</select>';
     return $txt;
+}
+/**
+ * Display a radio button
+ *
+ * Radios in the same column must have the same name, so use the field id for that.
+ * Give the button a value equal to the name we would normally have used.
+ * If it is checked, when submitting, Javascript disables it and creates a new hidden
+ * input with name equal to the value of the radio button and value '1'.
+ *
+ * @param
+ * @return
+ */
+function ewz_display_rad_form_field( $name,  $webform_id, $savedval, $field )
+{
+    assert( is_string( $name ) );
+    assert( Ewz_Base::is_pos_int( $webform_id ) );
+    assert( in_array( $savedval, array( null, 1, 0 ) ) );
+    assert( is_object( $field ) );
+
+    $ename = esc_attr( $name );
+    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
+
+
+    return '<input type="radio"  name="radio' . $field->field_id . '"' .
+                   ' id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
+                   ' value="' . $ename .'" ' .
+                   ($savedval ? ' checked="checked" ' : '') .
+            '>';
+}
+
+
+function ewz_display_chk_form_field( $name, $webform_id, $savedval )
+{
+    assert( Ewz_Base::is_pos_int( $webform_id ) );
+    assert( is_string( $name ) );
+    assert( in_array( $savedval, array( null, 1, 0 ) ) );
+
+    $ename = esc_attr( $name );
+
+    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
+      return '<input type="checkbox"  name="' . $ename .
+                   '" id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
+          ($savedval ? ' checked="checked" ' : '') .
+            '>';
 }
 
 /**
@@ -560,7 +613,6 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
     assert( is_array( $postdata ) );
     assert( Ewz_Base::is_pos_int( $user_id ) );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
-
     /*     * ************************** */
     /* Get the field information */
     /*     * ************************** */
@@ -595,7 +647,7 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
                 // error is stored here instead of being raised as an exception because older IE's dont allow
                 // checking dimensions on client.  We don't want to ignore the rest of the upload if one
                 // has a dimension error.
-                if( preg_match('/^___/', $uploaded_file['fname'] ) ){  
+                if( preg_match('/^___/', $uploaded_file['fname'] ) ){
                     // i.e there was an error picked up by ewz_handle_img_upload in ewz_to_upload_arr
                     $errs .= "\n" . preg_replace('/^___/', '', $uploaded_file['fname'] );
                     $data = NULL;
@@ -677,7 +729,7 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
                         $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $prefix.$filename, $row, $fields[$field_id] );
                     } catch( Exception $e ){
                         $upload[$row]['files'][$field_id]['fname'] = '___' . $e->getMessage();
-                    } 
+                    }
                 }
             }
         }
@@ -885,7 +937,7 @@ function ewz_user_delete_item( $item_id ){
         return '1';
     } else {
         return 'Sorry, this form is no longer open for uploads.';
-    }            
+    }
 }
 
 /**
@@ -950,15 +1002,20 @@ function ewz_check_upload_atts( $atts )
  */
 function ewz_display_item( $field, $value ) {
     assert( is_object( $field ) );
-    assert( is_string( $value ) );
-    if( $field->field_type == 'opt' ){
+    assert( is_string( $value ) || in_array( $value, array( null, 1, 0 ), true ) );
+    if(  'opt' == $field->field_type ){
         foreach( $field->fdata['options'] as $n => $opt ){
             assert( $n < count($field->fdata['options']));
             if( $opt['value'] == $value ){
                 return $opt['label'];
             }
         }
-        return $value;
+    } elseif( 'rad' == $field->field_type || 'chk' == $field->field_type ){
+        if ( $value == '1' ) {
+            return 'checked';
+        } else {
+            return '';
+        }
     } else {
        return $value;
     }

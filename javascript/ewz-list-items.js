@@ -20,11 +20,14 @@ function processForm(formId) {
               ( jform.find('select[name="action2"]').val() === 'ewz_attach_imgs') ){
         
         jQuery('#message').html('<img alt="" src="' + ewzG.load_gif + '"/>');
+        var overlay = jQuery('<div></div>').prependTo('body').attr('id', 'overlay');
         jQuery.post( ajaxurl,
                      jform.serialize(),
                      function (response) {
-                         alert(response);
                          jQuery('#message').html('');
+                         overlay.remove();
+                         alert(response);
+                         document.location.reload(true);                         
                      });
         return false;
     } else {

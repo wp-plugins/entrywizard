@@ -5,16 +5,16 @@ jQuery(document).ready(function() {
 /* To stop IE from generating errors if a console.log call was left in */
 function fixConsole()
 {
-    if (typeof console === "undefined")
+    if (typeof console === 'undefined')
     {
         console = {}; // define it if it doesn't exist already
     }
-    if (typeof console.log === "undefined")
+    if (typeof console.log === 'undefined')
     {
         console.log = function() {
         };
     }
-    if (typeof console.dir === "undefined")
+    if (typeof console.dir === 'undefined')
     {
         console.dir = function() {
         };
@@ -32,7 +32,7 @@ function init_ewz_upload(ewz_win) {
         for (name in wkey)
         {
             if (wkey.hasOwnProperty(name)) {
-                //window.console && console.log("RuntimeObject: ", name, typeof wkey[name], " >>> ",  wkey[name]);
+                //window.console && console.log('RuntimeObject: ', name, typeof wkey[name], ' >>> ',  wkey[name]);
                 do_setup(wkey[name]);
             }
         }
@@ -41,7 +41,7 @@ function init_ewz_upload(ewz_win) {
         for (wkey1 in ewz_win) {
             if (ewz_win.hasOwnProperty(wkey1)) {
                 if (wkey1.substring(0, 4) === 'ewzG') {
-                    // window.console && console.log( "this: ", wkey1, typeof ewz_win[wkey1], " >>> ",  ewz_win[wkey1] );
+                    // window.console && console.log( 'this: ', wkey1, typeof ewz_win[wkey1], ' >>> ',  ewz_win[wkey1] );
                     do_setup(ewz_win[wkey1]);
                 }
             }
@@ -67,7 +67,7 @@ function do_setup(ewzG) {
     // ewzG is null if not logged in
     // make any change in any input enable the "submit" button
     jQuery("#ewz_form_" + ewzG.webform_id).on("change", ":input:not(:button)",
-                                              function() { 
+                                              function() {
                                                   do_changed( jQuery(this), ewzG.webform_id);
                                               });
 
@@ -79,16 +79,20 @@ function do_setup(ewzG) {
 
 
 /* After a change, enable Submit and create the Clear button for the row if it doesnt exist */
-function do_changed( jitem, webform_id) {
+function do_changed( jitem, webform_id ) { 
     'use strict';
-    var btn = jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
+    jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
     var jrow = jitem.closest('tr');
     var jbody = jrow.closest('tbody');
-    if( jbody.find('td[class="btn"]').length == 0  ){
+    // header row
+    if( jbody.find('th[class="btn"]').length === 0  ){
         jbody.children().has('th').append('<th class="btn"></th>');
         jbody.children().has('td').append( '<td class="btn"></td>' );
     }
+
+    // changed row
     var    jlastcol = jrow.children().last();
+
     var    jrownum;
     if (jlastcol.find('button').length === 0) {
         jrownum = jrow.attr("id").replace("row", "").replace(/_\d*$/, '');
@@ -124,6 +128,20 @@ function get_values(ewzG, webform_id ){
                 case 'opt':
                     sel = jelem.find(":selected");
                     fvalues[row][i] = [ sel.val(), sel.text() ];   // need value for code and text for message
+                    break;
+                case 'rad':
+                    if( jelem.prop("checked") ){
+                        fvalues[row][i] = [ "checked", 'checked' ];
+                    } else {
+                        fvalues[row][i] = [ '', 'checked' ];
+                    }
+                    break;
+                case 'chk':
+                    if( jelem.prop("checked") ){
+                        fvalues[row][i] = [  "checked", 'checked' ];
+                    } else {
+                        fvalues[row][i] = [  "", 'checked'  ];
+                    }
                     break;
                 }
             } else {
@@ -164,12 +182,13 @@ function missing_check( ewzG, webform_id, fvalues, use_row ){
 /* Check any max rules on drop-down option selections */
 function options_check(  ewzG, webform_id, fvalues, use_row ){
     'use strict';
-    var optcount, msg, status, textvals, row, row1, sel_val, key, maxn, field_id;
+    var optcount, msg, status, textvals, row, row1, sel_val, key, maxn, field_id, ftype, text;
     msg = '';
     status = true;
     for (field_id in ewzG.layout.fields) {
         if (!ewzG.layout.fields.hasOwnProperty(field_id)) { continue; }
-        if (ewzG.layout.fields[field_id].field_type === 'opt') {
+        ftype = ewzG.layout.fields[field_id].field_type;
+        if (ftype === 'opt' || ftype === 'chk') {
             optcount = {};
             textvals = {};
             for (row = 0; row < ewzG.layout.max_num_items; ++row) {
@@ -179,7 +198,7 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
                 sel_val = fvalues[row][field_id][0];
                 if ( sel_val  ) {
                     textvals[ sel_val ] = fvalues[row][field_id][1];  // for display to user
-                    if (typeof(optcount[ sel_val ]) === 'undefined') {
+                    if (typeof optcount[ sel_val ] === 'undefined') {
                         optcount[ sel_val ] = 1;
                     } else {
                         ++optcount[ sel_val ];
@@ -188,14 +207,20 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
             }
             for ( key in optcount ) {
                 if(!optcount.hasOwnProperty(key)){ continue; }
-                maxn = ewzG.layout.fields[field_id].Xmaxnums[key];
+                if( ftype === 'opt' ){
+                    maxn = ewzG.layout.fields[field_id].Xmaxnums[key];
+                    text = 'equal to ';
+                } else {
+                    maxn = ewzG.layout.fields[field_id].fdata.chkmax;
+                    text = ' ';
+                }
                 if ( ( maxn > 0 ) && ( optcount[key] > maxn ) ) {
                     if( msg ){
                         msg += "\n";
                     }
-                    msg += "no more than " + maxn + " items may have a " + ewzG.layout.fields[field_id].field_header + " value of " + textvals[key];
+                    msg += "no more than " + maxn +  " items may have " +  ewzG.layout.fields[field_id].field_header + " " + text + textvals[key];
                     status = false;
-                }
+                }                
             }
         }
     }
@@ -260,10 +285,14 @@ function check_data(ewzG, webform_id) {
         if (status) {
             disable_unused_rows( webform_id, ewzG, use_row );
         }
-        return status;
+        if( ewzG.jsvalid ){
+            return status;
+        } else {
+            return true;
+        }
 
     } catch (except) {
-        alert("** Sorry, there was an unexpected error: " + except.message);
+        alert(except.message);
         return false;
     }
 }
@@ -313,6 +342,11 @@ function delete_item(button, webform_id) {
 }
 
 // Clear input previously entered
+// Remove all images, hidden inputs
+// Set select, text values to '', uncheck checkboxes and radio buttons
+// Remove 'dirty' flag and hidden inputs
+// Remove the 'clear' button
+// Disable submit if no other data
 function clear_row(button, webform_id) {
     'use strict';
     var jrow = jQuery(button).closest('tr'),
@@ -327,7 +361,10 @@ function clear_row(button, webform_id) {
     });
 
     jrow.find("img").remove();
-    jrow.find(":input").val('');
+    jrow.find(":input:not(:radio)").val('');
+    jrow.find(":radio").prop("checked", false );
+    jrow.find(":checkbox").prop("checked", false );
+
     jrow.find(":input[class='dirty']").removeClass("dirty");
     jrow.find('input[type="hidden"]').remove();
     jrow.find(":button").remove();
@@ -374,13 +411,13 @@ function fileSelected(field_id, input_id, webform_id) {
     if (typeof window.FileReader !== 'undefined') {
 
         freader = new FileReader();
-        freader.onload = function(fileref) { 
+        freader.onload = function(fileref) {
             fileref.preventDefault();  // prevent display of full image on drag-drop
-            
+
             // remove any existing image thumbnail, create the new img
             jQuery('#' + input_id).closest('td').find('img').remove();
 
-            jQuery('#dv_' + input_id).append('<img alt="" id="im_' + input_id + '" class="ewz_thumb" src="' + fileref.target.result + '">');
+            jQuery('#dv_' + input_id).append('<img style="height: ' + ewzG.thumb_height + 'px;" alt="" id="im_' + input_id + '" class="ewz_thumb" src="' + fileref.target.result + '">');
 
             var theImage = document.getElementById('im_' + input_id);
             theImage.onload = function() {
@@ -403,11 +440,11 @@ function fileSelected(field_id, input_id, webform_id) {
                 jQuery('#sz_' + input_id).text('Size: ' + ewzG.sResultFileSize);
                 jQuery('#tp_' + input_id).text('Type: ' + oFile.type);
                 jQuery('#wh_' + input_id).text('Width: ' + theImage.naturalWidth + ' Height: ' + theImage.naturalHeight);
-            };       
+            };
         };
 
         files = document.getElementById(input_id).files;
-        if ( ( files == null ) || ( typeof(files[0]) === 'undefined' ) || ( files[0] == null ) ) {
+        if ( ( files == null ) || ( typeof files[0] === 'undefined' ) || ( files[0] == null ) ) {
             jQuery('#dv_' + input_id).hide();
             jQuery('#nm_' + input_id).text('');
             jQuery('#sz_' + input_id).text('');
@@ -464,8 +501,8 @@ function invalid_image(field_id, theImage, webform_id) {
     iwidth = theImage.naturalWidth,
     iheight = theImage.naturalHeight;              // actual height of image
 
-    if ((typeof iwidth == "undefined" || iwidth == null || iwidth == 0)) {
-        
+    if ((typeof iwidth === 'undefined' || iwidth == null || iwidth == 0)) {
+
         return 'Unable to determine image dimensions.  It may be of a type not accepted by this application.';
 
     } else {
@@ -498,7 +535,30 @@ function invalid_image(field_id, theImage, webform_id) {
             return msg;
         }
         return '';
-    } 
+    }
+}
+
+function fix_radios( webform_id ){
+    jQuery("#ewz_form_" + webform_id).find( 'input[type="radio"]' ).each( function(){
+        var jrad = jQuery(this);
+        // unused rows have been disabled by now
+        if( !jrad.prop("disabled") ){
+           if( jrad.prop( "checked" )){
+               jrad.closest('form').append('<input type="hidden" name="' + jrad.val() + '" value="1" >');
+           } else {
+               jrad.closest('form').append('<input type="hidden" name="' + jrad.val() + '" value="0" >');
+           }
+           jrad.prop("disabled", true);
+        }
+    });
+    jQuery("#ewz_form_" + webform_id).find( 'input[type="checkbox"]' ).each( function(){
+        var jchk = jQuery(this);
+        if( !jchk.prop("disabled") ){
+            if( !jchk.prop( "checked" ) ){
+                jchk.closest('form').append('<input type="hidden" name="' + jchk.prop("name") + '" value="off" >');
+            }
+        }
+    });
 }
 
 
@@ -510,18 +570,18 @@ function startUploading(webform_id) {
     status, xmlRequest, jresponse, jdivComplete, jdivProgress, form_data;
     // cleanup temp states
     ewzG.iPreviousBytesLoaded = 0;
-
     // do client-side validation (uses alerts), only upload if check is ok
-    status = check_data(ewzG, webform_id);
+    status = check_data(ewzG, webform_id );
 
     if (status) {
+        fix_radios( ewzG.webform_id );
         jresponse = jQuery('#upload_response_' + webform_id);
-        if (typeof(window.FormData) === 'undefined') {
+        if (typeof window.FormData === 'undefined') {
             do_submit_form(jresponse, webform_id);
         } else {
             // create XMLHttpRequest object, adding few event listeners, and POSTing our data
             xmlRequest = new XMLHttpRequest();
-            if (typeof(xmlRequest.upload) === 'undefined') {
+            if (typeof xmlRequest.upload === 'undefined') {
                 do_submit_form(jresponse, webform_id);
             } else {
                 jresponse.hide();
@@ -537,7 +597,6 @@ function startUploading(webform_id) {
 
                 // get form data for POSTing
                 form_data = new FormData(document.getElementById('ewz_form_' + webform_id));
-
                 // set up event progress listeners (must be done before "open" call)
                 xmlRequest.upload.addEventListener('progress', uploadProgress, false);
                 xmlRequest.addEventListener('load', uploadFinish, false);
@@ -688,10 +747,7 @@ function bytesToSize(bytes) {
 function isblank(string)
 {
     'use strict';
-    if (typeof string === "undefined") {
-        return true;
-    }
-    if (string === "undefined") {
+    if (typeof string === 'undefined') {
         return true;
     }
     if (string === null) {

@@ -91,13 +91,17 @@ function layout_str(lnum, fObj) {
     }
     str += '                   </div>';
     str += '                   <p>';
-    str += '                      Add another field:  ';
+    str += '                      <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'ftype\')">&nbsp;Add another field: &nbsp; ';
     str += '                      <button type="button" class="button-secondary" id="addTextBtn_f' + lnum + '_" onClick="add_field( this, ' + "'str'" + ')">';
     str += '                          A Text Entry</button>';
     str += '                      <button type="button" class="button-secondary" id="addImgBtn_f' + lnum + '_" onClick="add_field( this, ' + "'img'" + ')">';
     str += '                          An Image File</button>';
     str += '                      <button type="button" class="button-secondary" id="addOptBtn_f' + lnum + '_" onClick="add_field( this, ' + "'opt'" + ')">';
     str += '                          A Drop-down Selection</button>';
+    str += '                      <button type="button" class="button-secondary" id="addRadBtn_f' + lnum + '_" onClick="add_field( this, ' + "'rad'" + ')">';
+    str += '                          A Radio Button</button>';
+    str += '                      <button type="button" class="button-secondary" id="addChkBtn_f' + lnum + '_" onClick="add_field( this, ' + "'chk'" + ')">';
+    str += '                          A Check Box</button>';
     str += '                  </p>';
     str += '                </div>';
     str += '             </div>';
@@ -272,9 +276,14 @@ function field_str(lnum, i, fObj) {
     str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'sscol\')">&nbsp;Spreadsheet Column: </td>';
     str += '           <td>' + colinput_str(fid + 'ss_column_', fld + '[ss_column]', fObj.ss_column, 'ssc' + lnum) + '</td>';
     str += '       </tr>';
+    var rq = fObj.required;
+    if( fObj.field_type == 'chk' || fObj.field_type == 'rad' ){
+       rq = 'disabled';
+    }
     str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'req\')">&nbsp;Required: </td>';
-    str += '           <td>' + checkboxinput_str(fid + 'required_', fld + '[required]', fObj.required) + '</td>';
+    str += '           <td>' + checkboxinput_str(fid + 'required_', fld + '[required]', rq) + '</td>';
     str += '       </tr>';
+
     str += '     </table>';
     str += '     <div style="text-align:right; padding:10px;"> ';
     str += '        <button type="button" class="button-secondary" id="del_' + fid + '" onClick="delete_field(this)">Delete Field</button>';
@@ -290,7 +299,9 @@ function field_str(lnum, i, fObj) {
 function type_data_field_str(lnum, fid, fld, field_type, fdata) {
     'use strict';
     var str, fdid, fdld;
-    str = '<table id="data_fields_' + fid + '"  class="widefat ewz_shaded ewz_field">';
+    // hide the table borders for a radio button, which has no options
+    var hidetable = ( field_type == 'rad' ) ?  ' style="border: #EEEEEE";' : '';
+    str = '<table ' + hidetable + ' id="data_fields_' + fid + '"  class="widefat ewz_shaded ewz_field">';
     fdid = fid + 'fdata_';
     fdld = fld + '[fdata]';
     switch (field_type) {
@@ -303,6 +314,12 @@ function type_data_field_str(lnum, fid, fld, field_type, fdata) {
         case "opt":
             str += opt_fields_str(fdid, fdld, fdata);
             break;
+        case "rad":
+            str += rad_fields_str(fdid, fdld, fdata);
+            break;
+        case "chk":
+            str += chk_fields_str(fdid, fdld, fdata);
+            break;
     }
     str += '</table>';
     if ('opt' === field_type) {
@@ -310,6 +327,8 @@ function type_data_field_str(lnum, fid, fld, field_type, fdata) {
     }
     return str;
 }
+
+
 
 /* return the html for setting the specific text field data - number of chars visible and max number of chars */
 /* called by type_data_field_str */
@@ -343,9 +362,6 @@ function opt_fields_str(fdid, fdld, oObj)
     }
     return str;
 }
-
-/* return the html for setting a single option of the  specific select-option data */
-/*    -- a single row in the table  -- called by   opt_fields_str                  */
 function opt_row_str(fdid, fdld, rownum, opts) {
     'use strict';
     var label, value, maxnum, rowfid, rowfld, str;
@@ -364,6 +380,26 @@ function opt_row_str(fdid, fdld, rownum, opts) {
     str += '        id="' + rowfid + 'del_" onClick="delete_option(this)">X</button></td>';
     str += '</tr>';
     return str;
+}
+/* return the html for setting the specific select-option data - options, labels and max of each allowed */
+/* called by type_data_field_str */
+function rad_fields_str(fdid, fdld, oObj)
+{
+    'use strict';
+    return '<tr><td><input type="hidden" id="' + fdid + '" name="' +  fdld + '[radio]"></td></tr>';
+}
+/* return the html for setting the specific select-option data - options, labels and max of each allowed */
+/* called by type_data_field_str */
+function chk_fields_str(fdid, fdld, oObj)
+{
+    'use strict';
+    var chk_maxnum = oObj.chkmax ? Number(oObj.chkmax) : '';
+    
+    var str = '<tr><td><input type="hidden" id="' + fdid + '" name="' +  fdld + '[checkbox]"></td></tr>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'chkmax\')"> &nbsp; (optional) Maximum number that may be checked</td>';
+    str += '    <td>' + numinput_str(fdid + "chkmax_", fdld + "[chkmax]", 'no max', 1, 100, chk_maxnum) + '</td></tr>';
+    return str;
+     
 }
 
 /* return the html for setting the specific image field data - dimensions, type, etc */
@@ -417,7 +453,9 @@ function type_opt_str(lnum, fid, fld, field_type) {
     str += '       onChange="insert_blank_data_field(' + lnum + ', this, this.options[this.selectedIndex].value)">';
     str += '   <option value="str" ' + (('str' === field_type) ? sel : '') + '>Text &nbsp; </option>';
     str += '   <option value="opt" ' + (('opt' === field_type) ? sel : '') + '>Option List &nbsp; </option>';
-    str += '   <option value="img" ' + (('img' === field_type) ? sel : '') + '>Image File  &nbsp; </option></select>';
+    str += '   <option value="img" ' + (('img' === field_type) ? sel : '') + '>Image File  &nbsp; </option>';
+    str += '   <option value="rad" ' + (('rad' === field_type) ? sel : '') + '>Radio Button  &nbsp; </option>';
+    str += '   <option value="chk" ' + (('chk' === field_type) ? sel : '') + '>Check Box  &nbsp; </option>';
     str += '</select>';
     return str;
 }
@@ -481,6 +519,16 @@ function disable_restricted_fields(lnum) {
     });
 }
 
+/* disable "required" checkbox if the field type is radio or checkbox */
+function disable_required_for_radio_chk(lnum){
+    'use strict';
+    var jfield = jQuery("#cfg_form_f" + lnum + "_").find('input[id$="_field_ident_"]').filter(function() {
+        return (this.value == 'followupQ' );}).closest('table[class="ewz_field"]');
+    var type = jfield.find( 'select[id$="_field_type_"]').val();
+    if( type == 'chk' || type == 'rad' ){
+        jfield.find('input[id$="_required_"]').prop("disabled", true);
+    }
+}
 
 function enable_restricted_fields(lnum) {
     'use strict';
@@ -527,7 +575,6 @@ function setup_layout(for_lnum, from_lnum) {
         disable_max_vals(jLayout);
     });
 
-
     disable_ss_options('.ssc' + for_lnum);
     jQuery("#f" + for_lnum + "_max_num_items_").change();
 
@@ -544,9 +591,13 @@ function setup_layout(for_lnum, from_lnum) {
 
     // disable fields appearing in restrictions
     disable_restricted_fields(for_lnum);
+
+    // disable required fields for checkboxes and radio buttons
+    disable_required_for_radio_chk(for_lnum);
 }
 
 /* For the maxnum dropdown box in an option field, disable any maxnum >= the overall max num items */
+/*    ( unless the field has identifier 'followupQ' )
 /* Also disable numbers less than this in the max_num_items drop-down */
 function disable_max_vals(jLayout) {
     'use strict';
@@ -560,12 +611,14 @@ function disable_max_vals(jLayout) {
         var jselect, optval;
 
         jselect = jQuery(this);
-        optval = jselect.val();
-        if (optval > mni_min) {
-            mni_min = optval;
+        if( !jselect.closest('table[class="ewz_field"]').find('input[id$="_field_ident_"]').val() == 'followupQ' ){
+            optval = jselect.val();
+            if (optval > mni_min) {
+                mni_min = optval;
+            }
+            jselect.find('option').prop("disabled", false);
+            jselect.find('option:gt(' + opt_max_limit + ')').prop("disabled", true);
         }
-        jselect.find('option').prop("disabled", false);
-        jselect.find('option:gt(' + opt_max_limit + ')').prop("disabled", true);
     });
     jMaxNum.find('option').prop("disabled", false);
     jMaxNum.find('option:lt(' + mni_min + ')').prop("disabled", true);
@@ -630,7 +683,7 @@ function update_title(textfield) {
 }
 
 /* Called when the type of a field is changed.  Changes the right-hand side of the field area   */
-/*    to a new, blank area of the relevant type                                                 */
+/*    to a new, blank area of the relevant type, and enables/disables the "required" field      */
 function insert_blank_data_field(lnum, type_sel, type) {
     'use strict';
     var sel, field_id, parenttable, datafield, tid, fdata;
@@ -642,20 +695,32 @@ function insert_blank_data_field(lnum, type_sel, type) {
     tid = datafield.attr("id").replace('special_', '');
 
     sel.blur();
-
+    // radio buttons and checkboxes cannot be required
     switch (type) {
         case "str":
             fdata = ewzG.empty_str;
-            break;
+            parenttable.find('input[id$="_required_"]').prop("disabled", false);
+           break;
         case "img":
             fdata = ewzG.empty_img;
+            parenttable.find('input[id$="_required_"]').prop("disabled", false);
             break;
         case "opt":
             fdata = ewzG.empty_opt;
+            parenttable.find('input[id$="_required_"]').prop("disabled", false);
+            break;
+        case "rad":
+            fdata = ewzG.empty_rad;
+            parenttable.find('input[id$="_required_"]').prop("value",'');
+            parenttable.find('input[id$="_required_"]').prop("disabled", true  );
+            break;
+        case "chk":
+            fdata = ewzG.empty_chk;
+            parenttable.find('input[id$="_required_"]').prop("value",'');
+            parenttable.find('input[id$="_required_"]').prop("disabled", true );
             break;
     }
     datafield.html(type_data_field_str(lnum, tid, 'fields[' + field_id + ']', type, fdata));
-
 }
 
 
@@ -737,6 +802,7 @@ function add_field(add_field_btn, field_type) {
     lnum = form.attr("id").replace('cfg_form_f', '').replace('_', '');
     fdata = {};
 
+    data = {};
     switch (field_type) {
         case "str":
             fdata = ewzG.empty_str;
@@ -747,17 +813,21 @@ function add_field(add_field_btn, field_type) {
         case "opt":
             fdata = ewzG.empty_opt;
             break;
+        case "rad":
+            fdata = ewzG.empty_rad;
+            break;
+        case "chk":
+            fdata = ewzG.empty_chk;
+            break;
     }
-    data = {};
 
     data.fdata = fdata;
     data.field_ident = '';
     data.field_header = '';
     data.field_id = '';
     data.field_type = field_type;
-    data.ss_column = '-1';
     data.required = 0;
-
+    data.ss_column = '-1';
     form.find('div[id^="ewz_sortable"]').append(jQuery(field_str(lnum, cnum, data)));
     jQuery('h3[id="field_title_' + newid + '"]').html("-- New Field --");
 
@@ -862,7 +932,7 @@ function delete_layout(button, nwebforms, nitems) {
         alert(ewzG.errmsg.deletehasitems);
         return;
     }
-    if ('' == id || 'undefined' == id) {
+    if (typeof id === 'undefined' || '' == id ) {
         delete_js_layout(id, thediv, lname);
     } else {
 
@@ -903,7 +973,7 @@ function delete_field(del_field_btn) {
     jbutton = jQuery(del_field_btn);
     jfield_div = jbutton.closest('div[id$="field_mbox_"]');
     field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
-    if ('' == field_id || 'undefined' == field_id) {
+    if (typeof field_id === undefined || '' == field_id ) {
         jfield_div.find('select[id$="_maxnum_"]').prop("selectedIndex", 0);
         jfield_div.find('select[id$="_maxnum_"]').change();
         jfield_div.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
@@ -964,34 +1034,39 @@ function ewz_check_layout_input(form, do_check) {
             jform.find('input').val(function(index, value) {
                 return value.replace(/ +$/, '').replace(/^ +/, '');
             });
+            // no layout name
             if (!jform.find('input[id$="_layout_name_"]').val()) {
                 alert(ewzG.errmsg.layoutname);
                 return false;
+                
             }
+            // no max num items
             maxnumitems = jform.find('select[id$="_max_num_items_"]').val();
             if (!maxnumitems) {
                 alert(ewzG.errmsg.maxnumitems);
                 return false;
             }
+            // no fields
             if (!jform.find('div[id^="field_mbox_"]')) {
                 alert(ewzG.errmsg.nofields);
                 return false;
             }
+            /* cant return from function from inside filter, so use 'ok' flag */
+            // missing column header
             jform.find('input[id$="_field_header_"]').filter(function() {
                 return  ('' == jQuery(this).val().replace(/^\s+|\s+$/g, ''));
             }).each(function() {
-                //alert("Empty: " + jQuery(this).attr("id"));
                 alert(ewzG.errmsg.colhead);
                 ok = false;
             });
-
+            // missing identifier
             jform.find('input[id$="field_ident_"]').filter(function() {
                 return !jQuery(this).val().replace(/^\s+|\s+$/g, '').match(/^[a-z][a-z0-9_\-]+$/i);
             }).each(function() {
                 alert(ewzG.errmsg.ident);
                 ok = false;
             });
-
+            // followup cannot be image type
             jform.find('input[id$="field_ident_"]').filter(function() {
                 return( 'followupQ' == jQuery(this).val() );
             }).filter(function() {
@@ -1000,18 +1075,21 @@ function ewz_check_layout_input(form, do_check) {
                 alert( ewzG.errmsg.followimg);
                 ok = false;
             });
-           jform.find('input[id$="_max_img_w_"]').each(function() {
+            // invalid max_img_w
+            jform.find('input[id$="_max_img_w_"]').each(function() {
                 if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
                     alert(ewzG.errmsg.maximgw);
                     ok = false;
                 }
             });
+            // invalid max_img_h
             jform.find('input[id$="_max_img_h_"]').each(function() {
                 if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
                     alert(ewzG.errmsg.maximgh);
                     ok = false;
                 }
             });
+            // invalid min_longest_dim
             jform.find('input[id$="min_longest_dim_"]').each(function() {
                 if( jQuery(this).val().match(/^ *$/)) {
                      jQuery(this).val(0);
@@ -1020,6 +1098,7 @@ function ewz_check_layout_input(form, do_check) {
                     ok = false;
                 }
             });
+            // invalid or missing max_img_size, maxUploadMb
             jform.find('input[id$="_max_img_size_"]').each(function() {
                 jQuery(this).val(jQuery(this).val().replace(/[Mm]$/, ''));
                 maxs = jQuery(this).val();
@@ -1038,70 +1117,72 @@ function ewz_check_layout_input(form, do_check) {
                     ok = false;
                     return;
                 }
+                // Warn about potential problems but allow if user okays
                 if (parseFloat(maxs) * maxnumitems >= parseFloat(ewzG.maxTotalMb)) {
                     if (!confirm(ewzG.errmsg.sysmaxup)) {
                         ok = false;
                     }
                 }
             });
+            // missing option label or value
             jform.find('input[id$="_label_"]').each(function() {
                 var lab = jQuery(this).val();
-
                 if (!lab) {
                     alert(ewzG.errmsg.optlabel);
                     ok = false;
+                    return;
                 }
                 if (lab.match(/[^A-Za-z0-9_\- ]/)) {
                     alert(ewzG.errmsg.option);
                     ok = false;
-                    return;
                 }
             });
-
+            // option list must contain a valid option
             jform.find('select[id$="_field_type_"]').each(function(){
                 if( jQuery(this).val() === 'opt'){
                     var jfield_table = jQuery(this).closest('table[class="ewz_field"]');
                     var header = jfield_table.find('input[id$="_field_header_"]').val();
-                
                     if(jfield_table.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').size() < 1 ){
                         alert( header + ': ' +  ewzG.errmsg.optioncount );
                         ok = false;
-                        return;
                     }
                 }
             });
+            // option must have a valid value
             jform.find('input[id$="_value_"]').each(function() {
                 var oval = jQuery(this).val();
-
                 if (!oval) {
                     alert(ewzG.errmsg.optvalue);
                     ok = false;
+                    return;
                 }
                 if (oval.match(/[^A-Za-z0-9_\- ]/)) {
                     alert(ewzG.errmsg.option);
                     ok = false;
-                    return;
                 }
             });
+            // restriction must have a message
             jform.find('input[id$="__msg_"]').each(function() {
                 if (!jQuery(this).val()) {
                     alert(ewzG.errmsg.restrmsg);
                     ok = false;
                 }
             });
+            // text input must have maxchars
             jform.find('select[id$="_maxstringchars_"]').each(function() {
                 if (!jQuery(this).val().replace(/^\s+|\s+$/g, '')) {
                     alert(ewzG.errmsg.maxnumchar);
                     ok = false;
                 }
             });
-
+            // img must have set of allowed types
             jform.find('select[id$="_allowed_image_types_"]').each(function() {
                 if (!jQuery(this).val()) {
                     alert(ewzG.errmsg.imgtypes);
                     ok = false;
                 }
             });
+            // warnings re ineffective restrictions
             jform.find('div[id^="add_restr_f"]').each(function() {
                 var any = jQuery(this).find('select[name^="restrictions"]').find('option:eq(0)').not(":selected");
 
@@ -1115,7 +1196,6 @@ function ewz_check_layout_input(form, do_check) {
                     }
                 }
             });
-
 
         } catch (except1) {
             return false;

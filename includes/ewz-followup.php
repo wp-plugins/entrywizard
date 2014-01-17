@@ -11,21 +11,27 @@ require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-followup-input.php' );
 /**
  * Function called by  ewz_followup shortcode
  * [ewz_followup  webforms="example,pair,test,next" show="excerpt,content"]
- * Form to populate the followup field if it exists, for any item uploaded by the 
+ * Form to populate the followup field if it exists, for any item uploaded by the
  * current user to any of the webforms defined by the "webforms" attribute.
- * 
+ *
  * @param   $atts  shortcode attributes ( 'webforms' and 'field' )
  * @return  html for the form
  */
 function ewz_followup( $atts ) {
     assert( is_array( $atts ) );
-    $followup_field = null;
     $layouts = array();
     $webforms = array();
 
+    // the field params that we assume are the same for all webforms
+    $followup_data = array(
+                           'fdata' =>  array(),
+                           'required' => false,
+                           'field_type' => '',
+                           'field_header' => '',
+                            );
     try{
         // get the followup field.
-        // this assumes all the webforms use the same layout, or at least have 
+        // this assumes all the webforms use the same layout, or at least have
         // exactly the same specs for the 'followupQ' field
         if ( !array_key_exists( 'idents', $atts ) ) {
             throw new EWZ_Exception( 'Missing idents attribute for shortcode' );
@@ -47,11 +53,18 @@ function ewz_followup( $atts ) {
             if ( !in_array( $ident, $valid_idents ) ) {
                 throw new EWZ_Exception(  'Invalid identifier ' . $ident . ' in shortcode' );
             }
-            $webforms[$ident] = new Ewz_Webform( $ident );        
+            $webforms[$ident] = new Ewz_Webform( $ident );
             $layouts[$ident] = new Ewz_Layout( $webforms[$ident]->layout_id );
-            $follow_id = $layouts[$ident]->contains_followup();        
+            $follow_id = $layouts[$ident]->contains_followup();
             if( $follow_id  ){
-                $followup_field = new Ewz_Field( $follow_id );
+                $f = new Ewz_Field( $follow_id );
+                $followup_data = array(
+                           'fdata' =>  $f->fdata,
+                           'required' => $f->required,
+                           'field_type' => $f->field_type,
+                           'field_header' => $f->field_header,
+                           'Xmaxnums' => isset( $f->Xmaxnums ) ? $f->Xmaxnums : null,
+                            );
             }
         }
     } catch ( Exception $e ) {
@@ -60,97 +73,111 @@ function ewz_followup( $atts ) {
 
     $message = '';
     if ( $_POST  ) {
-        try{ 
-            $input = new Ewz_Followup_Input( stripslashes_deep( $_POST ), $_FILES,  $followup_field );
-            ewz_process_followup_input( $input->get_input_data(), $followup_field );
+        try{
+            $input = new Ewz_Followup_Input( stripslashes_deep( $_POST ), $followup_data );
+            ewz_process_followup_input( $input->get_input_data() );
          } catch( Exception $e ) {
             $message .= $e->getMessage();
             $message .= "\n";
         }
     }
-    
+
     $ewzF = array( 'webforms' => array(),
                    'errmsg'   => $message,
-                   'f_field'  => $followup_field,
+                   'f_field'  => $followup_data,
                    );
 
 
     // generate output
     $output = '';
-    if( $followup_field ){
+    if( $followup_data['field_type'] ){
         $output .= '<form id="foll_form" autocomplete="off" method="POST" action="' . esc_js( esc_attr( get_permalink() ) ) . '" >';
         $output .= wp_nonce_field( 'ewzupload', 'ewzuploadnonce', true, false );
     }
+
+    $rownum = 0;
     foreach( $idents as $ident ){
 
         $webform = $webforms[$ident];
-        
         $layout = $layouts[$ident];
-            $webform->layout = $layout;
-            $output .= "<h2>$webform->webform_title</h2>\n";
-            //   $followupID = Ewz_Field::field_id_from_ident_arr( array( 'layout_id' => $webform->layout_id,
-            //                                                         'field_ident' => 'followupQ' ) );
-            $items = Ewz_Item::get_items_for_webform( $webform->webform_id, true );
-            $output .= ewz_followup_display( $items,
-                                            $layout->fields,
-                                            $webform->webform_id,
-                                            $show_data
-                                            );
-            $output .= '<br>';
-            array_push( $ewzF['webforms'], $webform );
+        $webform->layout = $layout;
+        $output .= "<h2>$webform->webform_title</h2>\n";
+        $items = Ewz_Item::get_items_for_webform( $webform->webform_id, true );
+        $output .= ewz_followup_display(
+                                        $rownum,
+                                        $items,
+                                        $layout->fields,
+                                        $webform->webform_id,
+                                        $show_data
+                                        );
+        $output .= '<br>';
+        array_push( $ewzF['webforms'], $webform );
+        $rownum += count( $items );
     }
+
+    $ewzF['jsvalid'] = Ewz_Base::validate_using_javascript();     // this is set to false for testing server validation
 
     // this passes ewzF to Javascript
     wp_localize_script( "ewz-followup", "ewzF",  $ewzF );
 
-    if( $followup_field ){
+    if( $followup_data['field_type'] ){
         $output .= '<br><center><input type="submit" onclick="return f_validate()"></center></form>';
     }
     return $output;
 }
 
 /**
- * Save the followup data to the database 
+ * Save the followup data to the database
  *
  * @param   $input            uploaded data already validated
  * @param   $followup_field   Ewz_Field with ident 'followupQ'
  */
-function ewz_process_followup_input( $input, $followup_field )
+function ewz_process_followup_input( $input )
 {
     assert( is_array( $input ) );
-    assert( is_object( $followup_field ) );
     foreach ( $input['rdata'] as $row => $datavalues ) {
         foreach( $datavalues as $item_id => $val ){
             $item_obj = new Ewz_Item( $item_id );
-            $item_obj->item_data[$followup_field->field_id] =  Array(
-                                                                     'field_id' => $followup_field->field_id,
+            $wform = new Ewz_Webform( $item_obj->webform_id );
+            $layout = new Ewz_Layout( $wform->layout_id );
+            foreach( $layout->fields as $field ){
+                if( $field->field_ident == 'followupQ' ){
+                    $item_obj->item_data[$field->field_id] =  Array(
+                                                                     'field_id' => $field->field_id,
                                                                      'value' => $val,
-                                                                     );
-            $item_obj->save();
+                                                                    );
+                    $item_obj->save();
+                    break;
+                }
+            }
         }
-    } 
+    }
 }
 
 
 /**
- * Return the html string for the display of a single webform on the followup page 
- * 
+ * Return the html string for the display of a single webform on the followup page
+ *
+ * @param    $init_rownum     first row number for the webform ( needed for radio button )
  * @param    $stored_items
  * @param    $fields
  * @param    $webform_id
- * @param    $show_data
+ * @param    $show_data       extra data uploaded by admin, to be displayed below image
 
  * @return  html string
  */
-function ewz_followup_display( $stored_items, $fields, $webform_id, $show_data ){
+function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id, $show_data ){
+    assert( Ewz_Base::is_nn_int( $init_rownum ) );
     assert( is_array( $stored_items ) );
     assert( is_array( $fields ) );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( is_array( $show_data ) );
 
+    $rownum = $init_rownum;
+
     $fields_arr = array_values($fields);
     $labels = array( );
-    foreach( $fields_arr as $field ) { 
+    foreach( $fields_arr as $field ) {
         if ( 'opt' == $field->field_type ) {
             foreach ( $field->fdata['options'] as $data ) {
                 $labels[$field->field_header][$data['value']] = $data['label'];
@@ -166,7 +193,7 @@ function ewz_followup_display( $stored_items, $fields, $webform_id, $show_data )
             $output .=   '<th>' . esc_html( $field->field_header ) . '</th>';
         }
         $output .=    '</tr></thead><tbody>';
-        
+
         foreach ( $stored_items as $m => $item ) {
             assert( $m < count($stored_items));
             $output .= '<tr>';
@@ -176,7 +203,7 @@ function ewz_followup_display( $stored_items, $fields, $webform_id, $show_data )
                 // the special followup field, which is the only input on the form now
                 if( $field->field_ident == 'followupQ' ){
                     $savedval = ewz_get_saved_value( $field, $item );
-                    $output .= ewz_display_followup_field( '', $webform_id, $savedval, $field, $item->item_id );
+                    $output .= ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $item->item_id );
                 }  else {
                     // display the other fields the same way we do for the upload feedback
                     if ( 'img' == $field->field_type ) {
@@ -191,9 +218,10 @@ function ewz_followup_display( $stored_items, $fields, $webform_id, $show_data )
                     $output .= '</td>';
                 }
             }
-            $output .= '</tr>';      
+            $output .= '</tr>';
+            ++$rownum;
         }
-        $output .= "</tbody></table>";      
+        $output .= "</tbody></table>";
     }
     $output .= '</div>';       // <div id="stored">
     return $output;
@@ -201,7 +229,7 @@ function ewz_followup_display( $stored_items, $fields, $webform_id, $show_data )
 
 /**
  * Return the html string for the display of an image field with extra uploaded data
- * 
+ *
  * @param   $field
  * @param   $item
  * @param   $showdata
@@ -230,14 +258,21 @@ function  ewz_display_image_field_with_data( $field, $item, $show_data ){
     return $str;
 }
 
-     
+
 function ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $item_id = NULL )
 {
     assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( in_array( $field->field_type, array( 'str', 'opt', 'img' ) ) );
-    assert( is_string( $savedval ) || $savedval === null );
+    assert( in_array( $field->field_type, array( 'str', 'opt', 'img', 'rad', 'chk' ) ) );
+    assert( is_int( $savedval ) ||  is_string( $savedval ) || $savedval === null );
     assert( is_null( $item_id ) || Ewz_Base::is_pos_int( $item_id ) );
+
+    if( $field->field_type == 'rad' ){
+        if( !$savedval && $rownum === 0 ){
+            $savedval = 1;
+        }
+        $rownum = 0;        // only one return value, rdata[] won't be handled properly
+    }
 
     if( !is_null( $item_id ) ){
         $name = "rdata[$rownum][" . $item_id . "]";
@@ -250,6 +285,10 @@ function ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $i
     case 'str': $display = ewz_display_str_followup_field( $name, $webform_id, $savedval, $field );
             break;
     case 'opt': $display = ewz_display_opt_followup_field( $name, $webform_id, $savedval, $field );
+            break;
+    case 'rad': $display = ewz_display_rad_followup_field( $name, $webform_id, $savedval, $field );
+            break;
+    case 'chk': $display = ewz_display_chk_followup_field( $name, $webform_id, $savedval );
             break;
     case 'img': throw new EWZ_Exception( "A followup field may not be of Image type");
             break;
@@ -273,7 +312,7 @@ function ewz_display_str_followup_field( $name, $webform_id, $savedval, $field )
 {
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( is_string( $name ) );
-    assert( is_string( $savedval ) );
+    assert( is_string( $savedval ) ||  Ewz_Base::is_nn_int( $savedval ) );
     assert( Ewz_Base::is_nn_int( $field->fdata['fieldwidth'] ) );
 
     $ename = esc_attr( $name );
@@ -285,6 +324,62 @@ function ewz_display_str_followup_field( $name, $webform_id, $savedval, $field )
                    '" value="' . esc_attr( $savedval ) .
             '">';
 }
+
+
+
+/**
+ * Return the html for displaying a radio button field
+ *
+ * @param   string  $name        js name of field
+ * @param   int     $webform_id
+ * @param   string  $savedval    data currently stored for the field
+ * @param   array   $field       field info
+ * @return  string   -- the html
+ */
+function ewz_display_rad_followup_field( $name, $webform_id, $savedval, $field )
+{
+    assert( is_string( $name ) );
+    assert( Ewz_Base::is_pos_int( $webform_id ) );
+    assert( in_array( $savedval, array( null, 1, 0 ) ) );
+    assert( is_object( $field ) );
+
+    $ename = esc_attr( $name );
+    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
+
+    return '<input type="radio"  name="radioFollowup"' .
+                   ' id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
+                   ' value="' . $ename .'" ' .
+                   ($savedval ? ' checked="checked" ' : '') .
+            '>';
+}
+
+
+
+/**
+ * Return the html for displaying a checkbox input field
+ *
+ * @param   string  $name        js name of field
+ * @param   int     $webform_id
+ * @param   string  $savedval    data currently stored for the field
+ * @param   array   $field       field info
+ * @return  string   -- the html
+ */
+function ewz_display_chk_followup_field( $name, $webform_id, $savedval )
+{
+    assert( Ewz_Base::is_pos_int( $webform_id ) );
+    assert( is_string( $name ) );
+    assert( in_array( $savedval, array( null, 1, 0 ) ) );
+
+    $ename = esc_attr( $name );
+
+    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
+      return '<input type="checkbox"  name="' . $ename .
+                   '" id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
+          ($savedval ? ' checked="checked" ' : '') .
+            '>';
+}
+
+
 
 /**
  * Return the html for displaying a single option field

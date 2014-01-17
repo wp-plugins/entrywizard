@@ -113,6 +113,7 @@ class Ewz_Setup
                                               user_id bigint(20) NOT NULL,
                                               webform_id smallint(6) NOT NULL,
                                               last_change datetime NOT NULL,
+                                              upload_date datetime NOT NULL,
                                               item_files mediumtext NOT NULL,
                                               item_data longtext NOT NULL
                                                                );";
@@ -206,7 +207,6 @@ class Ewz_Setup
         if ( $wpdb->get_var( "SHOW TABLES LIKE '$layout_table'" ) == $layout_table ) {
             error_log( "EWZ: dropping $layout_table" );
             $wpdb->query( "DROP Table " . EWZ_LAYOUT_TABLE );
-            $found = $wpdb->get_var( "SHOW TABLES LIKE '$layout_table'" );
         }
     }
 
@@ -650,6 +650,7 @@ class Ewz_Setup
                                          array( 'user_id'     => $user_id,
                                                 'webform_id'  => $webform_id,
                                                 'last_change' => current_time( 'mysql' ),
+                                                'upload_date' => current_time( 'mysql' ),
                                                 'item_files'  => serialize( $files ),
                                                 'item_data'   => serialize( $data )
                                                           )
@@ -669,7 +670,7 @@ class Ewz_Setup
 
     }
 
-    
+
     private static function set_initial_permissions()
     {
         $user = wp_get_current_user();

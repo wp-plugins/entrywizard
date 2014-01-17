@@ -5,28 +5,20 @@ require_once( EWZ_PLUGIN_DIR . "classes/validation/ewz-input.php");
 
 class Ewz_Followup_Input extends Ewz_Input
 {
-    protected $field;       // the followup field, should have the same properties for all webforms
-                            
-
-    function __construct( $form_data, $in_files, $in_field ) {
+    protected $fdata;         
+                                                           
+    function __construct( $form_data, $followup_data ) {
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
-        assert( is_array( $in_files ) );
-        assert( is_object( $in_field ) );
+        assert( is_array( $followup_data ) );
 
-        $this->field = $in_field;
-
-        // Set the rdata value for the image upload fields
-        // Needs to be done before validation
-        if ( count( $in_files ) > 0 ) {
-            foreach ( $in_files['rdata']['name'] as $row => $uploaded_fileinfo ) {
-                foreach ( $uploaded_fileinfo as $field_id => $filename ) {
-                    if ( $filename ) {
-                        $this->input_data['rdata'][$row][$field_id] = 'ewz_img_upload';
-                    }
-                }
-            }
-        }
+        $this->fdata = $followup_data['fdata'];
+        $this->required = $followup_data['required'];
+        $this->field_type = $followup_data['field_type'];
+        $this->field_header = $followup_data['field_header'];
+        $this->Xmaxnums = $followup_data['Xmaxnums'];
+        $this->chkmax = isset( $followup_data['fdata']['chkmax'] ) ?  $followup_data['fdata']['chkmax'] : 0;
+        
         $this->rules = array(
                              'ewzuploadnonce'   => array( 'type' => 'unonce', 'req' =>  true,  'val' => '' ),
                              '_wp_http_referer' => array( 'type' => 'string', 'req' =>  false, 'val' => '' ),
@@ -35,33 +27,57 @@ class Ewz_Followup_Input extends Ewz_Input
         $this->validate();
     }
 
+    /**
+     * Validate "rdata" input 
+     * 
+     * @param   $value  input value, may be changed by function
+     * @return  true  ( exception raised if not valid )
+     */
     protected function v_rdata( &$value, $arg ){
         assert( is_array( $value ) );
         assert( $arg == '' );
         $optcounts = array();
-        foreach ( $value as $rownum => $input_row ) {
-            foreach ( $input_row as $item_id => $val ) {
-                if ( !$val && $this->field->required ) {
+        $chkcount = array();
+        foreach ( $value as $rownum => &$input_row ) {
+            foreach ( $input_row as $item_id => &$val ) {
+                if ( ( !isset($val) || $val === '' ) && $this->required ) {
                     $rownum1 = $rownum + 1;
-                    throw new EWZ_Exception( "Row $rownum1: " . $this->field->field_header . ' is required.' );
+                    throw new EWZ_Exception( "Row $rownum1: " . $this->field_header . ' is required.' );
                 }
-                $field_id = $this->field->field_id;
-                switch ( $this->field->field_type ) {
+                switch ( $this->field_type ) {
                 case 'str':
-                        self::validate_str_data( $this->field->fdata, $val );  // may change 2nd arg
+                        self::validate_str_data( $this->fdata, $val );  // may change 2nd arg
                         break;
                 case 'opt':
-                        if( !isset( $optcounts[$field_id][$val] ) ){
-                            $optcounts[$field_id][$val] = 1;
+                        if( !isset( $optcounts[$val] ) ){
+                            $optcounts[$val] = 1;
                         } else {
-                            ++$optcounts[$field_id][$val];
+                            ++$optcounts[$val];
                         }
-                        self::validate_opt_data( $this->field, $val, $optcounts[$field_id][$val] );
+                        $this->validate_opt_data( $this->Xmaxnums, $val, $optcounts[$val] );
                         break;
+                case 'rad':
+                    if( !isset( $chkcount[$val] ) ){
+                        $chkcount[$val] = 0;
+                    }
+                    if( $val ){
+                        ++$chkcount[$val];                            
+                    }
+                    self::validate_rad_data( $value[$rownum][$item_id], $chkcount[$val] );  // may change 1st arg
+                    break;
+                case 'chk':
+                    if( !isset( $chkcount[$val] ) ){
+                        $chkcount[$val] = 0;
+                    }
+                    if( $val == 'on' ){
+                        ++$chkcount[$val];
+                    }
+                    self::validate_chk_data(  $this->chkmax, $value[$rownum][$item_id], $chkcount[$val] );  // may change it's input
+                    break;
                 default:
-                    throw new EWZ_Exception( "Invalid field type " . $this->field->field_type );
+                    throw new EWZ_Exception( "Invalid field type " . $this->field_type );
                 }
-            }
+           }
             $bad_data = '';
             if ( $bad_data ) {
                 throw new EWZ_Exception( "Restrictions not satisfied: $bad_data" );
@@ -99,6 +115,7 @@ class Ewz_Followup_Input extends Ewz_Input
         }
         return true;
     }
+
    /**
      * Validate option input
      *
@@ -108,12 +125,11 @@ class Ewz_Followup_Input extends Ewz_Input
      * @param   string  $val  input from a select list
      * @return  $val
      */
-    private static function validate_opt_data( $field, $val, $optcount )
+    private function validate_opt_data( $Xmaxnums, $val, $optcount )
     {
         assert( is_string( $val ) );
-        assert( is_object( $field ) );
         assert( Ewz_Base::is_pos_int( $optcount ) );
-        assert( Ewz_Base::is_pos_int( $field->field_id ) );
+        assert( is_array( $Xmaxnums ) );
 
         // if the item was required, it would be caught earlier, so allow blank here
         if( !$val ){
@@ -123,16 +139,56 @@ class Ewz_Followup_Input extends Ewz_Input
             throw new EWZ_Exception( "Invalid format for option input" );
         }
 
-        if ( array_key_exists( $val, $field->Xmaxnums ) && $field->Xmaxnums[$val] ) {
-            if ( intval($field->Xmaxnums[$val]) < $optcount ) {
-                throw new EWZ_Exception( "Too many '$val' values for $field->field_header"  );
+        if ( array_key_exists( $val, $Xmaxnums ) && $Xmaxnums[$val] ) {
+            if ( intval($Xmaxnums[$val]) < $optcount ) {
+                throw new EWZ_Exception( "Too many '$val' values for $this->field_header"  );
             }
         }
-        foreach ( $field->fdata['options'] as $option ) {
+        foreach ( $this->fdata['options'] as $option ) {
             if ( $val == $option['value'] ) {
                 return true;
             }
         }
-        throw new EWZ_Exception( "Invalid $field->field_header value $val");
+        throw new EWZ_Exception( "Invalid $this->field_header value $val");
+    }
+
+    /**
+     * Validate radio button data
+     * 
+     * @param    $val   input data, should be boolean type, gets changed to 0 or 1
+     * @return   boolean true,  exception if data not valid
+     */
+    private static function validate_rad_data(  &$val, $count ){
+        assert( is_string( $val ) );
+        assert( Ewz_Base::is_nn_int( $count ) );
+        if( !self::bool( $val, '' ) ){               // changes $val to int 0 or 1
+            throw new EWZ_Exception( "Invalid radio button input" );
+        }
+        if ( 1 < $count ) {
+            throw new EWZ_Exception( "More than one item checked"  );
+        }
+        return true;       
+    }
+
+    /**
+     * Validate checkbox data
+     * 
+     * @param    $chkmax max number of checked items allowed ( ignored if 0 )
+     * @param    $val   input data, should be boolean type, gets changed to 0 or 1
+     * @return   boolean true,  exception if data not valid
+     */
+    private static function validate_chk_data( $chkmax, &$val, $count ){
+        assert( is_string( $val ) );
+        assert( Ewz_Base::is_nn_int( $chkmax ) );
+        assert( Ewz_Base::is_nn_int( $count ) );
+        if( !self::bool( $val, '' ) ){               // changes $val to int 0 or 1
+            throw new EWZ_Exception( "Invalid checkbox input" );
+        }
+        if ( isset( $chkmax ) && $chkmax  ) {
+            if ( intval( $chkmax ) < $count ) {
+                throw new EWZ_Exception( "Too many items checked"  );
+            }
+        }     
+        return true;       
     }
 }

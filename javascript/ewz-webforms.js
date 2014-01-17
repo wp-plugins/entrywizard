@@ -302,7 +302,7 @@ function upload_date_str( evnum ){
 
         str +=   '<BR><TABLE class="ewz_field_opts">';
         str +=   '       <TR>';
-        str +=   '          <TD>Uploaded during the last ';
+        str +=   '          <TD>Initial upload occurred during the last &nbsp;';
         str +=   '             <SELECT id="uploaddays' + evnum  + '" name="uploaddays">';
         str +=   '                 <OPTION value="">  </OPTION>';
         for( day=1; day<=100; ++day ){
@@ -363,7 +363,7 @@ function delete_webform(button, itemcount){
 
     thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
     id = thediv.find('input[name="webform_id"]').first().attr("value");
-    if( '' === id || null === id || 'undefined' === typeof(id) ){
+    if( '' === id || null === id || 'undefined' === typeof id ){
         thediv.remove();
         return;
     }
@@ -444,26 +444,25 @@ function add_new_webform(){
 /* Validation */
 function ewz_check_csv_input(file_input_id){
     'use strict';
-    if(typeof window.FileReader !== 'undefined'){
+    var  theFile = document.getElementById(file_input_id).files[0],
+          mb;
+    if(theFile !== null){
 
-        var reader = new FileReader(),
-            theFile = document.getElementById(file_input_id).files[0],
-            mb;
-        if(theFile !== null){
-            // get selected file element
-            mb =  Math.floor( theFile.size / 1048576 );
-            if( mb > ewzG.maxUploadMb ){
-
-                alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
-                return false;
-            }
-            var theType = theFile.type;
-            if( theType != "text/csv" ){
-                alert( theFile.name + ': File type: ' +  theType + '.  Sorry, the file must be of type "text/csv"' );
-                return false;
-            }
+        // get selected file element
+        mb =  Math.floor( theFile.size / 1048576 );
+        if( mb > ewzG.maxUploadMb ){
+            alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
+            return false;
+        }
+        var theType = theFile.type;
+        var theName = theFile.name;
+        if( ( theType.length > 0 && theType != "text/csv" ) ||
+            ( theName.length > 0 && !/\.csv$/.test(theName)  ) ){
+            alert( theFile.name + ': Found filename: ' +  theName + ', detected type: ' + theType + '.  Sorry, the file must be of type "text/csv"' );
+            return false;
         }
     }
+    return true;
 }
 
 function ewz_check_webform_input(form, do_js_check){

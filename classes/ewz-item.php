@@ -17,8 +17,11 @@ class Ewz_Item extends Ewz_Base {
     public $user_id;
     public $webform_id;
     public $last_change;
+    public $upload_date;
     public $item_files;
     public $item_data;
+
+    public $layout_id;
 
     // Keep list of db data names/types as a convenience for iteration and so
     // we can easily add new ones. Dont include item_id here for safety
@@ -26,6 +29,7 @@ class Ewz_Item extends Ewz_Base {
         'user_id' => 'integer',
         'webform_id' => 'integer',
         'last_change' => 'string',
+        'upload_date' => 'string',
         'item_files' => 'array',
         'item_data' => 'array',
     );
@@ -37,6 +41,15 @@ class Ewz_Item extends Ewz_Base {
                 "SELECT count(*)  FROM " . EWZ_ITEM_TABLE .
                 " WHERE webform_id = %d", $webform_id ) );
         return (int)$count;
+    }
+
+    /**
+     * Deal with upgrade where last_change was previously the only date 
+     * 
+     */
+    public static function set_upload_date() {
+        global $wpdb;
+        $wpdb->query("UPDATE " . EWZ_ITEM_TABLE . " SET upload_date = last_change WHERE upload_date IS NULL" );
     }
 
     /**
@@ -66,24 +79,6 @@ class Ewz_Item extends Ewz_Base {
         return $items;
     }
 
-    /**
-     * Return an array of the filepaths of all the image files attached
-     * to any item on the database
-     *
-     * @return  array of pathnames
-     */
-    public static function get_all_item_files() {
-        global $wpdb;
-        $file_list = $wpdb->get_col( "SELECT item_files FROM " . EWZ_ITEM_TABLE );
-        $fname_list = array( );
-        foreach ( $file_list as $item_file ) {
-            $item_file_arr = unserialize( $item_file );
-            foreach ( $item_file_arr as $filedata ) {
-                array_push( $fname_list, $filedata['fname'] );
-            }
-        }
-        return $fname_list;
-    }
 
     /**
      * Return those members of the input items list that match the $field_opts list of values.
@@ -106,6 +101,7 @@ class Ewz_Item extends Ewz_Base {
                 } else {
                     $itemval = NULL;
                 }
+
                 switch ( $optval ) {
                     case "~*~":           // anything
                         break;
@@ -128,7 +124,7 @@ class Ewz_Item extends Ewz_Base {
             array_push( $out_items, $item );
         }
 
-        // only want those modified in the last 'uploaddays' days
+        // only want those uploaded in the last 'uploaddays' days
         if ( isset( $extra_opts['uploaddays'] ) && ( $extra_opts['uploaddays'] > 0 ) ) {
             $days = $extra_opts['uploaddays'];
             $out_items = self::only_recent( $out_items, $days );
@@ -136,7 +132,7 @@ class Ewz_Item extends Ewz_Base {
         return $out_items;
     }
 
-    /* Return only those members of the $items list that were changed within
+    /* Return only those members of the $items list that were uploaded within
      * the last $days days
      */
     static private function only_recent( $items, $days ) {
@@ -146,9 +142,11 @@ class Ewz_Item extends Ewz_Base {
         $filtered = array( );
         $seconds = 3600 * 24 * $days;
         foreach ( $items as $item ) {
-            $changed = date_parse( $item->last_change );
-            $changedtime = mktime( 0, 0, 0, $changed['month'], $changed['day'], $changed['year'] );
-            if ( ( time() - $changedtime ) < $seconds ) {
+            // upload_date added in 0.9.9 -- use last_change if no value
+            $uploaded = date_parse( empty( $item->upload_date ) ?  $item->last_change : $item->upload_date );
+            $uploadedtime = mktime( 0, 0, 0, $uploaded['month'], $uploaded['day'], $uploaded['year'] );
+            
+            if ( ( time() - $uploadedtime ) < $seconds ) {
                 array_push( $filtered, $item );
             }
         }
@@ -207,6 +205,8 @@ class Ewz_Item extends Ewz_Base {
         } else {
             $this->set_data( $dbitem );
         }
+        $webform = new Ewz_Webform( $this->webform_id );
+        $this->layout_id = $webform->layout_id;
     }
 
     /**
@@ -221,21 +221,14 @@ class Ewz_Item extends Ewz_Base {
             $data['item_id'] = 0;
         }
         $this->set_data( $data );
+        $webform = new Ewz_Webform( $this->webform_id );
+        $this->layout_id = $webform->layout_id;
         $this->check_errors();
     }
 
-    /**
-     * Return the layout id for the item's webform
-     *
-     * @return  int
-     */
-    protected function get_layout_id() {
-        $webform = new Ewz_Webform( $this->webform_id );
-        return $webform->layout_id;
-    }
 
     protected function get_num_items_allowed(){
-        $layout = new Ewz_Layout( $this->get_layout_id() );
+        $layout = new Ewz_Layout( $this->layout_id);
         return $layout->max_num_items;
     }
 
@@ -262,7 +255,33 @@ class Ewz_Item extends Ewz_Base {
         if ( !Ewz_Webform::is_valid_webform( $this->webform_id ) ) {
             throw new EWZ_Exception( 'No such webform', $this->webform_id );
         }
+        foreach( $this->item_data as $field_id => $field_data ){
+            if( $field_id != 'attachedto'){
+                if( !Ewz_Field::is_valid_field( $field_id, $this->layout_id ) ){
+                    throw new EWZ_Exception( "No such field for the layout", "field $field_id, layout " . $this->layout_id );
+                }
+            }
+        }
     }
+
+    /******************** Utilities  *******************************/
+    /**
+     * Record the page each image was attached to
+     */
+    public function record_attachment( $post_id ){
+        assert( Ewz_Base::is_pos_int( $post_id ) );
+        $title =  get_the_title( $post_id );
+        if( isset( $this->item_data['attachedto'] ) ){
+            $this->item_data['attachedto'] .= ', ';
+        } else {
+            $this->item_data['attachedto'] = '';
+        }
+        $this->item_data['attachedto'] .= $title;
+        $this->save();
+    }
+
+
+
 
     /* * ******************  Database Updates ********************* */
 
@@ -279,7 +298,6 @@ class Ewz_Item extends Ewz_Base {
     public function set_uploaded_info( $data ) {
         assert( is_array( $data ) );
         $ddata = $data;
-        $layout_id = $this->get_layout_id();
         // $data is expected to have the following structure:
         // field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ]
         $row = 0;
@@ -292,7 +310,7 @@ class Ewz_Item extends Ewz_Base {
                 throw new EWZ_Exception( "Missing field identifier in row $row of .csv file" );
             }
             $field_id = Ewz_Field::field_id_from_ident_arr(
-                    array( 'layout_id' => $layout_id, 'field_ident' => $field_ident ) );
+                    array( 'layout_id' => $this->layout_id, 'field_ident' => $field_ident ) );
 
             $title = array_shift( $ddata );
             if ( !isset( $title ) ) {
@@ -306,12 +324,25 @@ class Ewz_Item extends Ewz_Base {
             if ( !isset( $content ) ) {
                 throw new EWZ_Exception( "Missing field content in row $row of .csv file" );
             }
-            // sanitize_text_field checks for invalid UTF-8, converts single < characters to entities,
-            // *** strips all html tags ***, removes line breaks, tabs and extra white space, strips octets.
-            $this->item_data[$field_id]['ptitle'] = sanitize_text_field( $title );
-            $this->item_data[$field_id]['pexcerpt'] = sanitize_text_field( $excerpt );
-            $this->item_data[$field_id]['pcontent'] = sanitize_text_field( $content );
+            // wp_kses checks for invalid UTF-8, converts single < characters to entities,
+            // *** strips all html tags except those in $allowed_html***,
+            // removes other line breaks, tabs and extra white space, strips octets.
 
+            // what wp allows in comments, plus <br>
+            global $allowedtags; 
+
+            $allowed_html = $allowedtags;
+            $allowed_html['br'] = array();   
+
+            // this is needed because the strings are single-quoted in some javascript
+            $title = str_replace( "'", '&#039;', $title);
+            $excerpt = str_replace( "'", '&#039;', $excerpt);
+            $content = str_replace( "'", '&#039;', $content);
+
+            $this->item_data[$field_id]['ptitle']   = wp_kses( $title,   $allowed_html );
+            $this->item_data[$field_id]['ptitle']   = wp_kses( $title,   $allowed_html );
+            $this->item_data[$field_id]['pexcerpt'] = wp_kses( $excerpt, $allowed_html );
+            $this->item_data[$field_id]['pcontent'] = wp_kses( $content, $allowed_html );
         }
         $this->save();
     }
@@ -335,7 +366,6 @@ class Ewz_Item extends Ewz_Base {
             throw new EWZ_Exception( 'Insufficient permissions to edit item',
                     "item $this->item_id in webform $this->webform_id" );
         }
-
         //**NB: need to stripslashes *before* serialize, otherwise character counts are wrong
         // WP automatically adds slashes for quotes
         $data = stripslashes_deep( array(
@@ -357,12 +387,12 @@ class Ewz_Item extends Ewz_Base {
 
         $datatypes = array( '%d', '%d', '%s', '%s' );
         if ( $this->item_id ) {
-            $rows = $wpdb->update( EWZ_ITEM_TABLE,
+           $rows = $wpdb->update( EWZ_ITEM_TABLE,
                     $data,      array( 'item_id' => $this->item_id ),
                     $datatypes, array( '%d' ) );
 
             if ( ( false === $rows ) || ( $rows > 1 ) ) {
-                throw new EWZ_Exception( 'Problem updating item ' . basename( $item_file['fname'] ) . ', please reload the page to see your current status.' ,  
+                throw new EWZ_Exception( 'Problem updating item, please reload the page to see your current status.' ,
                                          $this->item_id );
             }
             // only alter last_change if there really was a change
@@ -373,6 +403,7 @@ class Ewz_Item extends Ewz_Base {
                         array( '%s' ),
                         array( '%d' ) );
             }
+
         } else {
             $errors = '';
             $num = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_ITEM_TABLE .
@@ -381,10 +412,10 @@ class Ewz_Item extends Ewz_Base {
             if( $this->get_num_items_allowed() < ( $num + 1 ) ){
                 foreach( $this->item_files as $item_file ){
                     $errors .= $this->delete_file( $item_file );
-                }                
+                }
                 throw new EWZ_Exception( 'Too many items uploaded, no data saved for ' . basename( $item_file['fname'] ) . "\n", $errors );
             } else {
-                $data['last_change'] = current_time( 'mysql' );
+                $data['upload_date'] = current_time( 'mysql' );
                 array_push( $datatypes, '%s' );
 
 
@@ -394,7 +425,8 @@ class Ewz_Item extends Ewz_Base {
                     foreach( $this->item_files as $item_file ){
                         $errors .= $this->delete_file( $item_file );
                     }
-                    throw new EWZ_Exception( 'Sorry, there was a problem creating the item '. basename( $item_file['fname'] ) . ", please refresh the page to see your current status.\n", $errors );
+                    throw new EWZ_Exception( 'Sorry, there was a problem creating the item '. basename( $item_file['fname'] ) . 
+                                             ", please refresh the page to see your current status.\n", $errors );
                 }
             }
         }
@@ -438,9 +470,9 @@ class Ewz_Item extends Ewz_Base {
 
     /**
      * Delete a file and its thumbnail
-     * 
-     * @param   $item_file  array   
-     * @return  
+     *
+     * @param   $item_file  array
+     * @return
      */
     public function   delete_file( $item_file ){
         assert( is_array( $item_file ) );

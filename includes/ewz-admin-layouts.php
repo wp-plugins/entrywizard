@@ -119,6 +119,9 @@ function ewz_layout_menu()
                                     "maxstringchars" => EWZ_MAX_STRING_LEN,
                                     "ss_col_fmt" => "-1" );
         $ewzG['empty_opt'] = array( "value" => "", "label" => "", "maxnum" => 0 );
+        $ewzG['empty_rad'] = array( "checked" => false);
+        $ewzG['empty_chk'] = array( "checked" => false,  "maxnum" => 0 );
+
         $ewzG['helpIcon'] = plugins_url( 'images/help.png', dirname( __FILE__ ) );
         $ewzG['maxUploadMb'] = EWZ_MAX_SIZE_MB;
         $ewzG['maxNumitems'] = EWZ_MAX_NUMITEMS;
@@ -185,8 +188,8 @@ function ewz_layout_menu()
         <div id="ewz_layouts" class="ewz-menu-layouts ewz-menu-group">
             <h2>EntryWizard Layout Management</h2>
             <div class="ewz_inotes">
-                <b>Notes:</b>
-                All items are required.
+                <b>Notes: </b>
+                Items are required unless marked as optional.
                 <br />Deletions that ask for a confirmation are saved immediately.
                 All other changes are saved when you click "Save Changes".
                 <br />Restrictions cannot be created until any changes to fields have been saved.
@@ -227,7 +230,7 @@ function ewz_layout_menu()
 
             <!-- HELP POPUP layout -->
             <div id="layout_help" class="wp-dialog" >
-                <p>The "name" appears on the menu of layouts on the "Webforms" page.
+                <p>The "name" will appear on the menu of layouts on the "Webforms" page.
                 </p>
 
                 <p>The shortcode "ewz_show_webform" generates a webform with N rows, where
@@ -235,13 +238,14 @@ function ewz_layout_menu()
                 </p>
 
                 <p>If some values in the "Maximum number of items" dropbox are disabled, it it because
-                   you have set a larger maximum in one of your option fields.</p>
+                   you have set a larger maximum for one of the options in a drop-down field.</p>
+
                 <p>Note that your environment or your web hosting company puts three limits on
-                    uploaded items:<br>
-                    <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?></li>
+                    uploaded items.  These have been detected to be:<br>
+                    <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?>M</li>
 
                         <li>The total size of the whole upload including all items may not be bigger than
-                            <?php print $ewzG['maxTotalMb']; ?></li>
+                            <?php print $ewzG['maxTotalMb']; ?>M</li>
 
                         <li>The maximum number of items that may be uploaded simultaneously is
                             <?php print $ewzG['maxNumitems']; ?></li>
@@ -253,8 +257,7 @@ function ewz_layout_menu()
                 </p>
 
                 <p>In addition, Wordpress currently is able to handle only the following image types:
-                    <ol><li>.jpg</li>
-                        <li>.jpeg</li>
+                    <ol><li>.jpg/.jpeg</li>
                         <li>.png</li>
                         <li>.gif</li>
                     </ol>
@@ -263,23 +266,28 @@ function ewz_layout_menu()
 
             <!-- HELP POPUP fields -->
             <div id="field_help" class="wp-dialog" >
-                <p>The shortcode "ewz_show_webform" generates a webform with a column for each field
-                    you create.  Each field may be either a text input, an image upload or a
-                    drop-down selection.
+                <p>The <b>shortcode</b> "ewz_show_webform" generates a webform.  The form appears as a table with
+                     the number of rows equal to the "maximum number of items" set above, and with a column 
+                     for each field you create. <br>
+                     Each field may be a text input, an image upload, a drop-down selection, a checkbox or
+                     a radio button.
                 </p>
-                <p>The order of the fields in the webform may be changed by dragging the "postboxes".
-                    ( To move a postbox to the top you may have to drag the top one down, instead)
+                     <p>The <b>order</b> of the fields in the webform may be changed by dragging the "postboxes", which
+                     are the long bars containing the field titles, up or down.
+                    (To move a postbox to the top you may have to drag the top one down, instead)
                 </p>
-                <p> ** Too many fields, or fields that are too wide, may make a form that is too wide
+                <p> <i><b>Too many fields</b>, or fields that are too wide</i>, may make a form that is too wide
                     to display on the viewer's monitor.  In that case, the form will display with a
-                    scrollbar at the bottom, which is not very user-friendly.  When designing your
-                    layout, keep testing the view with different window widths and font sizes.
+                    scrollbar at the bottom, which is not very user-friendly. <br>
+                    The width available for the form depends on the Wordpress theme. Some themes make it 
+                    easy to change the width, others may require some custom coding to do it.<br>
+                    When designing your layout, keep testing the view with different window widths and font sizes.
                     If possible, view it on different monitors with different resolutions.
                 </p>
-                <p> If a restriction has been created that forbids a certain combination of field
+                <p> If a <b>restriction</b> has been created that forbids a certain combination of field
                     values, the field may no longer be deleted, and its type may no longer be changed.
                     If it is a drop-down field with a restriction on one or more options, those options
-                    may not be deleted, and their values may not be changed.
+                    may not be deleted, and their values may not be changed.<br>
                     Items that may no longer be changed for this reason are outlined in red.
                 </p>
             </div>
@@ -324,17 +332,22 @@ function ewz_layout_menu()
 
             <!-- HELP POPUP field type -->
             <div id="ftype_help" class="wp-dialog" >
-                <p>You may select the type of input you are asking for.
-                </p>
-                <p>Currently, this may be one of:
+                <p>Each field contains one of the following types of user input:
                     <ol>
-                        <li><b>A text input:</b> the user may input any piece of text,
+                        <li><b>A text input:</b> The user may input any ( single-line ) piece of text,
                             subject only to the length restrictions you set</li>
-                        <li><b>An image file:</b> the user will be asked to select a file from their
+                        <li><b>An image file:</b> The user will be asked to select a file from their
                             local machine.  You may restrict various image parameters, such a size
                             and dimensions.</li>
-                        <li><b>A drop-down option list:</b> you choose the values that appear.
-                            The user must select one of these values.</li>
+                        <li><b>A drop-down option list:</b> You choose the values that appear.
+                            The user must select one of these values.
+                            Optionally, you may set a maximum on the number of items that may have a 
+                            particular value selected </li>
+                        <li><b>A checkbox:</b> 
+                            The user may either check the box or leave it blank.</li>
+                        <li><b>A radio button:</b>
+                            The user may "check" the button for just one item, no more. 
+                            Clicking the button for a second item automatically unchecks the first.</li>
                     </ol>
                 </p>
             </div>
@@ -363,8 +376,7 @@ function ewz_layout_menu()
             <!-- HELP POPUP image type -->
             <div id="imgtype_help" class="wp-dialog" >
                 <p>Wordpress currently is able to handle only the following image types:
-                    <ol><li>.jpg</li>
-                        <li>.jpeg</li>
+                    <ol><li>.jpg/.jpeg</li>
                         <li>.png</li>
                         <li>.gif</li>
                     </ol>
@@ -385,7 +397,7 @@ function ewz_layout_menu()
 
             <!-- HELP POPUP spreadsheet column -->
             <div id="sscol_help" class="wp-dialog" >
-                <p><b>If you wish the data in this column to appear in the spreadsheet, specify here
+                <p>If you wish the data in this column to appear in the spreadsheet, specify here
                      the column in which it is to appear. If you select 'None', the item will not appear
                      in the spreadsheet at all.
                 </p>
@@ -397,7 +409,9 @@ function ewz_layout_menu()
             <!-- HELP POPUP required -->
             <div id="req_help" class="wp-dialog" >
                 <p>Check this box if you wish to insist that the field is filled out by everyone.
-                    Leave it unchecked if the field is optional.
+                   Leave it unchecked if the field is optional.<br>
+                    ( The box is disabled for radiobutton and checkbox fields, since there is only
+                      one possible way to fill them out. )
                 </p>
             </div>
 
@@ -463,6 +477,11 @@ function ewz_layout_menu()
                     lower-case characters )
                 </p>
             </div>
+            <!-- HELP POPUP check box max-->
+            <div id="chkmax_help" class="wp-dialog" >
+                <p>The maximum number of items that may have this checkbox checked.
+                </p>
+            </div>
 
             <!-- HELP POPUP extra info -->
             <div id="xtra_help" class="wp-dialog" >
@@ -470,19 +489,20 @@ function ewz_layout_menu()
                     other items of information in the spreadsheet that you download.
                 </p>
                 <p>The source of the data is shown in parentheses.
-                  <ul><li>"WP User data" is information you control via the Users menu </li>
-                      <li>"EWZ Item data" is information about an item stored by this plugin but not
-                          actually set by the user</li>
-                     <li>"EWZ Webform data" is set by you on the WebForms page, except for the WP ID,
-                         which is a numeric identifier created by Wordpress</li>
-                     <li>"Admin Uploaded data" is data that you may optionally upload as a .csv file
-                         via the WebForms page.  It is blank if you did not upload anything for the
-                         item</li>
-                     <li>"Custom data" is again optional. Wordpress stores some information about a
+                     <ul><li><b>"WP User data"</b> is information you control via the Wordpress Users menu. </li>
+                      <li><b>"EWZ Item data"</b> is information about an item stored by this plugin but not
+                          actually set by the user.<br>
+                          It may include data uploaded by the administrator via a .csv file
+                          ( See the Data Management area on the WebForms page ).<br>
+                          The WP Item ID is a numeric identifier created by Wordpress.  You will need this
+                          if you wish to upload such a .csv file.</li>
+                     <li><b>"EWZ Webform data"</b> is mainly set by the administrator on the WebForms page. 
+                          The WP Webform ID is a numeric identifier created by Wordpress.</li>
+                     <li><b>"Custom data"</b> is optional. Wordpress stores some information about a
                          user, but there are plugins, like CIMI User Extra Fields,  that allow you
-                         to add more information.
+                         to add more information.<br>
                          If you have such a plugin, and if it provides a function to access the
-                         information, you may tell EntryWizard about it in the "ewz-custom-data.php"
+                         information, you may tell EntryWizard about it -- see the "ewz-extra.txt"
                          file.</li>
                   </ul>
                </p>

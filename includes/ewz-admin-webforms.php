@@ -28,12 +28,13 @@ function ewz_process_uploaded_csv( $webform_id )
        return( "No uploaded files");
    }
    $csvfile_data = $_FILES['csv_data'];
-
    $file_tmp_name = $csvfile_data['tmp_name'];
 
-   if( 'text/csv' != $csvfile_data['type'] ){
-       throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
-   }
+   //Browsers don't always get the type right
+   //if( 'text/csv' != $csvfile_data['type'] ){
+   //    throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
+   //}
+
    if( $csvfile_data['error'] ){
      throw new EWZ_Exception( 'Failed to upload .csv file' );
    }
@@ -237,20 +238,27 @@ function ewz_webforms_menu()
 
         <!-- HELP POPUP -->
         <div id="shortcode_help" class="wp-dialog" >
+         <h2>The ewz_show_webform shortcode</h2>
          <p>The shortcode <b>&nbsp; &#91;ewz_show_webform &nbsp; identifier="xxx"&#93;</b> &nbsp; inserts the 
-            webform identified by "xxx" into your page.</p>
+            webform with identifier "xxx" into your page. 
+           (You set the identifier when you create the webform using this page.)</p>
+             <hr>
+         <h2>The ewz_followup shortcode</h2>
          <p>It is also possible to display a read-only summary of all the  data uploaded 
             by the user, possibly in several different webforms, using the shortcode<br>
-            <b>&#91;ewz_followup &nbsp; webforms="ident1,ident2,ident3" &nbsp; show="excerpt,content"&#93;</b>
+            <b>&#91;ewz_followup &nbsp; idents="ident1,ident2,ident3" &nbsp; show="excerpt,content"&#93;</b>
           </p>
          <p>This will display, in read-only form, all data uploaded by the user via the webforms
              with identifiers "ident1","ident2" or "ident3".  If the administrator uploaded extra  
-            data ( using the upload facility in the Data Management area of the webforms page ), 
+            'title', 'excerpt' and 'content' data 
+            ( using the upload facility in the Data Management area of the webforms page ), 
             the uploaded excerpt and content data will be also be displayed.</p>
-         <p><i>If the webforms all contain the same special field with identifier "followupQ" </i>,
-             the followup display will become a form with this field as an input for each item.
+             <hr>
+         <p><i>If the webforms all use a layout that contains the same special field with identifier "followupQ" </i>,
+             the followup display will become a form with this one field as an input for each item.
             Data entered in it will be stored and may be downloaded as usual. </p>
           <p>A "followupQ" field may not be of "Image File" type.</p> 
+          <p>A "followupQ" field will not be displayed if the "ewz_show_webform" shortcode is used.</p> 
           <p>Restrictions will not be enforced on followup fields.</p>
         </div>
 
@@ -319,23 +327,26 @@ function ewz_webforms_menu()
                  of data to be stored for a field. For images you attach to a page,
                  these three items are used for the Title, Excerpt and Content of
                  the image.  Otherwise, they may be used for any purpose.
-            <p>*The file must be in plain text, "comma-delimited" format.<br>
+             <ul>
+            <li>The file must be in plain text, "comma-delimited" format.<br>
                 The easiest way to generate the .csv file is to save a spreadsheet
-                in .csv format.</p>
-            <p>*The first column must contain the wordpress item sequence number.
-                You may get this by including the WP Item ID under Extra Data in
-                the layouts tab.</p>
-            <p>*The rest of the columns contain, in this order, the image-field
+                in .csv format.</li>
+            <li>The first column <b>must contain the wordpress item sequence number</b>.
+                You may obtain this by including the WP Item ID under Extra Data in
+                the layout and then viewing it by clicking "Manage Items" on the webforms page.</li>
+            <li>The rest of the columns contain, in this order, the image-field
                 identifier, title, excerpt, content for each image you wish to
-                annotate in this way</p>
-              For example, if you have assigned identifiers 'ident1' and 'ident5'
-              to image columns 1 and 5, the line:
-           <br><i>700,"ident1","Title 1","Excerpt 1","Content1","ident5","title
-               for column 5", "Excerpt #5","Content for image in column 5"</i><br>
-               would create Title, Excerpt and Content values for columns 1 and 5
-               of item 700
-            </p>
+                annotate in this way.</li>    
+            <li>You may use some basic html markup in your text:<br> 
+            <?php print allowed_tags(); print "&lt;br&gt;"; ?></li>
+           </ul>
 
+           <p>For example, if your layout allows for two images per item, and you have assigned 
+           identifiers 'ident1' and 'ident5' to image columns 1 and 5,<br> the line:
+           <br><br><i>700,"ident1","&lt;b&gtTitle for image 1&lt;/b&gt","Excerpt for image 1","Image 1 Content","ident5","title
+               for column 5", "Excerpt #5","Content for image in column 5"</i><br><br>
+               would create Title, Excerpt and Content values for the images in columns 1 and 5
+               of item 700</p>
         </div>
 
         <!-- HELP POPUP data selection -->
@@ -345,19 +356,21 @@ function ewz_webforms_menu()
                A selection list is generated here for each field in the webform's
                layout, except for required text and image fields.
                With the selected images you may do one of several things:
-            <p>* Download a spreadsheet containing all the uploaded information
-                connected to the items</p>
-            <p>  ( <i>The spreadsheet is in .csv (comma-delimited) form, which
+            <ul>
+             <li> Download a spreadsheet containing all the uploaded information
+                connected to the items
+                <br>( <i>The spreadsheet is in .csv (comma-delimited) form, which
                     should open easily in most spreadsheet software.
                  The separator/delimiter is a comma (,), and the text delimiter is a
-                    double quote (").</i></p>
-            <p>* Download the same spreadsheet together with the uploaded image
-                files</p>
-            <p>* Download just the uploaded image files</p>
+                    double quote (").</i></li>
+            <li>Download the same spreadsheet together with the uploaded image
+                files</li>
+            <li>Download just the uploaded image files</li>
            <?php if( Ewz_Permission::can_manage_some_webform() ) { ?>
-                <p>* View the images and data ( Requires permission to manage the webform ).
+                <li>View the images and data ( Requires permission to manage the webform ).
                 With the image thumbnails visible, you may then inspect data, remove individual items,
-                 or attach images to a page or post.</p>
+                 or attach images to a page or post.</li>
+             </ul>
             <?php } ?>
         </div>
 
@@ -365,12 +378,12 @@ function ewz_webforms_menu()
         <div id="prefix_help" class="wp-dialog" >
             <p><u>If you wish</u>, you may choose to add a prefix to each of the
                 image file names.<br>  
-                The prefix may be applied either to each file as soon as it is uploaded to the server,<br>
-                or only to files which are downloaded using the Download Images buttons below.<br>
+                The prefix may be applied to each file as soon as it is uploaded to the server,<br>
+                or it may only be applied to files which are downloaded using the Download Images buttons below.<br>
             </p>
              <p> Applying the prefix immediately on upload is safer if you download a lot of image files at once.
                  If using the buttons below takes too long and times out, you may then use ftp to download the 
-                 files from the ewz_img_uploads folder in your wordpress uploads folder.
+                 files from the ewz_img_uploads subfolder in your wordpress uploads folder.
              </p>
              <p>
                 The prefix may contain the  following expressions, which will
@@ -397,14 +410,15 @@ function ewz_webforms_menu()
                    }
             ?>
                 </tbody></table>
+
             For instance, suppose <ol><li> You set the identifier for this webform
                     as "group1" and enter &nbsp; <b>"2012Jan-[~WFM]-[~UID]"</b>
                     in the Optional Prefix box above</li>
                 <li> A member with wordpress id number <b>257</b> uploads images</li>
-                <li> One of these images has the filename <b>myimage.jpg</b></li>
+                <li> One of these images is uploaded with the filename <b>myimage.jpg</b></li>
             </ol>
             Then the image will be downloaded with the filename
-            &nbsp; <b>"2012Jan-group1-257-my_image.jpg".</b>.  This may be useful
+            &nbsp; <b>"2012Jan-group1-257-my_image.jpg".</b>  This may be useful
             if you wish the images to sort or group in a particular way.
             </p>
         </div>

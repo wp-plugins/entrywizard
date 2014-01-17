@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.8
-Stable tag: 0.9.8
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,6 +12,8 @@ Uploading by logged-in users of sets of image files and associated data. Adminis
 == Description ==
 
 EntryWizard was developed to cater to the needs of camera club competitions.  In these competitions members may submit multiple images with titles and other data attached.
+
+* To display the upload form without a horizontal scroll, it may require a theme, or modification of a theme, that allows a fairly wide page. 
 
 * Administrators use the software to design web forms, asking for information as text inputs and/or drop-down menu items as well as image files. 
 
@@ -41,7 +43,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * There is a fine-grained permissions system allowing administrators to grant an individual user various levels of control over the webforms and layouts.
   Only logged-in users may see the webform.
 
-* ( Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow of the downloaded images using the information in the spreadsheet. )
+* ( Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow of a selection of the downloaded images using the information in the spreadsheet. )
 
 == Installation ==
 
@@ -105,6 +107,17 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+= 1.0.0 =
+* added checkbox and radio button field types
+* allow some html tags in data uploaded by admin
+* option for display in spreadsheet of pages the item was attached to
+* option for display in spreadsheet of data uploaded by admin
+* record upload date and date of most recent change separately, make both available for display in spreadsheet
+* fixed a situation where some themes could show the image on the upload form at full size instead of as a thumbnail
+* fixed an error in the documentation for the followup display: the parameter is called 'idents', not 'webforms'
+* fixed an issue where a "clear" button appeared incorrectly on the upload form
+* documentation
+
 = 0.9.8 =
 * added an experimental facility for a "followup" form that displays the results of several webforms with the same layout, and allows users to add one more piece of information to each item, without being able to edit the previously uploaded data.
 * improvements to the item-list admin page: Settings for attaching images to pages are now remembered, and the selection data used for the display are shown at the top of the page. 
@@ -176,13 +189,14 @@ Enhancements planned eventually (in no particular order):
 
 * Override "max number of images" from Layouts in Webforms, so we don't need a whole new layout just to change the number of images
 
-* Customize the "Upload closed" message
+* Customize the "Upload closed" message, the thumbnail height, and some other parameters
 
 * Optional overall upload fields in addition to those attached to each image
 
-* Checkbox and Text-area fields
+* Text-area field
 
-* Possible option of a two-line row for each item in the webform, if the layout requires too much horizontal space
+* Possible option of a two-line row for each item in the webform, if the layout requires too much horizontal space,
+  and an option to override some narrow page widths 
 
 * Column sorting in the list view
 

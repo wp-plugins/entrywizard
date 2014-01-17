@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 0.9.8
+  Version: 1.0.0
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -86,13 +86,21 @@ function ewz_check_for_db_updates(){
         // 0.9.6 added new apply_prefix column to webforms table 
         // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
         if ( version_compare( $ewz_data_version, '0.9.6', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 0.9.6");
             Ewz_Setup::activate_or_install_ewz();
             delete_option('ewz_db_version');
             Ewz_Field::change_min_area_to_dim();    
         }
         // 0.9.8 added attach_prefs to webform table
         if ( version_compare( $ewz_data_version, '0.9.8', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 0.9.8");
             Ewz_Setup::activate_or_install_ewz();
+        }
+        // 1.0.0 added upload_date to item table
+        if ( version_compare( $ewz_data_version, '1.0.0', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 1.0.0");
+            Ewz_Setup::activate_or_install_ewz();
+            Ewz_Item::set_upload_date();
         }
         update_option( 'ewz_data_version', $this_version );
     }
@@ -137,7 +145,7 @@ function ewz_set_dev_env(){
         define( 'EWZ_DBG', true );
         define( 'CLEANUP_ON_DEACTIVATE', true );
         $is_admin = is_admin() ? 'ADMIN' : '';
-        error_log("~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
+        error_log("EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
                    . 'GET:   ' . print_r( $_GET, true )
                 . 'POST:  ' . print_r( $_POST, true )
                 . 'FILES: ' . print_r( $_FILES, true )

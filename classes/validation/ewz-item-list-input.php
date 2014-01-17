@@ -23,10 +23,10 @@ class Ewz_Item_List_Input extends Ewz_Input
         $is_att = ( 'ewz_attach_imgs' == $act );
         $this->rules 
             = array(
-                    'webform_id'   => array( 'type' => 'seq',       'req' => true,    'val' => ''             ),
-                    'ewznonce'     => array( 'type' => 'anonce',    'req' => true,    'val' => ''             ),
-                    'fopt'         => array( 'type' => 'v_fopts',   'req' => false,    'val' => array()        ),
-                    '_wpnonce'     => array( 'type' => 'string',    'req' => false,   'val' => ''             ),  // for WP_List_Table
+                    'webform_id'   => array( 'type' => 'seq',       'req' => true,    'val' => ''            ),
+                    'ewznonce'     => array( 'type' => 'anonce',    'req' => true,   'val' => ''            ), 
+                    'fopt'         => array( 'type' => 'v_fopts',   'req' => false,   'val' => array()       ),
+                    '_wpnonce'     => array( 'type' => 'string',    'req' => false,   'val' => ''            ),  // for WP_List_Table
                     'action'       => array( 'type' => 'limited',   'req' => false,   'val' => array('ewz_attach_imgs',
                                                                                                      'ewz_set_ipp',
                                                                                                      'ewz_batch_delete', 

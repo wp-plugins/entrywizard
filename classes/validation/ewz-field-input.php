@@ -15,7 +15,7 @@ class Ewz_Field_Input extends Ewz_Input
         $this->rules = array(
                              'field_id'       => array( 'type' => 'seq',      'req' => false, 'val' => '' ),
                              'field_header'   => array( 'type' => 'string',   'req' => true,  'val' => '' ),
-                             'field_type'     => array( 'type' => 'limited',  'req' => true,  'val' => array( 'img', 'str', 'opt' ) ),
+                             'field_type'     => array( 'type' => 'limited',  'req' => true,  'val' => array( 'img', 'str', 'opt', 'rad', 'chk' ) ),
                              'field_ident'    => array( 'type' => 'ident',    'req' => true,  'val' => '' ),
                              'fdata'          => array( 'type' => 'v_fdata',  'req' => true,  'val' => '' ),
                              'ss_column'      => array( 'type' => 'int1',     'req' => false, 'val' => '' ),
@@ -49,6 +49,10 @@ class Ewz_Field_Input extends Ewz_Input
             break;
         case 'img':
             self::valid_img_input( $fdata );
+            break;
+        case 'rad':
+            break;
+        case 'chk':
             break;
         default:   throw new EWZ_Exception( 'Invalid value ' . $this->input_data['field_type'] . ' for field type' );
         }

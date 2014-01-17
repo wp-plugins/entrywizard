@@ -253,7 +253,7 @@ class Ewz_Webform extends Ewz_Base {
         // create a new archive
         $errmsg = $this->make_zip_archive( $items, $archive_path, $include_ss );
         if( $errmsg ){
-            throw new EWZ_Exception("EWZ: make_zip_archive returned: $msg");            
+            throw new EWZ_Exception("EWZ: make_zip_archive returned: $errmsg");
         } else {
             // display it, making sure the redirect location is not cached
             // Date in the past
@@ -300,7 +300,7 @@ class Ewz_Webform extends Ewz_Base {
                         continue;   // ignore items with no image file
                     }
                     ++$tmpn;
-                    
+
                     // a very rough-and-ready way to allow more time if there are a lot of image files
                     // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 25 files.
                     if ( $tmpn > 25 ) {
@@ -322,7 +322,7 @@ class Ewz_Webform extends Ewz_Base {
                             $zip->addFile( $item_file['fname'], $this->do_substitutions( $subst_data ) . basename( $item_file['fname'] ) );
                         }
                     } else {
-                        error_log("EWZ: cant find " .  $item_file['fname'] ); 
+                        error_log("EWZ: cant find " .  $item_file['fname'] );
                         $msg .= "\n\nUnable to find file " . basename( $item_file['fname'] );
                     }
                 }
@@ -513,7 +513,7 @@ class Ewz_Webform extends Ewz_Base {
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
                 // dont crash on undefined custom data
-                if( isset( $display[$xcol] ) ){                
+                if( isset( $display[$xcol] ) ){
                     switch ( $display[$xcol]['dobject'] ) {
                         case 'wform':
                             $datasource = $wform;
@@ -597,7 +597,7 @@ class Ewz_Webform extends Ewz_Base {
         foreach ( $item->item_data as $field_id => $field_value_arr ) {
             if ( array_key_exists( $field_id, $fields ) ) {
                 $field = $fields[$field_id];
-                if ( $field->ss_column >= 0 ) {
+                if ( $field->ss_column >= 0  && isset( $field_value_arr['value'] ) ) {
                     assert( empty( $itemrow[$field->ss_column] ) );
                     $itemrow[$field->ss_column] = $field_value_arr['value'];
                 }
@@ -731,7 +731,7 @@ class Ewz_Webform extends Ewz_Base {
         $prefs = array();
         if ( $this->webform_id ) {
 
-            $prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE . 
+            $prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
                                                                   " WHERE  webform_id = %d", $this->webform_id ) ) );
         }
         return $prefs;
