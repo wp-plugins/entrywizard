@@ -111,11 +111,11 @@ function data_management_str( evnum, eObj ){
     if(eObj.can_manage_webform){
         str +=  xtra_data_upload_str(  evnum, eObj );
     }
-    /**** NB: action is item_list, not webform here, and requires the webform_id in the url ********/
-    str +=   '<form method="post" action="' + ewzG.list_page + '&webform_id=' + eObj.webform_id + '" id="data_form_ev' + evnum + '_">';
+    /**** NB: action is item_list, not webform here, and requires 'get' method for pagination ********/
+    str +=   '<form method="GET" action="' + ewzG.list_page  + '" id="data_form_ev' + evnum + '_">';
     str += '  <div class="ewzform">';
-    str +=   '    <div class="ewz_numc"></div>';
     str +=   '    <input type="hidden" name="page" value="entrywizlist">';
+    str +=   '    <input type="hidden" name="ewzmode" value="list">';
     str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
     str +=   '    <br><br><br><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'datasel\')"> &nbsp; With selected items:';
 
@@ -127,8 +127,8 @@ function data_management_str( evnum, eObj ){
 
     str +=   '    <TABLE class="ewz_buttonrow">';
     if( eObj.itemcount > 0 && eObj.can_manage_webform ){
-        str +=   '  <TR><TD><button type="button" onClick="set_mode(this,\'list\')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
-        str +=   '     <TD></TD><TD></TD>';
+        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
+        str +=   '     <TD></TD>';
         str +=   '  </TR>';
     }
     if(eObj.can_download){
@@ -140,6 +140,7 @@ function data_management_str( evnum, eObj ){
     }
     str +=   '  </TABLE>';
     str +=   ' </div>';
+    str +=   ' <div class="ewz_numc"></div>';
     str +=   '</form>';
 
     return str;
@@ -147,7 +148,7 @@ function data_management_str( evnum, eObj ){
 
 function set_mode(button, mode){
     jform = jQuery( button ).closest('form');
-    jform.append('<input type="hidden" name="ewzmode" value="' + mode + '">' );
+    jform.find('input[name="ewzmode"]').val(mode);
     jform.submit();
 }
 
@@ -181,8 +182,10 @@ function webform_data_str(evnum, eObj) {
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
-    str +=   '            <td> <input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '" size="15" maxlength="25"></td>';
-    str +=   '            <td></td>';
+    str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
+    str +=   '            <td>Apply this prefix to the file stored on the server &nbsp; ';
+    str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
+    str +=   '            </td>';
     str +=   '        </tr>';
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'open\')">&nbsp;Open for Uploads:</td>';
@@ -299,7 +302,7 @@ function upload_date_str( evnum ){
 
         str +=   '<BR><TABLE class="ewz_field_opts">';
         str +=   '       <TR>';
-        str +=   '          <TD>Uploaded during the last ';
+        str +=   '          <TD>Initial upload occurred during the last &nbsp;';
         str +=   '             <SELECT id="uploaddays' + evnum  + '" name="uploaddays">';
         str +=   '                 <OPTION value="">  </OPTION>';
         for( day=1; day<=100; ++day ){
@@ -338,6 +341,7 @@ function select_layout_str( evnum, eObj ){
 }
 /************************ Functions That Change The Page  ****************************************/
 
+
 function user_select(id){
     'use strict';
    if(jQuery('#' + id ).is(':visible')){
@@ -357,6 +361,12 @@ function delete_webform(button, itemcount){
         confirmstring = '',
         thediv,id,ok,del_nonce,jqxhr;
 
+    thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
+    id = thediv.find('input[name="webform_id"]').first().attr("value");
+    if( '' === id || null === id || 'undefined' === typeof id ){
+        thediv.remove();
+        return;
+    }
     if(itemcount > 0){
         confirmstring +=  ewzG.errmsg.warn + "\n"  + ewzG.errmsg.hasitems + "\n\n";
     }
@@ -364,11 +374,6 @@ function delete_webform(button, itemcount){
     confirmstring += "\n" + ewzG.errmsg.noundo;
 
     if( confirm( confirmstring ) ){
-        thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
-        id = thediv.find('input[name="webform_id"]').first().attr("value");
-        if(  '' === id || 'undefined' === id ){
-            thediv.remove();
-        } else {
             ok = 'no';
             jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
             del_nonce = thediv.find('input[name="ewznonce"]').val();
@@ -381,14 +386,14 @@ function delete_webform(button, itemcount){
                                      },
                                      function (response) {
                                          jQuery("#temp_load").remove();
-                                         if( '1' === response ){
+                                         if( '1' == response ){
                                              thediv.remove();
                                          } else {
                                              alert( response );
                                          }
                                      }
                                    );
-        }
+        
     }
 }
 
@@ -410,6 +415,7 @@ function add_new_webform(){
     newform.webform_id = '';
     newform.webform_ident = '';
     newform.prefix = '';
+    newform.apply_prefix = true;
     jQnew = jQuery(ewz_management(num, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");
@@ -438,27 +444,25 @@ function add_new_webform(){
 /* Validation */
 function ewz_check_csv_input(file_input_id){
     'use strict';
-    if(typeof window.FileReader !== 'undefined'){
+    var  theFile = document.getElementById(file_input_id).files[0],
+          mb;
+    if(theFile !== null){
 
-        var reader = new FileReader(),
-            files = document.getElementById(file_input_id).files,
-            mb,
-            theFile;
-        if(files !== null){
-            // get selected file element
-            theFile = files[0];
-            mb =  Math.floor( theFile.size / 1048576 );
-            if( mb > ewzG.maxUploadMb ){
-
-                alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
-                return false;
-            }
-            if( theFile.type !== 'text/csv' ){
-                alert( 'Sorry, the file must be of type "text/csv"' );
-                return false;
-            }
+        // get selected file element
+        mb =  Math.floor( theFile.size / 1048576 );
+        if( mb > ewzG.maxUploadMb ){
+            alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
+            return false;
+        }
+        var theType = theFile.type;
+        var theName = theFile.name;
+        if( ( theType.length > 0 && theType != "text/csv" ) ||
+            ( theName.length > 0 && !/\.csv$/.test(theName)  ) ){
+            alert( theFile.name + ': Found filename: ' +  theName + ', detected type: ' + theType + '.  Sorry, the file must be of type "text/csv"' );
+            return false;
         }
     }
+    return true;
 }
 
 function ewz_check_webform_input(form, do_js_check){
@@ -468,6 +472,10 @@ function ewz_check_webform_input(form, do_js_check){
     if( do_js_check) {
         try{
             jform = jQuery(form);
+            if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
+                !jform.find('input[id^="prefix_"]').val().trim( ).length ){
+                jform.find('input[id^="apply_prefix"]').prop('checked', false );
+            }
             if(!jform.find('input[id^="webform_title_ev"]').val()){
                 alert(ewzG.errmsg.formTitle);
                 return false;
@@ -495,12 +503,4 @@ function ewz_check_webform_input(form, do_js_check){
     }
 }
 
-function set_list_url( evnum, webform_id ){
-    'use strict';
-    var qstring = '&ewzmode=list',
-        jform = jQuery('#data_form_ev' + evnum + '_'),
-        act = jform.attr('action');
-    jform.attr('action', act + qstring);
-    return true;
-}
 

@@ -11,8 +11,6 @@ require_once( EWZ_PLUGIN_DIR . "/includes/ewz-common.php");
 
 class Ewz_Setup
 {
-    // Set this to true to go back to install state after each deactivate
-
     public static function activate_or_install_ewz()
     {
         global $wpdb;
@@ -31,6 +29,7 @@ class Ewz_Setup
         self::create_db_tables();
 
         $rowcount = $wpdb->get_var( "SELECT count(*) FROM $layout_table" );
+
         if( !file_exists(  EWZ_IMG_UPLOAD_DIR ) ){
             mkdir( EWZ_IMG_UPLOAD_DIR );
         }
@@ -49,10 +48,10 @@ class Ewz_Setup
         $ids1 = self::create_base_layout1();
         $ids2 = self::create_base_layout2();
 
-        $webform_id1 = self::create_sample_webform( "Standard Competition Format", "standard", $ids1['layout_id'] );
+        $webform_id1 = self::create_sample_webform( "Example Competition Form", "example", $ids1['layout_id'] );
         $webform_id2 = self::create_sample_webform( "Image Pair Form", "pair", $ids2['layout_id'] );
 
-        self::create_sample_data1( EWZ_IMG_UPLOAD_DIR, $webform_id2, "standard", $ids2 );
+        self::create_sample_data1( EWZ_IMG_UPLOAD_DIR, $webform_id2, "pair", $ids2 );
         self::set_initial_permissions();
     }
 
@@ -61,9 +60,6 @@ class Ewz_Setup
      * ************************************************** */
     public static function create_db_tables()
     {
-        global $ewz_db_version;
-        $ewz_db_version = "1.0";
-
         error_log( "EWZ: creating tables " );
         $layout_table = EWZ_LAYOUT_TABLE;
         $field_table = EWZ_FIELD_TABLE;
@@ -105,8 +101,10 @@ class Ewz_Setup
                                                 webform_title varchar(100) NOT NULL UNIQUE,
                                                 webform_ident char(15) NOT NULL UNIQUE,
                                                 prefix char(25) NULL,
+                                                apply_prefix tinyint(1) NULL,
                                                 upload_open tinyint(1) NOT NULL,
-                                                open_for varchar(1000) NOT NULL
+                                                open_for varchar(1000) NOT NULL,
+                                                attach_prefs varchar(1000) NULL
                                                ); ";
 
 
@@ -115,6 +113,7 @@ class Ewz_Setup
                                               user_id bigint(20) NOT NULL,
                                               webform_id smallint(6) NOT NULL,
                                               last_change datetime NOT NULL,
+                                              upload_date datetime NOT NULL,
                                               item_files mediumtext NOT NULL,
                                               item_data longtext NOT NULL
                                                                );";
@@ -145,8 +144,6 @@ class Ewz_Setup
             dbDelta( $create_field_sql );
             dbDelta( $create_webform_sql );
             dbDelta( $create_item_sql );
-
-            add_option( "ewz_db_version", $ewz_db_version );
     }
 
     /* ***************************************************
@@ -210,8 +207,6 @@ class Ewz_Setup
         if ( $wpdb->get_var( "SHOW TABLES LIKE '$layout_table'" ) == $layout_table ) {
             error_log( "EWZ: dropping $layout_table" );
             $wpdb->query( "DROP Table " . EWZ_LAYOUT_TABLE );
-            $found = $wpdb->get_var( "SHOW TABLES LIKE '$layout_table'" );
-            error_log( "EWZ: checking for " . EWZ_LAYOUT_TABLE . " found $found");
         }
     }
 
@@ -298,7 +293,7 @@ class Ewz_Setup
                                              'canrotate' => true,
                                              'ss_col_o'  => 16,
                                              'max_img_size' => 1,
-                                             'min_img_area' => 864000,
+                                             'min_longest_dim' => 800,
                                              'allowed_image_types' => array('image/jpeg',
                                                                             'image/pjpeg',
                                                                             'image/gif',
@@ -309,7 +304,7 @@ class Ewz_Setup
 
 
         $rows_affected = $wpdb->insert( $layout_table,
-                                        array( 'layout_name' => "Standard Competition",
+                                        array( 'layout_name' => "Sample Competition Layout",
                                                'max_num_items' => 4,
                                                'restrictions' => '',
                                                'extra_cols' => ''
@@ -462,7 +457,7 @@ class Ewz_Setup
                                               'canrotate' => false,
                                               'ss_col_o'  => -1,
                                               'max_img_size' => 1,
-                                              'min_img_area' => 864000,
+                                              'min_longest_dim' => 800,
                                               'allowed_image_types' => array('image/jpeg',
                                                                              'image/pjpeg',
 
@@ -484,7 +479,7 @@ class Ewz_Setup
                                                'canrotate' => false,
                                                'ss_col_o'  => 16,
                                                'max_img_size' => 1,
-                                               'min_img_area' => 864000,
+                                               'min_longest_dim' => 800,
                                                'allowed_image_types' => array('image/jpeg',
                                                                               'image/pjpeg',
 
@@ -599,6 +594,7 @@ class Ewz_Setup
                                               'webform_title' => $webform_title,
                                               'webform_ident' => $webform_ident,
                                               'upload_open' => 1,
+                                              'apply_prefix' => 1,
                                               'open_for' => "a:0:{}",
                                               )
                                         );
@@ -639,7 +635,7 @@ class Ewz_Setup
                                      "value"    => "N"
                                      ),
                        $ids['field_id2'] => array( "field_id" => $ids['field_id2'],
-                                     "value"    => "cccccccccc"
+                                     "value"    => "My Image"
                                       ),
                        $ids['field_id3'] => array( "field_id" => $ids['field_id3'],
                                      "value"    => "ewz_img_upload"
@@ -654,6 +650,7 @@ class Ewz_Setup
                                          array( 'user_id'     => $user_id,
                                                 'webform_id'  => $webform_id,
                                                 'last_change' => current_time( 'mysql' ),
+                                                'upload_date' => current_time( 'mysql' ),
                                                 'item_files'  => serialize( $files ),
                                                 'item_data'   => serialize( $data )
                                                           )
@@ -674,7 +671,6 @@ class Ewz_Setup
     }
 
 
-
     private static function set_initial_permissions()
     {
         $user = wp_get_current_user();
@@ -686,6 +682,8 @@ class Ewz_Setup
     }
 
     private static function rrmdir( $dir ) {
+        assert( is_string( $dir ) );
+
       error_log( "EWZ: removing directory $dir" );
       if ( is_dir( $dir ) ) {
          $objects = scandir( $dir );
@@ -703,3 +701,4 @@ class Ewz_Setup
       }
    }
 }
+

@@ -1,3 +1,14 @@
+#overlay {
+   position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    opacity: 0.8;
+    filter: alpha(opacity=80);
+    z-index:50;
+}
 .ewz_padded td { padding: 20px 10px 20px 10px !important;}
 .ewz_pcentre {
     padding-top: 5px;
@@ -8,7 +19,7 @@
 
 
 .ewz_formsetup {}
-.ewz_ihelp {}
+.ewz_ihelp { padding-right: 2px; }
 .ewz_showlist {}
 
 .ewz_border{
@@ -28,7 +39,7 @@
 }
 .ewz_disabled{
     border: 1px dotted red;
-    padding: 8px;
+    padding: 7px 2px 8px 2px;
     text-align: center;
     vertical-align:middle;
 }
@@ -67,7 +78,8 @@ table.ewz_border{ border-collapse: collapse;
                                  vertical-align:middle;
                              }
 
-.ewz_shaded{ vertical-align:middle;
+.ewz_shaded{
+             vertical-align:middle;
              background: #F5F5F5;
              border-color: #EEEEEE;
           }
@@ -119,8 +131,15 @@ table.ewz_border{ border-collapse: collapse;
               clear:right;
               margin-right:10px;
             }
+.ewz_params { display:block;
+              float:right;
+              margin-right:15px;
+              margin-bottom:15px;
+            }
 
-.wp-dialog .ui-dialog-content{ padding: 10px !important; }
+.wp-dialog .ui-dialog-content{ padding: 15px !important; }
+.wp-dialog ul { padding-left: 10px;
+                list-style: disc; }
 
 td.b{  border: 1px solid black;
        padding: 5px;
@@ -185,13 +204,13 @@ input[id$="_layout_name_"] {
     width: 15em;
 }
 input[id$="_field_header_"] {
-    width: 7em;
+    width: 9em;
 }
 input[id$="field_ident_"] {
-    width: 7em;
+    width: 9em;
 }
 input[id$="_label_"] {
-    width: 10em;
+    width: 9em;
 }
 input[id$="_value_"] {
     width: 5em;
@@ -215,5 +234,5 @@ input[id^="webform_ident"] {
     width: 12em;
 }
 input[id^="prefix_"] {
-    width: 7em;
+    width: 15em;
 }

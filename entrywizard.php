@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 0.9
+  Version: 1.0.0
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -25,15 +25,14 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_PLUGIN_DIR',    plugin_dir_path( __FILE__ ) );
-define( 'EWZ_VERSION', 0.9 );
+define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
 define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
 
-
-ewz_set_dev_env();     // development environment
 
 /*
  * INCLUDES
@@ -46,6 +45,7 @@ if ( is_admin() ) {
 
 // this is needed for admin, too, because the ajax function runs as admin
 require_once( EWZ_PLUGIN_DIR . '/includes/ewz-upload.php' );
+require_once( EWZ_PLUGIN_DIR . '/includes/ewz-followup.php' );
 
 
 /*
@@ -61,8 +61,10 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
  */
 add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
 // in the admin area we add another function after this, so make sure we know its priority
+add_action( 'init', 'ewz_set_dev_env', 1 );
 add_action( 'plugins_loaded', 'ewz_init_globals', 10 );
 
+add_action( 'admin_init', 'ewz_check_for_db_updates' );
 
 
 /*
@@ -72,35 +74,62 @@ if ( !is_admin() ) {
     // adding this for all admin pages triggers warnings for some themes and plugins
     // just add it specifically for the ajax calls when they are run in ewz-admin.php
     add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
+    add_shortcode( 'ewz_followup', 'ewz_followup' );
 }
 
-/*
- * LOCALIZATION
- */
-load_plugin_textdomain(
-    'entrywiz', false,
-    basename( dirname( __FILE__ ) ) . '/languages'
-);
+
+function ewz_check_for_db_updates(){
+    $data = get_plugin_data(__FILE__, false, false );
+    $this_version = $data['Version'];
+    $ewz_data_version = get_option('ewz_data_version', '0.9.1' );
+    if( version_compare( $ewz_data_version, $this_version,  '<' ) ){
+        // 0.9.6 added new apply_prefix column to webforms table 
+        // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
+        if ( version_compare( $ewz_data_version, '0.9.6', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 0.9.6");
+            Ewz_Setup::activate_or_install_ewz();
+            delete_option('ewz_db_version');
+            Ewz_Field::change_min_area_to_dim();    
+        }
+        // 0.9.8 added attach_prefs to webform table
+        if ( version_compare( $ewz_data_version, '0.9.8', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 0.9.8");
+            Ewz_Setup::activate_or_install_ewz();
+        }
+        // 1.0.0 added upload_date to item table
+        if ( version_compare( $ewz_data_version, '1.0.0', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 1.0.0");
+            Ewz_Setup::activate_or_install_ewz();
+            Ewz_Item::set_upload_date();
+        }
+        update_option( 'ewz_data_version', $this_version );
+    }
+}
 
 
 function ewz_add_stylesheet() {
     wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__) );
     wp_enqueue_style( 'ewz-style' );
 
-    // Load the Javascript file
-    //  wp_register_script( "ewz-upload",
-    //                    plugins_url( 'javascript/ewz-upload.js', dirname(__FILE__) ),
-    //			array('jquery', 'jquery-form') );
     wp_enqueue_script( 'ewz-upload',
                         plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
                        array('jquery', 'jquery-form'),
                        false,
                        true      // in footer, so $ewzG has been defined
                        );
-}
+    wp_enqueue_script( 'ewz-followup',
+                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
+                       array('jquery', 'jquery-form'),
+                       false,
+                       true      // in footer, so $ewzG has been defined
+                       );
+ }
 
 function ewz_set_dev_env(){
-    if( is_dir( '/home/entrywizard' ) ){   // only true in development environment
+    if( is_file( plugin_dir_path( __FILE__ ). "DEVE_ENV" )   // only true in development environment
+        && !( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] ) )
+        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] )
+      ){   
         /*
          * ASSERT OPTIONS
          */
@@ -115,26 +144,13 @@ function ewz_set_dev_env(){
         assert_options(ASSERT_CALLBACK, 'ewz_assert_handler');
         define( 'EWZ_DBG', true );
         define( 'CLEANUP_ON_DEACTIVATE', true );
-
-
-       error_log("~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added ) ~~~~~~~ \n"
+        $is_admin = is_admin() ? 'ADMIN' : '';
+        error_log("EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
                    . 'GET:   ' . print_r( $_GET, true )
                 . 'POST:  ' . print_r( $_POST, true )
                 . 'FILES: ' . print_r( $_FILES, true )
                 . 'URI:' . $_SERVER['REQUEST_URI']
             );
-
-
-        include_once('Var_Dump.php');
-        Var_Dump::displayInit(array('display_mode' => 'HTML4_Table'), array('mode' => 'normal','offset' => 4));
-
-        function ewzdump( $obj ){
-            // no assert
-            $out = fopen( "/home/josie/dbg.html", 'a' );
-            fwrite( $out, Var_Dump::display($obj, true) );
-            fclose($out);
-        }
-
     } else {
         define( 'EWZ_DBG', false );
         assert_options( ASSERT_ACTIVE, false );
@@ -142,8 +158,15 @@ function ewz_set_dev_env(){
     }
 }
 
+
 function ewz_init_globals(){
     global $wpdb;
+
+    load_plugin_textdomain(
+                           'entrywiz', false,
+                           basename( dirname( __FILE__ ) ) . '/languages'
+                           );
+
     define( 'EWZ_PREFIX', $wpdb->prefix );
 
     define( 'EWZ_LAYOUT_TABLE',  EWZ_PREFIX . 'ewz_layout' );
@@ -158,7 +181,7 @@ function ewz_init_globals(){
 
 
     define( 'EWZ_DEFAULT_DIM',  1280 );           // default max image dimension in pixels
-    define( 'EWZ_DEFAULT_MIN_AREA',  100 );       // default smallest image area in square pixels
+    define( 'EWZ_DEFAULT_MIN_LONGEST',  100 );    // default minimum longest image dimension in pixels
     define( 'EWZ_MAX_STRING_LEN', 50 );           // default max length of text input field
     define( 'EWZ_MAX_FIELD_WIDTH', 10 );          // default max field width of text input field
 

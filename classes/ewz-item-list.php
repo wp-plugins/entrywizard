@@ -10,6 +10,7 @@ if ( !class_exists( 'WP_List_Table' ) ) {
 class Ewz_Item_List extends WP_List_Table
 {
 
+    private $default_ipp = 20;
     public $ewz_rows;           // array of data to be displayed
     public $ewz_item_ids;       // arr
     public $is_read_only;       // not currently used, may be needed later
@@ -54,7 +55,11 @@ class Ewz_Item_List extends WP_List_Table
         // no assert
         // value to display in cell
         // just use the value in the input row, which is generated elsewhere
-        return $row[$col_name];
+        if( isset( $row[$col_name] ) ){
+            return $row[$col_name];
+        } else {
+            return '';
+        }
     }
 
     /** ***********************************************************************
@@ -89,9 +94,10 @@ class Ewz_Item_List extends WP_List_Table
 
    /**
     * Return the array of bulk actions to be shown in the drop-down
+    * Also note that list tables are not automatically wrapped in <form> elements,
+    * so you will need to create those manually in order for bulk actions to function.
     * 
-    * Key for each item is the function to be called, value is the string to display
-    * 
+    * @return array An associative array containing all the bulk actions: 'slugs'=>'Visible Titles'
     */
     function get_bulk_actions()
     {
@@ -99,8 +105,11 @@ class Ewz_Item_List extends WP_List_Table
             $actions = array();
         } else {
             $actions = array(
-                         'ewz_attach_imgs'  => 'Attach images to Selected Page',     
-                         'ewz_admin_del_items' => 'Delete Selected Items',
+                             // attach is done via ajax, since list page itself does not change
+                             'ewz_attach_imgs'  => 'Attach images to Selected Page',
+
+                             // delete does a submit, because page itself changes
+                             'ewz_batch_delete' => 'Delete Selected Items',
                           );
         }
         return $actions;
@@ -114,8 +123,9 @@ class Ewz_Item_List extends WP_List_Table
         $per_page = get_user_meta( $user_id, 'ewz_itemsperpage', true );
 
         if ( empty( $per_page ) || $per_page < 1 ) {
-            // get the default value if none is set
-            $per_page = 57;
+            // set and use the default value if none is set
+            update_user_meta( $user_id,'ewz_itemsperpage', $this->default_ipp );
+            $per_page = $this->default_ipp;
         }
 
         // headers
@@ -135,7 +145,7 @@ class Ewz_Item_List extends WP_List_Table
         $this->set_pagination_args( array(
             'total_items' => $total_items, 
             'per_page' => $per_page, 
-            'total_pages' => ceil( $total_items / $per_page )   
+            'total_pages' => ceil( $total_items / $per_page )
         ) );
 
         $this->items = $dataslice;
