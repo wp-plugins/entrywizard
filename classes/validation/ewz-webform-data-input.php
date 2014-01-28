@@ -28,7 +28,7 @@ class Ewz_Webform_Data_Input extends Ewz_Input
     }
 
 
-     function v_fopts( $value, $arg ){
+     static function v_fopts( $value, $arg ){
          assert( is_array( $value ) || empty( $value ) );
          assert( isset( $arg ) );
          if( !is_array( $value ) ){

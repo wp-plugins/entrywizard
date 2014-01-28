@@ -83,7 +83,7 @@ abstract class Ewz_Base
      * @param   mixed   String or Integer
      * @return  boolean
      */
-    public function is_nn_int( $val ){
+    public static function is_nn_int( $val ){
         // no assert
         if( is_string( $val )){
             return preg_match( '/^[0-9]+$/', $val );
@@ -98,7 +98,7 @@ abstract class Ewz_Base
      * @param   mixed   String or Integer
      * @return  boolean
      */
-    public function is_pos_int( $val ){
+    public  static function is_pos_int( $val ){
         // no assert
         if( is_string( $val )){
             return preg_match( '/^[1-9][0-9]*$/', $val );

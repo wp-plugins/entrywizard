@@ -41,7 +41,6 @@
 .ewz_padded td { padding: 20px 10px 20px 10px !important;}
 
 /*************************************/
-
 div[id^="speed"], div[id^="remaining"] {
     float: left;
     width: 100px;
@@ -94,9 +93,11 @@ div[id^="upload_response"] {
     overflow: hidden;
     padding: 10px;
 }
-.ewz_progress {
-    padding: 10px;
+.ewz_progress {  
     text-align: center;
+}
+button[id^="ewz_change_"] {
+    margin: 10px;    
 }
 .ewz_thumb {
     height: 70px;

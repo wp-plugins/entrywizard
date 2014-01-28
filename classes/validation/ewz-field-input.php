@@ -15,7 +15,7 @@ class Ewz_Field_Input extends Ewz_Input
         $this->rules = array(
                              'field_id'       => array( 'type' => 'seq',      'req' => false, 'val' => '' ),
                              'field_header'   => array( 'type' => 'string',   'req' => true,  'val' => '' ),
-                             'field_type'     => array( 'type' => 'limited',  'req' => true,  'val' => array( 'img', 'str', 'opt' ) ),
+                             'field_type'     => array( 'type' => 'limited',  'req' => true,  'val' => array( 'img', 'str', 'opt', 'rad', 'chk' ) ),
                              'field_ident'    => array( 'type' => 'ident',    'req' => true,  'val' => '' ),
                              'fdata'          => array( 'type' => 'v_fdata',  'req' => true,  'val' => '' ),
                              'ss_column'      => array( 'type' => 'int1',     'req' => false, 'val' => '' ),
@@ -50,6 +50,10 @@ class Ewz_Field_Input extends Ewz_Input
         case 'img':
             self::valid_img_input( $fdata );
             break;
+        case 'rad':
+            break;
+        case 'chk':
+            break;
         default:   throw new EWZ_Exception( 'Invalid value ' . $this->input_data['field_type'] . ' for field type' );
         }
 
@@ -62,7 +66,7 @@ class Ewz_Field_Input extends Ewz_Input
      * @param  array  $field     input string field to check
      * @return string $bad_data  comma-separated list of bad data
      */
-    private function valid_str_input( &$field )
+    private static function valid_str_input( &$field )
     {
         assert( is_array( $field ) );
 
@@ -115,12 +119,12 @@ class Ewz_Field_Input extends Ewz_Input
      *
      * @param  array  $field  input image field to check
      */
-    private function valid_img_input( $field )
+    private static function valid_img_input( $field )
     {
         assert( is_array( $field ) );
 
         $imgtypes = array( 'image/jpeg', 'image/pjpeg', 'image/gif', 'image/png' );
-        $req_field_data = array( 'max_img_w', 'max_img_h', 'ss_col_w', 'ss_col_h', 'ss_col_o', 'max_img_size', 'min_img_area', 'allowed_image_types' );
+        $req_field_data = array( 'max_img_w', 'max_img_h', 'ss_col_w', 'ss_col_h', 'ss_col_o', 'max_img_size', 'min_longest_dim', 'allowed_image_types' );
         $opt_field_data = array( 'canrotate' );
 
         foreach ( $req_field_data as $req ) {
@@ -146,7 +150,7 @@ class Ewz_Field_Input extends Ewz_Input
                 }
                 $field[$name] = ( int ) $val;
                 
-            } elseif ( $name == 'min_img_area' ) {
+            } elseif ( $name == 'min_longest_dim' ) {
                 if( !is_string( $val ) ){
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
@@ -154,7 +158,7 @@ class Ewz_Field_Input extends Ewz_Input
                     throw new EWZ_Exception( "Invalid value '$val' for $name" );
                 }
                 if( !$val ){
-                    $val = EWZ_DEFAULT_MIN_AREA;
+                    $val = EWZ_DEFAULT_MIN_LONGEST;
                 }
                 $val = ( int ) $val;
             } elseif ( $name == 'max_img_size' ) {
@@ -208,7 +212,7 @@ class Ewz_Field_Input extends Ewz_Input
      * @param  array  $field  input option field to check
      * @return string $bad_data  comma-separated list of bad data
      */
-    private function valid_opt_input( &$fdata )
+    private static function valid_opt_input( &$fdata )
     {
         assert( is_array( $fdata ) );
 

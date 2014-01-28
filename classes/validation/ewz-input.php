@@ -94,51 +94,51 @@ abstract class Ewz_Input {
 
     /********* Validation Functions ************/
 
-    protected function fixed( $value, $arg ) {
+    protected static function fixed( $value, $arg ) {
         assert( is_string( $value ) );
         assert( is_string( $arg ) );
         return ( is_string( $value ) && ( $value == $arg ) );
     }
 
-    protected function limited( $value, $arg ) {
+    protected static function limited( $value, $arg ) {
         assert( is_string( $value ) );
         assert( is_array( $arg ) );
         return ( is_string( $value ) && ( in_array( $value, $arg ) ) );
     }
 
     // for values passed to functions that do their own validation
-    protected function arrayv( $value, $arg ) {
+    protected static function arrayv( $value, $arg ) {
         assert( is_array( $value ) );
         assert( is_array( $arg ) );
         return true;
     }
 
-    protected function anonce( $value, $arg ) {
+    protected static function anonce( $value, $arg ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         return check_admin_referer( 'ewzadmin', 'ewznonce' );
     }
-    protected function unonce( $value, $arg ) {
+    protected static function unonce( $value, $arg ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         return wp_verify_nonce( $value, 'ewzupload' );
     }
 
-    protected function ident( $value, $arg  ) {
+    protected static function ident( $value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         return ( is_string( $value ) &&
                  ( preg_match( self::REGEX_IDENT, $value ) ) );
     }
 
-    protected function alpha_num( $value, $arg  ) {
+    protected static function alpha_num( $value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         return ( is_string( $value ) &&
                  ( preg_match( self::REGEX_ALPHA_NUM, $value ) ) );
     }
 
-    protected function seq( &$value, $arg  ) {
+    protected static function seq( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         $ok= ( is_string( $value ) &&
@@ -148,7 +148,7 @@ abstract class Ewz_Input {
         return $ok;
     }
 
-    protected function int1( &$value, $arg  ) {
+    protected static function int1( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         $ok= ( is_string( $value ) &&
@@ -158,7 +158,7 @@ abstract class Ewz_Input {
         return $ok;
     }
 
-    protected function is_int_arr( $value, $arg, $allow1  ) {
+    protected static function is_int_arr( $value, $arg, $allow1  ) {
         assert( is_array( $value ) );
         assert( is_array( $arg ) );
         assert( is_bool( $allow1 ) );
@@ -189,16 +189,16 @@ abstract class Ewz_Input {
         return true;
     }
 
-    protected function int_arr( $value, $arg  ) {
+    protected static function int_arr( $value, $arg  ) {
         // no assert
-        return $this->is_int_arr( $value, $arg, false  );
+        return self::is_int_arr( $value, $arg, false  );
     }
-    protected function int1_arr( $value, $arg  ) {
+    protected static function int1_arr( $value, $arg  ) {
         // no assert
-        return $this->is_int_arr( $value, $arg, true  );
+        return self::is_int_arr( $value, $arg, true  );
     }
 
-    protected function string( &$value, $arg  ) {
+    protected static function string( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
         if( is_string( $value ) ){
@@ -210,19 +210,33 @@ abstract class Ewz_Input {
         }
     }
 
-    protected function bool( &$value, $arg  ) {
-        assert( is_string( $value )  );
+    protected static function bool( &$value, $arg  ) {
+        assert( is_string( $value ) || $value == null );
         assert( isset( $arg ) );
-        if( !is_string( $value )){
+        if( !( in_array( $value, array( '1', 1, 'on', 0, '0', 'off' ) ) ) ){
+            $value = 0;
             return false;
         }
-        $ok = preg_match( self::REGEX_BOOL, $value );
-        $value = (bool)$value;
-        return $ok;
+        switch( $value ){
+        case 1:
+        case '1':
+        case 'on':
+            $value = 1;
+            return true;
+            break;
+        case 0:
+        case '0':
+        case 'off':
+            $value = 0;
+            return true;
+            break;
+        default:
+            return false;
+        }
 
     }
 
-    protected function str_len( $value, $limits ) {
+    protected static function str_len( $value, $limits ) {
         assert( is_string( $value ) );
         assert( isset( $limits[0] ) );
         assert( isset( $limits[1] ) );

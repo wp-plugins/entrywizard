@@ -13,19 +13,22 @@ class Ewz_Layout_Input extends Ewz_Input {
     function __construct( $form_data ) {
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
+        $customvars = array_keys( Ewz_Custom_Data::$data );
+        $xcols = array_merge( array( 'att','aat','aae','aac', 'dlc', 'dtu', 'iid', 'wft', 'wid', 'wfm', 'nam', 'fnm', 'lnm', 'mnm', 'mem', 'mid', 'mli' ),
+                             $customvars );
+        
         $this->rules = array(
-            'fields' => array( 'type' => 'v_fields', 'req' => true, 'val' => '' ),
-            'forder' => array( 'type' => 'v_forder', 'req' => true, 'val' => '' ),
-            'layout_id' => array( 'type' => 'seq', 'req' => false, 'val' => '' ),
-            'layout_name' => array( 'type' => 'string', 'req' => true, 'val' => '' ),
-            'max_num_items' => array( 'type' => 'seq', 'req' => true, 'val' => '' ),
-            'ewzmode' => array( 'type' => 'fixed', 'req' => true, 'val' => 'layout' ),
-            'ewznonce' => array( 'type' => 'anonce', 'req' => true, 'val' => '' ),
-            'restrictions' => array( 'type' => 'v_restrictions', 'req' => false, 'val' => $form_data['fields'] ),
-            'action' => array( 'type' => 'fixed', 'req' => false, 'val' => 'ewz_layout_changes' ),
-            '_wp_http_referer' => array( 'type' => 'string', 'req' => false, 'val' => '' ),
-            'extra_cols' => array( 'type' => 'v_extra_cols', 'req' => false, 'val' =>
-                array( 'dtu', 'iid', 'wft', 'wid', 'wfm', 'nam', 'fnm', 'lnm', 'mnm', 'mem', 'mid', 'mli', 'custom1', 'custom2' ) ),
+            'fields'        => array( 'type' => 'v_fields',       'req' => true,  'val' => '' ),
+            'forder'        => array( 'type' => 'v_forder',       'req' => true,  'val' => '' ),
+            'layout_id'     => array( 'type' => 'seq',            'req' => false, 'val' => '' ),
+            'layout_name'   => array( 'type' => 'string',         'req' => true,  'val' => '' ),
+            'max_num_items' => array( 'type' => 'seq',            'req' => true,  'val' => '' ),
+            'ewzmode'       => array( 'type' => 'fixed',          'req' => true,  'val' => 'layout' ),
+            'ewznonce'      => array( 'type' => 'anonce',         'req' => true,  'val' => '' ),
+            'restrictions'  => array( 'type' => 'v_restrictions', 'req' => false, 'val' => $form_data['fields'] ),
+            'action'        => array( 'type' => 'fixed',          'req' => false, 'val' => 'ewz_layout_changes' ),
+            '_wp_http_referer' => array( 'type' => 'string',      'req' => false, 'val' => '' ),
+            'extra_cols'    => array( 'type' => 'v_extra_cols',   'req' => false, 'val' => $xcols ),
         );
         $this->validate();
     }
