@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 3.8
-Stable tag: 1.0.0
+Tested up to: 3.8.1
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
     +  Up to 6 entries may be submitted, each with or without a digital version 
     +  At most 2 of the 6 images may be in the "Nature" category. 
     +  Any image of type "Digital" must have an uploaded digital version
-    +  The images must be in jpeg format, with maximum dimensions of 1280 x 1024 pixels and maximum size of 1M.
+    +  The images must be in jpeg format, with maximum dimensions of 1280 x 1024 pixels, longest dimension no less than 900 pixels, and size no greater than 1M.
      
 * The administrators may set up any number of different "layouts" ( specifications of what information to ask for and what limits to enforce ), assigning an identifier to each.   
   
@@ -107,6 +107,10 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 4. Downloading the images and spreadsheet.
 
 == Changelog ==
+= 1.0.1 =
+* fixed a problem setting the change date for new installations
+* got rid of some warning messages
+
 = 1.0.0 =
 * added checkbox and radio button field types
 * allow some html tags in data uploaded by admin

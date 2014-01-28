@@ -73,13 +73,14 @@ function ewz_check_and_attach_imgs()
     if( 5 * $n > $timelimit ){
         set_time_limit ( 5 * $n );
     }
-
-    foreach ( $requestdata['ewz_check'] as $item_id ) {
-        $msg = ewz_attach_item( $item_id, $requestdata );
-        if( $msg ){
-            $errmsg .= $msg;
-        } else {
-            ++$count;
+    if( isset( $requestdata['ewz_check'] ) ){
+        foreach ( $requestdata['ewz_check'] as $item_id ) {
+            $msg = ewz_attach_item( $item_id, $requestdata );
+            if( $msg ){
+                $errmsg .= $msg;
+            } else {
+                ++$count;
+            }
         }
     }
     $errmsg .= "  $count items attached";
@@ -331,13 +332,13 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                 // append the uploaded info from the .csv file if it exists
                 $info = '';
                 if ( isset( $item->item_data[$field_id]['ptitle'] ) ) {
-                    $info .= "<p><b>Title:</b> " . wp_kses( $item->item_data[$field_id]['ptitle'], array( 'br' => array(), 'b' => array() ) ). "</p>";
+                    $info .= "<p><b>Title:</b> " . $item->item_data[$field_id]['ptitle'] . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pexcerpt'] ) ) {
-                    $info .= "<p><b>Excerpt:</b> " . wp_kses( $item->item_data[$field_id]['pexcerpt'], array( 'br' => array(), 'b' => array() ) ) . "</p>";
+                    $info .= "<p><b>Excerpt:</b> " .  $item->item_data[$field_id]['pexcerpt'] . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pcontent'] ) ) {
-                    $info .= "<p><b>Content:</b> " . wp_kses( $item->item_data[$field_id]['pcontent'], array( 'br' => array(), 'b' => array() ) ) . "</p>";
+                    $info .= "<p><b>Content:</b> " .  $item->item_data[$field_id]['pcontent'] . "</p>";
                 }
                 if ( $info ) {
                     // this gets passed through echo, so needs extra escaping for single quotes (?)

@@ -135,7 +135,7 @@ class Ewz_Item extends Ewz_Base {
     /* Return only those members of the $items list that were uploaded within
      * the last $days days
      */
-    static private function only_recent( $items, $days ) {
+    private static function only_recent( $items, $days ) {
         assert( is_array( $items ) );
         assert( Ewz_Base::is_pos_int( $days ) );
 
@@ -245,7 +245,7 @@ class Ewz_Item extends Ewz_Base {
             if ( is_string( $this->item_files ) ) {
                 $this->item_files = unserialize( $this->item_files );
             }
-        }
+        } 
         foreach ( self::$varlist as $key => $type ) {
             settype( $this->$key, $type );
         }
@@ -340,7 +340,6 @@ class Ewz_Item extends Ewz_Base {
             $content = str_replace( "'", '&#039;', $content);
 
             $this->item_data[$field_id]['ptitle']   = wp_kses( $title,   $allowed_html );
-            $this->item_data[$field_id]['ptitle']   = wp_kses( $title,   $allowed_html );
             $this->item_data[$field_id]['pexcerpt'] = wp_kses( $excerpt, $allowed_html );
             $this->item_data[$field_id]['pcontent'] = wp_kses( $content, $allowed_html );
         }
@@ -369,19 +368,17 @@ class Ewz_Item extends Ewz_Base {
         //**NB: need to stripslashes *before* serialize, otherwise character counts are wrong
         // WP automatically adds slashes for quotes
         $data = stripslashes_deep( array(
-            'user_id' => $this->user_id,
-            'webform_id' => $this->webform_id,
-            'item_data' => serialize( stripslashes_deep( $this->item_data ) ),
-                ) );
+                                         'user_id' => $this->user_id,
+                                         'webform_id' => $this->webform_id,
+                                         'item_data' => serialize( stripslashes_deep( $this->item_data ) ),
+                                         ) );
 
-        // don't update item_files unless there was a real image upload,
+        // *** don't update item_files unless there was a real image upload ***
+        // item_files is set from the uploaded data, so does not contain any previously uploaded image files
+        // when it is saved, it overwrites anything that was already there
 
-        // ***** This assumes that if any image for the item is uploaded, all are
-        //       uploaded at once, which is what has to happen in the current gui.
-        // *****
-
-        //***** No stripslashes here - wp doesn't escape $_FILES as it does $_POST
         if ( isset( $this->item_files ) && count( $this->item_files ) > 0 ) {
+            // No stripslashes here - wp doesn't escape $_FILES as it does $_POST
             $data['item_files'] = serialize( $this->item_files ) ;
         }
 
@@ -410,23 +407,32 @@ class Ewz_Item extends Ewz_Base {
                                                    " WHERE user_id = %d AND webform_id = %d ",
                                                    $this->user_id, $this->webform_id ) );
             if( $this->get_num_items_allowed() < ( $num + 1 ) ){
-                foreach( $this->item_files as $item_file ){
-                    $errors .= $this->delete_file( $item_file );
+                if ( isset( $this->item_files ) ){
+                    foreach( $this->item_files as $item_file ){
+                        $errors .= $this->delete_file( $item_file );
+                    }
                 }
-                throw new EWZ_Exception( 'Too many items uploaded, no data saved for ' . basename( $item_file['fname'] ) . "\n", $errors );
+                throw new EWZ_Exception( "Too many items uploaded, no data saved.\n", $errors );
             } else {
+                // actually creating a new item
+                if( !isset( $data['item_files'] ) ){
+                    $data['item_files'] = serialize( array() ) ;
+                }
                 $data['upload_date'] = current_time( 'mysql' );
+                array_push( $datatypes, '%s' );
+                $data['last_change'] = $data['upload_date'];
                 array_push( $datatypes, '%s' );
 
 
                 $wpdb->insert( EWZ_ITEM_TABLE, $data, $datatypes );
                 $inserted = $wpdb->insert_id;
                 if ( !$inserted ) {
-                    foreach( $this->item_files as $item_file ){
-                        $errors .= $this->delete_file( $item_file );
+                    if ( isset( $this->item_files ) ){
+                        foreach( $this->item_files as $item_file ){
+                            $errors .= $this->delete_file( $item_file );
+                        }
                     }
-                    throw new EWZ_Exception( 'Sorry, there was a problem creating the item '. basename( $item_file['fname'] ) . 
-                                             ", please refresh the page to see your current status.\n", $errors );
+                    throw new EWZ_Exception( "Sorry, there was a problem saving some items, please refresh the page to see your current status.\n", $errors );
                 }
             }
         }
@@ -460,8 +466,10 @@ class Ewz_Item extends Ewz_Base {
         }
 
         // Attempt to delete all files, don't just raise exception after first failure
-        foreach ( $this->item_files as $item_file ) {
-            $errors .= $this->delete_file( $item_file );
+        if( isset( $this->item_files ) ){
+            foreach ( $this->item_files as $item_file ) {
+                $errors .= $this->delete_file( $item_file );
+            }
         }
         if ( $errors ) {
             throw new EWZ_Exception( "Problem deleting item:\n$errors" );

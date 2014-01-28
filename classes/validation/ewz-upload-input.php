@@ -39,9 +39,9 @@ class Ewz_Upload_Input extends Ewz_Input
     }
 
 
-    public static function is_valid_ident( $identifier ){
+    public function is_valid_ident( $identifier ){
         assert( is_string(  $identifier ) );
-        return $this->ident( $identifier );
+        return self::ident( $identifier );
     }
 
   //****** All v_.... functions must return a boolean **************/
@@ -57,7 +57,7 @@ class Ewz_Upload_Input extends Ewz_Input
       assert( is_array( $value ) );
       assert( $arg == '' );
       foreach ( array_keys( $value ) as $id ){
-          return $this->seq( $value[$id], $arg  );      // seq potentially changes first arg
+          return self::seq( $value[$id], $arg  );      // seq potentially changes first arg
       }
   }
 

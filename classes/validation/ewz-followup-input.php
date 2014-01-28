@@ -78,11 +78,13 @@ class Ewz_Followup_Input extends Ewz_Input
                     throw new EWZ_Exception( "Invalid field type " . $this->field_type );
                 }
            }
+            unset( $val );
             $bad_data = '';
             if ( $bad_data ) {
                 throw new EWZ_Exception( "Restrictions not satisfied: $bad_data" );
             }
         }
+        unset( $input_row );
         return true;
     }
 

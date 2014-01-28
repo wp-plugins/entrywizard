@@ -197,7 +197,7 @@ if(eObj.user_options){
     str +=   '            <td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'openfor\')">&nbsp;Show user selection list</td>';
     str +=   '            <td><input type="checkbox"  id="show_uselect_' + evnum + '" onChange="' + clickstr + '"></td>';
     str +=   '            <td><div id="' + divid + '" style="display:none">';
-    str +=   '                  <select  multiple="multiple" size="8" name="o_user[]" id="o_user_' + evnum + '_">' +  eObj.user_options + '</select>';
+    str +=   '                  Open for selected users only:<br><select  multiple="multiple" size="8" name="o_user[]" id="o_user_' + evnum + '_">' +  eObj.user_options + '</select>';
     str +=   '                </div></td>';
     str +=   '        </tr>';
 }

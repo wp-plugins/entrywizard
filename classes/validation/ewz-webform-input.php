@@ -64,7 +64,7 @@ class Ewz_Webform_Input extends Ewz_Input
              throw new EWZ_Exception( 'Bad input for user' );
          }
          foreach( $value as $key => $uid ){
-             if( !$this->seq( $value[$key], $arg ) ){   // seq potentially changes first arg
+             if( !self::seq( $value[$key], $arg ) ){   // seq potentially changes first arg
                  throw new EWZ_Exception( "Bad value '$uid' for user" );
              }
          }

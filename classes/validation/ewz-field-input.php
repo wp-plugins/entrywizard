@@ -66,7 +66,7 @@ class Ewz_Field_Input extends Ewz_Input
      * @param  array  $field     input string field to check
      * @return string $bad_data  comma-separated list of bad data
      */
-    private function valid_str_input( &$field )
+    private static function valid_str_input( &$field )
     {
         assert( is_array( $field ) );
 
@@ -119,7 +119,7 @@ class Ewz_Field_Input extends Ewz_Input
      *
      * @param  array  $field  input image field to check
      */
-    private function valid_img_input( $field )
+    private static function valid_img_input( $field )
     {
         assert( is_array( $field ) );
 
@@ -212,7 +212,7 @@ class Ewz_Field_Input extends Ewz_Input
      * @param  array  $field  input option field to check
      * @return string $bad_data  comma-separated list of bad data
      */
-    private function valid_opt_input( &$fdata )
+    private static function valid_opt_input( &$fdata )
     {
         assert( is_array( $fdata ) );
 
