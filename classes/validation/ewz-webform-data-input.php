@@ -28,7 +28,7 @@ class Ewz_Webform_Data_Input extends Ewz_Input
     }
 
 
-     function v_fopts( $value, $arg ){
+     static function v_fopts( $value, $arg ){
          assert( is_array( $value ) || empty( $value ) );
          assert( isset( $arg ) );
          if( !is_array( $value ) ){
@@ -39,11 +39,11 @@ class Ewz_Webform_Data_Input extends Ewz_Input
          }
          foreach( $value as $key => $val ){
              if( !preg_match( self::REGEX_SEQ, $key )  ){
-                 throw new EWZ_Exception( "Invalid key '$key' for field option" );
+                 throw new EWZ_Exception( "Invalid key for field option: '$key' " );
              }  
              if ( !( is_string( $val ) &&
                      preg_match( '/^[_a-zA-Z0-9\-\~\+\*\-]*$/', $val ) ) ){
-                 throw new EWZ_Exception( "Invalid value '$val' for field option");
+                 throw new EWZ_Exception( "Invalid value for field option: '$val' ");
              }
          }  
          return true;

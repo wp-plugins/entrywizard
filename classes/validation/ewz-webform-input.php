@@ -19,8 +19,10 @@ class Ewz_Webform_Input extends Ewz_Input
                   'ewzmode'        =>  array( 'type' => 'fixed',  'req' => true,  'val' => 'webform' ),
                   'ewznonce'       =>  array( 'type' => 'anonce', 'req' => true,  'val' => '' ),
                   'layout_id'      =>  array( 'type' => 'seq',    'req' => true,  'val' => '' ),
+                  'num_items'      =>  array( 'type' => 'seq',    'req' => false,  'val' => '' ),
                   'page'           =>  array( 'type' => 'fixed',  'req' => true,  'val' => 'entrywizard' ),
                   'prefix'         =>  array( 'type' => 'v_prefix', 'req' => false,  'val' => '' ),
+                  'apply_prefix'   =>  array( 'type' => 'bool',   'req' => false,  'val' => '' ),
                   'upload_open'    =>  array( 'type' => 'bool',   'req' => false,  'val' => '' ),
                   'o_user'         =>  array( 'type' => 'v_users', 'req' => false,  'val' => '' ),
                   'webform_id'     =>  array( 'type' => 'seq',    'req' => false,  'val' => '' ),
@@ -38,6 +40,9 @@ class Ewz_Webform_Input extends Ewz_Input
         if ( !array_key_exists( 'upload_open', $this->input_data ) ) {
             $this->input_data['upload_open'] = false;
         }
+        if ( !array_key_exists( 'apply_prefix', $this->input_data ) ) {
+            $this->input_data['apply_prefix'] = false;
+        }
         return true;
      }
 
@@ -46,10 +51,9 @@ class Ewz_Webform_Input extends Ewz_Input
      function v_prefix( $value, $arg ){
          assert( is_string( $value ) || empty( $value ) );
          assert( $arg == '' );
-         if( !is_string( $value ) && preg_match( '/^[\[\]A-Z0-9~\-_]*$/i', $value ) ){
+         if( !is_string( $value ) || !preg_match( '/^[\[\]A-Z0-9~\-_]*$/i', $value ) ){
              throw new EWZ_Exception( 'Bad input for prefix' );
          }
-
          return true;
      }
 
@@ -60,7 +64,7 @@ class Ewz_Webform_Input extends Ewz_Input
              throw new EWZ_Exception( 'Bad input for user' );
          }
          foreach( $value as $key => $uid ){
-             if( !$this->seq( $value[$key], $arg ) ){   // seq potentially changes first arg
+             if( !self::seq( $value[$key], $arg ) ){   // seq potentially changes first arg
                  throw new EWZ_Exception( "Bad value '$uid' for user" );
              }
          }

@@ -13,6 +13,12 @@ abstract class Ewz_Base
 
     abstract public function delete();
 
+    // get from database given key
+    abstract protected function create_from_id( $id );
+
+    // create from uploaded data
+    abstract protected function create_from_data( $data );
+
     public static function validate_using_javascript(){
         // normally returns true
         // return false to force all validation to be done on server,
@@ -83,12 +89,12 @@ abstract class Ewz_Base
      * @param   mixed   String or Integer
      * @return  boolean
      */
-    public function is_nn_int( $val ){
+    public static function is_nn_int( $val ){
         // no assert
         if( is_string( $val )){
             return preg_match( '/^[0-9]+$/', $val );
         } else {
-            return is_int( $val );
+            return ( is_int( $val ) && ( $val >= 0 ) );
         }
     }
 
@@ -98,7 +104,7 @@ abstract class Ewz_Base
      * @param   mixed   String or Integer
      * @return  boolean
      */
-    public function is_pos_int( $val ){
+    public  static function is_pos_int( $val ){
         // no assert
         if( is_string( $val )){
             return preg_match( '/^[1-9][0-9]*$/', $val );

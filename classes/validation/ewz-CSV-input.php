@@ -15,7 +15,7 @@ class Ewz_CSV_Input extends Ewz_Input
          $this->rules = array(
 
                   '_wp_http_referer'=> array( 'type' => 'string', 'req' => false, 'val' => '' ),
-                  'ewzmode'         => array( 'type' => 'fixed',  'req' => true,  'val' => 'csv' ),
+                  'ewzmode'         => array( 'type' => 'limited',  'req' => true,  'val' => array('csv','itmcsvdata' ) ),
                   'ewznonce'        => array( 'type' => 'anonce', 'req' => true,  'val' => '' ),
                   'webform_id'      => array( 'type' => 'seq',    'req' => true,  'val' => '' ),
                   'csv_btn'         => array( 'type' => 'noval',  'req' => true,  'val' => '' ),
