@@ -70,7 +70,7 @@ class Ewz_Item extends Ewz_Base {
         $list = $wpdb->get_results( $wpdb->prepare(
                "SELECT item_id  FROM " .
                 EWZ_ITEM_TABLE . " WHERE webform_id = %d" . $clause . " ORDER BY item_id",
-               $webform_id ) );
+               $webform_id ), OBJECT );
         $items = array( );
         foreach ( $list as $itm ) {
             $newItem = new Ewz_Item( $itm->item_id );
@@ -228,8 +228,8 @@ class Ewz_Item extends Ewz_Base {
 
 
     protected function get_num_items_allowed(){
-        $layout = new Ewz_Layout( $this->layout_id);
-        return $layout->max_num_items;
+        $webform = new Ewz_Webform( $this->webform_id);
+        return $webform->num_items;
     }
 
     /********************  Validation  *******************************/
@@ -255,10 +255,10 @@ class Ewz_Item extends Ewz_Base {
         if ( !Ewz_Webform::is_valid_webform( $this->webform_id ) ) {
             throw new EWZ_Exception( 'No such webform', $this->webform_id );
         }
-        foreach( $this->item_data as $field_id => $field_data ){
-            if( $field_id != 'attachedto'){
-                if( !Ewz_Field::is_valid_field( $field_id, $this->layout_id ) ){
-                    throw new EWZ_Exception( "No such field for the layout", "field $field_id, layout " . $this->layout_id );
+        foreach( $this->item_data as $data_id => $field_data ){
+            if( ( $data_id != 'attachedto' ) && ( $data_id != 'admin_data' ) ){
+                if( !Ewz_Field::is_valid_field( $data_id, $this->layout_id ) ){
+                    throw new EWZ_Exception( "No such field for the layout", "field $data_id, layout " . $this->layout_id );
                 }
             }
         }
@@ -290,9 +290,7 @@ class Ewz_Item extends Ewz_Base {
      * This function must also validate, since the input comes from a
      * user-written text file, not a web page which would be validated earlier.
      *
-     * @param post_title
-     * @param post_excerpt
-     * @param post_content
+     * @param $data ( field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ] )
      * @return none
      */
     public function set_uploaded_info( $data ) {
@@ -300,29 +298,29 @@ class Ewz_Item extends Ewz_Base {
         $ddata = $data;
         // $data is expected to have the following structure:
         // field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ]
-        $row = 0;
+        $col = 1;
         while ( isset( $ddata[0] ) ) {
             assert( is_string( $ddata[0] ) );
             $field_ident = array_shift( $ddata );
 
-            ++$row;
+            ++$col;
             if ( !isset( $field_ident ) ) {
-                throw new EWZ_Exception( "Missing field identifier in row $row of .csv file" );
+                throw new EWZ_Exception( "Missing field identifier for $this->item_id in column $col of .csv file" );
             }
             $field_id = Ewz_Field::field_id_from_ident_arr(
                     array( 'layout_id' => $this->layout_id, 'field_ident' => $field_ident ) );
 
             $title = array_shift( $ddata );
             if ( !isset( $title ) ) {
-                throw new EWZ_Exception( "Missing field title in row $row of .csv file" );
+                throw new EWZ_Exception( "Missing field title for $this->item_id in column $col of .csv file" );
             }
             $excerpt = array_shift( $ddata );
             if ( !isset( $excerpt ) ) {
-                throw new EWZ_Exception( "Missing field excerpt in row $row of .csv file" );
+                throw new EWZ_Exception( "Missing field excerpt for $this->item_id in column $col of .csv file" );
             }
             $content = array_shift( $ddata );
             if ( !isset( $content ) ) {
-                throw new EWZ_Exception( "Missing field content in row $row of .csv file" );
+                throw new EWZ_Exception( "Missing field content for $this->item_id in column $col of .csv file" );
             }
             // wp_kses checks for invalid UTF-8, converts single < characters to entities,
             // *** strips all html tags except those in $allowed_html***,
@@ -343,6 +341,37 @@ class Ewz_Item extends Ewz_Base {
             $this->item_data[$field_id]['pexcerpt'] = wp_kses( $excerpt, $allowed_html );
             $this->item_data[$field_id]['pcontent'] = wp_kses( $content, $allowed_html );
         }
+        $this->save();
+    }
+    /**
+     * Add extra data uploaded via admin .csv file ( see webforms ), and save
+     * This function must also validate, since the input comes from a
+     * user-written text file, not a web page which would be validated earlier.
+     *
+     * @param $data ( field_ident, data )
+     * @return none
+     */
+    public function set_uploaded_admin_data( $admin_data ) {
+        assert( is_string( $admin_data ) );
+        if ( !isset( $admin_data ) ) {
+            throw new EWZ_Exception( "Missing field admin_data for item $this->item_id in .csv file" );
+        }
+
+        // wp_kses checks for invalid UTF-8, converts single < characters to entities,
+        // *** strips all html tags except those in $allowed_html***,
+        // removes other line breaks, tabs and extra white space, strips octets.
+
+        // what wp allows in comments, plus <br>
+        global $allowedtags; 
+
+        $allowed_html = $allowedtags;
+        $allowed_html['br'] = array();   
+
+        // this is needed because the strings are single-quoted in some javascript
+        $admin_data = str_replace( "'", '&#039;', $admin_data);
+
+        $this->item_data['admin_data']   = wp_kses( $admin_data, $allowed_html );
+        
         $this->save();
     }
 
@@ -372,7 +401,6 @@ class Ewz_Item extends Ewz_Base {
                                          'webform_id' => $this->webform_id,
                                          'item_data' => serialize( stripslashes_deep( $this->item_data ) ),
                                          ) );
-
         // *** don't update item_files unless there was a real image upload ***
         // item_files is set from the uploaded data, so does not contain any previously uploaded image files
         // when it is saved, it overwrites anything that was already there

@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.0.1
+  Version: 1.1.0
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -32,7 +32,6 @@ define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
 define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
-
 
 /*
  * INCLUDES
@@ -70,7 +69,7 @@ add_action( 'admin_init', 'ewz_check_for_db_updates' );
 /*
  * SHORTCODE
  */
-if ( !is_admin() ) {
+if ( !is_admin() ) { 
     // adding this for all admin pages triggers warnings for some themes and plugins
     // just add it specifically for the ajax calls when they are run in ewz-admin.php
     add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
@@ -102,6 +101,13 @@ function ewz_check_for_db_updates(){
             Ewz_Setup::activate_or_install_ewz();
             Ewz_Item::set_upload_date();
         }
+        // 1.1.0 added num_items to webform table and override to layout table
+        if ( version_compare( $ewz_data_version, '1.1.0', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 1.1.0");
+            Ewz_Setup::activate_or_install_ewz();
+            Ewz_Webform::set_num_items();
+        }
+        
         update_option( 'ewz_data_version', $this_version );
     }
 }
@@ -293,11 +299,11 @@ function ewzdbg( $str, $in_obj = null )
 {
     if ( defined( 'EWZ_DBG' ) && EWZ_DBG ){
         // no assert
-        if ( $in_obj ) {
-            error_log(  "RHCC object $str: " . print_r( $in_obj, true ) );
+        if ( $in_obj !== null ) {
+            error_log(  "EWZ_DBG object $str: " . var_export( $in_obj, true ) );
             return;
         } else {
-            error_log( 'RHCC variable: ' .  print_r( $str, true ) );
+            error_log( 'EWZ_DBG variable: ' .  var_export( $str, true ) );
             return;
         }
     }

@@ -19,6 +19,7 @@ class Ewz_Webform_Input extends Ewz_Input
                   'ewzmode'        =>  array( 'type' => 'fixed',  'req' => true,  'val' => 'webform' ),
                   'ewznonce'       =>  array( 'type' => 'anonce', 'req' => true,  'val' => '' ),
                   'layout_id'      =>  array( 'type' => 'seq',    'req' => true,  'val' => '' ),
+                  'num_items'      =>  array( 'type' => 'seq',    'req' => false,  'val' => '' ),
                   'page'           =>  array( 'type' => 'fixed',  'req' => true,  'val' => 'entrywizard' ),
                   'prefix'         =>  array( 'type' => 'v_prefix', 'req' => false,  'val' => '' ),
                   'apply_prefix'   =>  array( 'type' => 'bool',   'req' => false,  'val' => '' ),
@@ -50,10 +51,9 @@ class Ewz_Webform_Input extends Ewz_Input
      function v_prefix( $value, $arg ){
          assert( is_string( $value ) || empty( $value ) );
          assert( $arg == '' );
-         if( !is_string( $value ) && preg_match( '/^[\[\]A-Z0-9~\-_]*$/i', $value ) ){
+         if( !is_string( $value ) || !preg_match( '/^[\[\]A-Z0-9~\-_]*$/i', $value ) ){
              throw new EWZ_Exception( 'Bad input for prefix' );
          }
-
          return true;
      }
 

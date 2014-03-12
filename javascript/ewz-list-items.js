@@ -3,34 +3,31 @@
 function processForm(formId) {
     'use strict';
     var jform = jQuery("#"+formId);
+    jQuery('#doaction').prop("disabled", true );
+    jQuery('#doaction2').prop("disabled", true );
+    if(( jform.find('select[name="action"]').val() === 'ewz_attach_imgs') ||
+        ( jform.find('select[name="action2"]').val() === 'ewz_attach_imgs') ){
+        if( !(jform.find('input[type="hidden"][name="ifield"]').length > 0) &&
+            !(jform.find('input[type="radio"][name="ifield"]:checked').length > 0) ){
+            jQuery('#doaction').prop("disabled", false );
+            jQuery('#doaction2').prop("disabled", false );
+            alert( "Please select an image column");
+            return false;
+        }
+    }      
+           
+
     if( ( jform.find('select[name="action"]').val() === 'ewz_batch_delete') ||
-        ( jform.find('select[name="action2"]').val() === 'ewz_batch_delete') ){
+        ( jform.find('select[name="action2"]').val() === 'ewz_batch_delete')||
+        ( jform.find('select[name="action"]').val() === 'ewz_attach_imgs') ||
+        ( jform.find('select[name="action2"]').val() === 'ewz_attach_imgs') ){
 
-        jQuery('#message').html('<img alt="" src="' + ewzG.load_gif + '"/>');
-        jQuery.post( ajaxurl,
-                     jform.serialize(),
-                     function (response) {
-                         alert(response);
-                         jQuery('#message').html('');
-                         document.location.reload(true);
-                     });
-        return false;
-
-    } else if( ( jform.find('select[name="action"]').val() === 'ewz_attach_imgs') ||
-              ( jform.find('select[name="action2"]').val() === 'ewz_attach_imgs') ){
-        
         jQuery('#message').html('<img alt="" src="' + ewzG.load_gif + '"/>');
         var overlay = jQuery('<div></div>').prependTo('body').attr('id', 'overlay');
-        jQuery.post( ajaxurl,
-                     jform.serialize(),
-                     function (response) {
-                         jQuery('#message').html('');
-                         overlay.remove();
-                         alert(response);
-                         document.location.reload(true);                         
-                     });
-        return false;
+        return true;
     } else {
+        jQuery('#doaction').prop("disabled", false );
+        jQuery('#doaction2').prop("disabled", false );
         alert( "Please select an action");
         return false;
     }        

@@ -56,7 +56,7 @@ abstract class Ewz_Input {
                 if( $this->rules[$field]['type'] == 'noval' ){
                     return true;
                 } elseif (  $this->rules[$field]['req'] ) {
-                    throw new EWZ_Exception( get_class( $this ) . ": $field required.");
+                    throw new EWZ_Exception( get_class( $this ) . ": $field is required.");
                 } else {
                     $this->input_data[$field] = $this->rules[$field]['val'];
                 }
@@ -80,7 +80,8 @@ abstract class Ewz_Input {
                                           array( $this, $this->rules[$field]['type'] ),   // function to call
                                           array( &$this->input_data[$field], $this->rules[$field]['val'] )    // args to pass
                                           ) ){
-                    throw new EWZ_Exception( get_class( $this ) . " found invalid value for $field: " . $value );
+                    $class = str_replace( '_Input', '', str_replace( 'Ewz_', '', get_class( $this ) ) );
+                    throw new EWZ_Exception( $class . " found invalid value for $field: " . $value );
                 }
             }
         }
@@ -118,6 +119,7 @@ abstract class Ewz_Input {
         assert( isset( $arg ) );
         return check_admin_referer( 'ewzadmin', 'ewznonce' );
     }
+
     protected static function unonce( $value, $arg ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
@@ -214,26 +216,26 @@ abstract class Ewz_Input {
         assert( is_string( $value ) || $value == null );
         assert( isset( $arg ) );
         if( !( in_array( $value, array( '1', 1, 'on', 0, '0', 'off' ) ) ) ){
-            $value = 0;
+            $value = false;
             return false;
         }
         switch( $value ){
         case 1:
         case '1':
         case 'on':
-            $value = 1;
+            $value = true;
             return true;
             break;
         case 0:
         case '0':
         case 'off':
-            $value = 0;
+        case null:
+            $value = false;
             return true;
             break;
         default:
             return false;
         }
-
     }
 
     protected static function str_len( $value, $limits ) {

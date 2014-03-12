@@ -18,6 +18,70 @@ require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
  * @param    $webform_id    webform
  * @return   success message
  */
+function ewz_process_uploaded_admin_data( $webform_id )
+{
+    assert( Ewz_Base::is_pos_int( $webform_id ) );
+
+    // needed for Windows files ???
+   ini_set('auto_detect_line_endings', true);
+   if( !isset( $_FILES['itmcsv_data'] ) ){
+       return( "No uploaded files");
+   }
+   $csvfile_data = $_FILES['itmcsv_data'];
+   $file_tmp_name = $csvfile_data['tmp_name'];
+
+   //Browsers don't always get the type right
+   //if( 'text/csv' != $csvfile_data['type'] ){
+   //    throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
+   //}
+
+   if( $csvfile_data['error'] ){
+     throw new EWZ_Exception( 'Failed to upload .csv file of admin data' );
+   }
+   if ( !is_readable($file_tmp_name) ) {
+       throw new EWZ_Exception( 'Failed to read uploaded .csv file of admin data' );
+   }
+   if ( false === ($fh = fopen($file_tmp_name, 'r')) ) {
+       throw new EWZ_Exception( 'Failed to open uploaded .csv file of admin data' );
+   }
+
+   $f_h = fopen($file_tmp_name, "r");
+   $n = 0;
+   $errs = '';
+   while (( $data = fgetcsv($f_h, 1000 ))){
+
+       if( isset( $data[0] ) ){
+           $item_id = array_shift( $data );
+           try{
+               if( !is_numeric( $item_id ) ){
+                   throw new EWZ_Exception( "File is not in correct format - please read help." );
+               }
+               $item = new Ewz_Item( $item_id );
+               if( $item->webform_id == $webform_id ){
+                   $item->set_uploaded_admin_data( $data[0] );
+                   ++$n;
+               } else {
+                   // item_id is part of user-generated input, so include it in error message
+                   throw new EWZ_Exception( "Item $item_id not found in this webform" );
+               }
+           } catch( Exception $e ) {
+               $errs .= "Item $item_id: ". $e->getMessage() . "\n";
+           }
+       }
+   }
+   fclose( $f_h );
+   return $errs . "Admin data for $n items successfully saved";
+}
+
+/**
+ * Store the per-item info in an uploaded csv file for a webform
+ *
+ * Checks to make sure item is attached to webform - otherwise, webform param is not
+ * used, but seems a good idea to force a separate upload for each form.
+ *
+ * @param    $webform_id    webform
+ * @return   success message
+ */
 function ewz_process_uploaded_csv( $webform_id )
 {
     assert( Ewz_Base::is_pos_int( $webform_id ) );
@@ -120,6 +184,14 @@ function ewz_webforms_menu()
                // then process $_FILES
                $message = ewz_process_uploaded_csv( $data['webform_id'] );
                break;
+           case 'itmcsvdata':
+               // upload a csv of text data form items
+               // first validate $_POST, $_GET - raises exceptions on problems
+               $input = new Ewz_CSV_Input( array_merge( $_POST, $_GET ) );
+               $data = $input->get_input_data();
+               // then process $_FILES
+               $message = ewz_process_uploaded_admin_data( $data['webform_id'] );
+               break;
 
            default:
                throw new EWZ_Exception( 'Invalid Input ', 'mode=' . $_POST['ewzmode'] );
@@ -161,8 +233,7 @@ function ewz_webforms_menu()
 
             // easier in Javascript if this is set
             $webform->layout_name = $layout->layout_name;
-            $webform->webform_title = $webform->webform_title;
-
+            $webform->canOverride = $layout->override;
             $webform = ewz_html_esc( $webform );
 
             // has to be escaped separately because it contains html
@@ -186,7 +257,6 @@ function ewz_webforms_menu()
         /*******************************/
         $ewzG = array( 'webforms' => $webforms );
         $ewzG['list_page'] = admin_url( 'admin.php?page=entrywizlist' );
-
         // the webform that should start off open
         $openwebform_id = 0;
         if ( array_key_exists( 'openwebform', $_GET ) ){
@@ -236,7 +306,7 @@ function ewz_webforms_menu()
 
         <div id="help-text" style="display:none">
 
-        <!-- HELP POPUP -->
+        <!-- HELP POPUP shortcode -->
         <div id="shortcode_help" class="wp-dialog" >
          <h2>The ewz_show_webform shortcode</h2>
          <p>The shortcode <b>&nbsp; &#91;ewz_show_webform &nbsp; identifier="xxx"&#93;</b> &nbsp; inserts the 
@@ -245,14 +315,15 @@ function ewz_webforms_menu()
              <hr>
          <h2>The ewz_followup shortcode</h2>
          <p>It is also possible to display a read-only summary of all the  data uploaded 
-            by the user, possibly in several different webforms, using the shortcode<br>
-            <b>&#91;ewz_followup &nbsp; idents="ident1,ident2,ident3" &nbsp; show="excerpt,content"&#93;</b>
+            by the user, in different webforms, using the shortcode<br>
+            <b>&#91;ewz_followup &nbsp; idents="ident1,ident2,ident3" &nbsp; show="item_data,content"&#93;</b>
           </p>
          <p>This will display, in read-only form, all data uploaded by the user via the webforms
-             with identifiers "ident1","ident2" or "ident3".  If the administrator uploaded extra  
-            'title', 'excerpt' and 'content' data 
-            ( using the upload facility in the Data Management area of the webforms page ), 
-            the uploaded excerpt and content data will be also be displayed.</p>
+            with identifiers "ident1","ident2" or "ident3", plus "item_data" and "content" items uploaded by the administrator</p>
+         <p>The "show" parameter may include any ( or none ) of "title","excerpt","content","item_data" provided these items
+            were uploaded using the "extra image data" or  "extra item data" forms in the 
+            Data Management area of the webforms page.
+         </p>
              <hr>
          <p><i>If the webforms all use a layout that contains the same special field with identifier "followupQ" </i>,
              the followup display will become a form with this one field as an input for each item.
@@ -262,10 +333,19 @@ function ewz_webforms_menu()
           <p>Restrictions will not be enforced on followup fields.</p>
         </div>
 
+        <!-- HELP POPUP wlayout -->
         <div id="wlayout_help" class="wp-dialog" >
             <p>The layouts are created in the Layouts admin page.
                 You select one here. It determines what information is required,
                 and in what order the items appear in the form.</p>
+            <p>If the selected layout allows the webform to override the number of items allowed,
+               you will need to save the webform before the "number of items" selection box appears.</p>
+        </div>
+
+        <!-- HELP POPUP numitems -->
+        <div id="numitems_help" class="wp-dialog" >
+           <p>If the layout allows it, this option overrides the "Maximum number of items" set in the layout.</p>
+           <p>It has no effect on any maximum numbers set in the layout for drop-down selection fields.</p>
         </div>
 
         <!-- HELP POPUP identifier -->
@@ -324,16 +404,17 @@ function ewz_webforms_menu()
         <!-- HELP POPUP csv upload -->
         <div id="csv_help" class="wp-dialog" >
              <p>You may optionally upload a .csv file containing three extra items
-                 of data to be stored for a field. For images you attach to a page,
+                 of data to be stored for each <b>image field</b>. For images you attach to a page,
                  these three items are used for the Title, Excerpt and Content of
-                 the image.  Otherwise, they may be used for any purpose.
+                 the image.  Otherwise, they may be used for any purpose, including display
+                 in a "followup" page. 
              <ul>
             <li>The file must be in plain text, "comma-delimited" format.<br>
                 The easiest way to generate the .csv file is to save a spreadsheet
                 in .csv format.</li>
             <li>The first column <b>must contain the wordpress item sequence number</b>.
-                You may obtain this by including the WP Item ID under Extra Data in
-                the layout and then viewing it by clicking "Manage Items" on the webforms page.</li>
+                You may obtain this by including the WP Item ID under Extra Data in the layout and then 
+                viewing it by clicking "Manage Items" on the webforms page or by downloading the spreadsheet.</li>
             <li>The rest of the columns contain, in this order, the image-field
                 identifier, title, excerpt, content for each image you wish to
                 annotate in this way.</li>    
@@ -347,6 +428,21 @@ function ewz_webforms_menu()
                for column 5", "Excerpt #5","Content for image in column 5"</i><br><br>
                would create Title, Excerpt and Content values for the images in columns 1 and 5
                of item 700</p>
+        </div>
+        <div id="itmcsv_help" class="wp-dialog" >
+             <p>You may also optionally upload a .csv file containing a single piece
+                of text to be stored for each <b>item</b>. 
+             <ul>
+            <li>The file must be in plain text, "comma-delimited" format.<br>
+                The easiest way to generate the .csv file is to save a spreadsheet
+                in .csv format.</li>
+            <li>The first column <b>must contain the wordpress item sequence number</b>.
+                You may obtain this by including the WP Item ID under Extra Data in
+                the layout and then viewing it by clicking "Manage Items" on the webforms page.</li>
+            <li>The second column should contain the text you wish to store for the item</li>    
+            <li>You may use some basic html markup in your text:<br> 
+            <?php print allowed_tags(); print "&lt;br&gt;"; ?></li>
+           </ul>
         </div>
 
         <!-- HELP POPUP data selection -->

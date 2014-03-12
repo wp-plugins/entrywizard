@@ -53,7 +53,6 @@ function ewz_check_and_attach_imgs()
         throw new EWZ_Exception( 'Attempt to attach items without permission to manage webform' );
     }
 
-
     // save the options for attaching, because may need to use the same ones for several pages
     $save_prefs = array(
                         'ewz_page_sel' => $requestdata['ewz_page_sel'],
@@ -65,7 +64,10 @@ function ewz_check_and_attach_imgs()
     $webform->save_attach_prefs( $save_prefs );
 
     $count = 0;
-    $n = count( $requestdata['ewz_check'] );
+    $n = 0;
+    if( isset( $requestdata['ewz_check'] ) ){
+        $n = count( $requestdata['ewz_check'] );
+    }
     $errmsg = '';
 
     // allow extra time for processing - this can be slow
@@ -204,8 +206,10 @@ function ewz_batch_delete_items(  )
     } catch( Exception $e ){
         return $e->getMessage();
     }
-
-    $items_for_deletion = $requestdata['ewz_check'];
+    $items_for_deletion = array();
+    if( isset( $requestdata['ewz_check'] ) ){
+        $items_for_deletion = $requestdata['ewz_check'];
+    }
     $n = 0;
     foreach ( $items_for_deletion as $item_id ) {
         $item = new Ewz_Item( $item_id );
@@ -275,7 +279,7 @@ function ewz_get_img_cols( $fields )
  * @param $fields       array of Ewz_Fields, indexed on field_id
  * @param $extra_cols   array of integers representing column numbers, indexed
  *                        by the extra_column abbreviations
- *                       ('att','aat','aae','aac','dlc','dtu','iid','wft','wid','wfm','nam','fnm',
+ *                       ('att','aat','aae','aac','add','dlc','dtu','iid','wft','wid','wfm','nam','fnm',
  *                        'lnm', 'mnm', 'mem','mid', 'mli', 'custom1', 'custom2', ... )
  * @param $wform        Ewz_Webform
  *
@@ -420,6 +424,25 @@ function ewz_get_img_size_options( $selected ) {
     return $options;
 }
 
+/**
+ * Return a function to be used to sort the array
+ *
+ * @param   $sort_col  column to sort on (numeric, 0-based)
+ * @param   $sort_order  string 'asc' or 'desc'
+ * @return  the function
+ */
+function ewz_item_list_sort( $sort_col, $sort_order ){
+    assert( Ewz_Base::is_nn_int( $sort_col ) );
+    assert( ( $sort_order == 'asc' ) || ( $sort_col == 'desc' ) );
+            
+    return function($a, $b) use ( $sort_col, $sort_order ) {
+        if( $sort_order == 'asc' ){
+            return strcmp( $a[$sort_col], $b[$sort_col] );
+        } else {
+            return  strcmp( $b[$sort_col], $a[$sort_col] );
+        }   
+    };
+}
 
 /* * ************************** Main Item List Function ********************************
  * Generates the management page that lists uploaded items
@@ -438,7 +461,6 @@ function ewz_list_items() {
             Ewz_Permission::can_manage_webform( $data['webform_id'] ) ) ){
         wp_die( "Insufficient Permissions To View Page" );
     }
-
     // if errors here stop processing
     try{
         $input = new Ewz_Item_List_Input( $data );
@@ -447,8 +469,22 @@ function ewz_list_items() {
         wp_die( $e->getMessage() );
     }
 
-    // Messages from exceptions generated here are  are shown to user
+    // Do any bulk actions requested
+    $the_action = -1;
+    if( isset( $requestdata['action'] ) ){
+        $the_action = $requestdata['action'];
+        if( $the_action == -1 ){
+            $the_action = $requestdata['action2'];
+        }
+    }
     $message = '';
+    // Messages from exceptions generated here are  are shown to user
+    if( $the_action == 'ewz_attach_imgs' ){
+        $message = ewz_check_and_attach_imgs();
+    } else if(  $the_action == 'ewz_batch_delete' ){
+        $message = ewz_batch_delete_items();
+    }
+
     // if errors here stop processing
     try{
         ewz_display_list_page( $message, $requestdata );
@@ -532,7 +568,7 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
             <td>$dropdown</td></tr>
         <tr><td><img alt="" class="ewz_ihelp" src="$help_icon" onClick="ewz_help('imgcomm');">&nbsp;
                         Allow comments on attached images: </td>
-            <td><input type="checkbox" id="img_comment" name="img_comment" $commentChecked ></td></tr>
+            <td><input type="checkbox" id="img_comment" value="1" name="img_comment" $commentChecked ></td></tr>
         <tr><td><img alt="" class="ewz_ihelp" src="$help_icon" onClick="ewz_help('imgsize');">&nbsp;
                         Attach resized image: </td>
             <td><select id="img_size" name="img_size" >$size_args</select></td></tr>
@@ -540,7 +576,7 @@ EOF;
      if ( count( $image_columns ) > 1 ) {
 	foreach ( $image_columns as $fld_id => $fld_head ) {
             $eschead = esc_html( $fld_head );
-            $str .= '<tr><td>Attach images from column $eschead</td>';
+            $str .= "<tr><td>Attach images from column $eschead</td>";
 	    $str .= '    <td><input type="radio" name="ifield" value="' . $fld_id . '"></td>';
 	    $str .= '</tr>';
         }
@@ -589,11 +625,14 @@ function  ewz_display_list_page( $message, $requestdata ){
 
     $headers = ewz_get_headers( $fields, $extra_cols );
     $rows = ewz_get_item_rows( $items, $fields, $extra_cols, $webform );
+    if( isset( $requestdata['orderby'] ) && isset( $requestdata['order'] ) ){
+        uasort( $rows, ewz_item_list_sort( $requestdata['orderby'], $requestdata['order'] ) );
+    }
     $item_ids = array_map( create_function( '$v', 'return $v->item_id;' ),  $items );
 
     $ewzG = array(
                   'message'    => $message,
-                  'load_gif'   => plugins_url( 'images/loading.gif', dirname(__FILE__) ),
+                  'load_gif'   => plugins_url( 'images/loading1.gif', dirname(__FILE__) ),
                   'helpIcon'   => plugins_url( 'images/help.png' , dirname(__FILE__) ),
                   );
     wp_localize_script( 'ewz-admin-list-items', 'ewzG',  $ewzG  );
@@ -626,7 +665,7 @@ function  ewz_display_list_page( $message, $requestdata ){
           <br>
           <u>Displaying:</u> <?php print $opt_display_string; ?>
      </div>
-     <form id="list_form" action="<?php print $listurl; ?>" method="POST" onSubmit="return processForm('list_form');">
+     <form id="list_form" action="" method="POST" onSubmit="return processForm('list_form')">
         <div class="ewzform">
            <?php wp_nonce_field( 'ewzadmin', 'ewznonce' ); ?>
            <input type="hidden" name="webform_id" id="webform_id" value="<?php print $webform_id; ?>">

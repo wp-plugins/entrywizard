@@ -52,11 +52,11 @@ function init_ewz_upload(ewz_win) {
     });
 
 
-    // Bind the onchange event of the inputs to flag the inputs as being "dirty".
+    // Bind the onchange event of the inputs to flag the inputs as being "ewzdirty".
     jQuery(":input").change(
         function(objEvent) {
-            // Add dirty flag to the input in question (whose value has changed).
-            jQuery(this).addClass("dirty");
+            // Add ewzdirty flag to the input in question (whose value has changed).
+            jQuery(this).addClass("ewzdirty");
         }
     );
 }
@@ -108,7 +108,7 @@ function get_values(ewzG, webform_id ){
     'use strict';
     var row, fvalues, i, jelem, sel;
     fvalues = [];
-    for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+    for (row = 0; row < ewzG.num_items; ++row) {
         fvalues[row] = {};
         for (i in ewzG.layout.fields) {
             if (!ewzG.layout.fields.hasOwnProperty(i)) { continue; }
@@ -158,7 +158,7 @@ function missing_check( ewzG, webform_id, fvalues, use_row ){
     var missing, status, row, row1, i;
     missing = '';
     status = true;
-    for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+    for (row = 0; row < ewzG.num_items; ++row) {
         if( !use_row[row] ){ continue; }
         row1 = row + 1;   // for user display
         for (i in ewzG.layout.fields) {
@@ -173,7 +173,7 @@ function missing_check( ewzG, webform_id, fvalues, use_row ){
             }
         }
     }
-    if( !status ){
+    if( !status && ewzG.jsvalid ){
         alert( "** Sorry, there are some required items missing:\n" + missing );
     }
     return status;
@@ -191,7 +191,7 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
         if (ftype === 'opt' || ftype === 'chk') {
             optcount = {};
             textvals = {};
-            for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+            for (row = 0; row < ewzG.num_items; ++row) {
                 if( !use_row[row] ){ continue; }
 
                 row1 = row + 1;                                // for display to user
@@ -224,7 +224,7 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
             }
         }
     }
-    if( !status ){
+    if( !status && ewzG.jsvalid ){
         alert( "** Sorry, " + msg );
     }
     return status;
@@ -235,7 +235,7 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
 function restrictions_check( ewzG, webform_id, fvalues, use_row ){
     'use strict';
     var row, matches_restr, row1, field_id, restr1, ismatch;
-    for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+    for (row = 0; row < ewzG.num_items; ++row) {
         if ( !use_row[row] ) { continue; }
         row1 = row + 1;   // for user display
 
@@ -252,7 +252,7 @@ function restrictions_check( ewzG, webform_id, fvalues, use_row ){
             }
 
             // if matches_restr is still true, alert and return false
-            if ( matches_restr ) {
+            if ( matches_restr && ewzG.jsvalid  ) {
                 alert("** Sorry, there was an error in row " + row1 + ": " + ewzG.layout.restrictions[restr1].msg);
                 return false;
             }
@@ -268,7 +268,7 @@ function check_data(ewzG, webform_id) {
     var status, fvalues, use_row, row, field_id, idstr;
     fvalues = get_values(ewzG, webform_id );
     use_row = {};
-    for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+    for (row = 0; row < ewzG.num_items; ++row) {
         for (field_id in ewzG.layout.fields) {
             if (!ewzG.layout.fields.hasOwnProperty(field_id)) { continue; }
             if( fvalues[row][field_id][0] ){
@@ -285,11 +285,7 @@ function check_data(ewzG, webform_id) {
         if (status) {
             disable_unused_rows( webform_id, ewzG, use_row );
         }
-        if( ewzG.jsvalid ){
-            return status;
-        } else {
-            return true;
-        }
+        return status;
 
     } catch (except) {
         alert(except.message);
@@ -301,7 +297,7 @@ function check_data(ewzG, webform_id) {
 function disable_unused_rows( webform_id, ewzG, use_row ){
     'use strict';
     var row, fld_id, idstr;
-    for (row = 0; row < ewzG.layout.max_num_items; ++row) {
+    for (row = 0; row < ewzG.num_items; ++row) {
         if (!use_row[row]) {
             for (fld_id in ewzG.layout.fields) {
                 if( !ewzG.layout.fields.hasOwnProperty(fld_id) ){ continue; }
@@ -344,7 +340,7 @@ function delete_item(button, webform_id) {
 // Clear input previously entered
 // Remove all images, hidden inputs
 // Set select, text values to '', uncheck checkboxes and radio buttons
-// Remove 'dirty' flag and hidden inputs
+// Remove 'ewzdirty' flag and hidden inputs
 // Remove the 'clear' button
 // Disable submit if no other data
 function clear_row(button, webform_id) {
@@ -365,7 +361,7 @@ function clear_row(button, webform_id) {
     jrow.find(":radio").prop("checked", false );
     jrow.find(":checkbox").prop("checked", false );
 
-    jrow.find(":input[class='dirty']").removeClass("dirty");
+    jrow.find(":input[class='ewzdirty']").removeClass("ewzdirty");
     jrow.find('input[type="hidden"]').remove();
     jrow.find(":button").remove();
 
@@ -374,7 +370,7 @@ function clear_row(button, webform_id) {
         jform.find('tr td:last-child').remove();
         jform.find('tr th:last-child').remove();
     }
-    if (jform.find(":input[class='dirty']").size() === 0) {
+    if (jform.find(":input[class='ewzdirty']").size() === 0) {
         jQuery("#ewz_fsubmit_" + webform_id).prop({
             disabled: true
         });
@@ -393,6 +389,12 @@ function show_modify(button, webform_id) {
     jQuery("#ewz_fsubmit_" + webform_id).prop({
         disabled: true
     });
+    var tablew = jQuery('#scrollablediv_' + webform_id).find('table[class="ewz_padded ewz_upload_table"]').outerWidth();
+    var scrollw = jQuery('#scrollablediv_' + webform_id).innerWidth();
+    if ( scrollw <= tablew ){
+        jQuery('#ewz_modify_' + webform_id).prepend("<i>The available space is too narrow to display all of this form. You should see <b>a scrollbar just above the submit button.</i></b>");
+    }
+    
 }
 
 
@@ -426,7 +428,7 @@ function fileSelected(field_id, input_id, webform_id) {
                 var errmsg = invalid_image(field_id, theImage, webform_id);
                 ewzG.sResultFileSize = bytesToSize(oFile.size);
 
-                if (errmsg) {
+                if (errmsg && ewzG.jsvalid ) {
                     alert('** ' + oFile.name + ":\n\n" +
                           "\nSize: " + ewzG.sResultFileSize + "\nType: " + oFile.type +
                           "\nWidth: " + theImage.naturalWidth + "\nHeight: " + theImage.naturalHeight + "\n\n" +
@@ -461,17 +463,19 @@ function fileSelected(field_id, input_id, webform_id) {
                 limits.max_img_size = 1;
             }
 
-            rFilter = new RegExp ( '^(' + limits.allowed_image_types.join('|').replace(/\//g, '\\\/') + ')$', 'i');
+            if( ewzG.jsvalid ){
+                rFilter = new RegExp ( '^(' + limits.allowed_image_types.join('|').replace(/\//g, '\\\/') + ')$', 'i');
 
-            if (!rFilter.test(oFile.type)) {
-                alert('** ' + oFile.name + ":\n\n" + ewzG.ftype_err);
-                clear_file_input( input_id );
-                return;
-            }
-            if (oFile.size > (limits.max_img_size * 1048576)) {
-                alert('** ' + oFile.name + ":\n\n" + ewzG.fsize_err.replace('%d', bytesToSize(oFile.size)) + limits.max_img_size + 'MB');
-                clear_file_input( input_id );
-                return;
+                if (!rFilter.test(oFile.type)) {
+                    alert('** ' + oFile.name + ":\n\n" + ewzG.ftype_err);
+                    clear_file_input( input_id );
+                    return;
+                }
+                if (oFile.size > (limits.max_img_size * 1048576)) {
+                    alert('** ' + oFile.name + ":\n\n" + ewzG.fsize_err.replace('%d', bytesToSize(oFile.size)) + limits.max_img_size + 'MB');
+                    clear_file_input( input_id );
+                    return;
+                }
             }
             freader.readAsDataURL(oFile);
             if(freader.error){
@@ -555,7 +559,7 @@ function fix_radios( webform_id ){
         var jchk = jQuery(this);
         if( !jchk.prop("disabled") ){
             if( !jchk.prop( "checked" ) ){
-                jchk.closest('form').append('<input type="hidden" name="' + jchk.prop("name") + '" value="off" >');
+                jchk.closest('form').append('<input type="hidden" name="' + jchk.prop("name") + '" value="0" >');
             }
         }
     });
@@ -567,13 +571,19 @@ function fix_radios( webform_id ){
 function startUploading(webform_id) {
     'use strict';
     var ewzG = window['ewzG_' + webform_id],
-    status, xmlRequest, jresponse, jdivComplete, jdivProgress, form_data;
+               status, xmlRequest, jresponse, jdivComplete, jdivProgress, form_data;
+    jQuery("#ewz_fsubmit_" + webform_id).prop({
+        disabled: true
+    });
+    if( ewzG.inProgress ){
+        return;
+    }
     // cleanup temp states
     ewzG.iPreviousBytesLoaded = 0;
     // do client-side validation (uses alerts), only upload if check is ok
     status = check_data(ewzG, webform_id );
 
-    if (status) {
+    if (status || !ewzG.jsvalid ) {
         fix_radios( ewzG.webform_id );
         jresponse = jQuery('#upload_response_' + webform_id);
         if (typeof window.FormData === 'undefined') {
@@ -584,7 +594,9 @@ function startUploading(webform_id) {
             if (typeof xmlRequest.upload === 'undefined') {
                 do_submit_form(jresponse, webform_id);
             } else {
+                ewzG.inProgress = true;
                 jresponse.hide();
+
                 jQuery('#progress_percent_' + webform_id).text('');
 
                 jdivComplete = jQuery('#complete_' + webform_id);
@@ -597,13 +609,14 @@ function startUploading(webform_id) {
 
                 // get form data for POSTing
                 form_data = new FormData(document.getElementById('ewz_form_' + webform_id));
+
                 // set up event progress listeners (must be done before "open" call)
                 xmlRequest.upload.addEventListener('progress', uploadProgress, false);
                 xmlRequest.addEventListener('load', uploadFinish, false);
                 xmlRequest.addEventListener('error', uploadError, false);
                 xmlRequest.addEventListener('abort', uploadAbort, false);
-
                 xmlRequest.open('POST', ewzG.ajaxurl + '?action=ewz_upload');
+
                 xmlRequest.send(form_data);
 
                 // set doInnerUpdates to run on timer
@@ -611,6 +624,9 @@ function startUploading(webform_id) {
             }
         }
     } else {
+        jQuery("#ewz_fsubmit_" + webform_id).prop({
+            disabled: false
+        });
         return;
     }
 
@@ -623,7 +639,7 @@ function startUploading(webform_id) {
         }
         jResponseDiv.show();
 
-        jResponseDiv.text( 'Upload may take some time, depending on image size and network speed.  More feedback is available using a browser with better support for HTML5.');
+        jResponseDiv.text( ewzG.oldform );
         document.getElementById('ewz_form_' + webform_id).submit();
     }
 
@@ -638,16 +654,18 @@ function startUploading(webform_id) {
             iPercentComplete = Math.round(event.loaded * 100 / event.total);
             iBytesTransfered = bytesToSize(ewzG.iBytesUploaded);
 
-            jQuery('#progress_percent_' + webform_id).text(iPercentComplete.toString() + '%');
+            jQuery('#progress_percent_' + webform_id).text( iPercentComplete.toString() + '%');
             jQuery('#b_transfered_' + webform_id).text( iBytesTransfered );
             jQuery('#progress_bar_' + webform_id).width( ( iPercentComplete * 5).toString() + 'px' );
 
-            // when complete, display the  ewzG.wait message in upload_response area
+            jUploadResponse = jQuery('#upload_response_' + webform_id);
+            // when complete, display the  ewzG.complete message in upload_response area
             if (iPercentComplete === 100) {
-                jUploadResponse = jQuery('#upload_response_' + webform_id);
+                jUploadResponse.text( ewzG.complete );
+            } else {
                 jUploadResponse.text( ewzG.wait );
-                jUploadResponse.show();
             }
+            jUploadResponse.show();
         } else {
             jQuery('#progress_bar_' + webform_id).text( 'unable to calculate progress' );
         }
@@ -693,6 +711,7 @@ function startUploading(webform_id) {
             document.location.reload(true);  // needed to make sure blank lines not disabled
         }
         clearInterval(ewzG.timer);
+        ewzG.inProgress = false;
     }
 
     /* NB: this is a nested function within startUploading */
@@ -701,6 +720,7 @@ function startUploading(webform_id) {
 
         alert("Error in upload: " + ewzG.upload_err);
         clearInterval(ewzG.timer);
+        ewzG.inProgress = false;
     }
 
     /* NB: this is a nested function within startUploading */
@@ -708,6 +728,7 @@ function startUploading(webform_id) {
     function uploadAbort(event) {
         alert("Upload aborted: " + ewzG.abort_err);
         clearInterval(ewzG.timer);
+        ewzG.inProgress = false;
     }
 }
 

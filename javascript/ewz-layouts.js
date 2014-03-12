@@ -42,6 +42,7 @@ function init_ewz_layouts() {
 /* Returns the html string for a postbox containing a single layout */
 function layout_str(lnum, fObj) {
     'use strict';
+
     var i, key, str, kvalue, khead, korigin;
     /*********** Postbox *************/
     str = '<div id="ewz_admin_layouts_f' + lnum + '_" class="metabox-holder">';
@@ -53,7 +54,7 @@ function layout_str(lnum, fObj) {
     /*********** General *************/
     str += '       <div class="inside">';
     str += '          <form method="POST" action="" id="cfg_form_f' + lnum + '_" ';
-    str += '                onSubmit="return ewz_check_layout_input(this, \'' + ewzG.jsvalid + '\')">';
+    str += '                onSubmit="return ewz_check_layout_input(this, ' + ewzG.jsvalid + ')">';
     str += '          <div class="ewzform">';
     str += '             <input type="hidden" name="ewzmode" value="layout">';
     str += '             <input type="hidden" name="layout_id" id="layout_id' + lnum + '_"value="' + fObj.layout_id + '">';
@@ -70,11 +71,12 @@ function layout_str(lnum, fObj) {
     }
     str += '                <p class="ewz_sect_title"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'layout\')">&nbsp;General Information</p>';
     str += '                <table>';
-    str += '                    <tr><td>Name for this layout</td>';
+    str += '                    <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'name\')">&nbsp;Name for this layout</td>';
     str += '                        <td>' + textinput_str('f' + lnum + '_layout_name_', 'layout_name', 50, fObj.layout_name) + '</td>';
     str += '                    </tr>';
-    str += '                    <tr><td> Maximum number of items</td>';
-    str += '                        <td>' + numinput_str('f' + lnum + '_max_num_items_', 'max_num_items', '', 1, ewzG.maxNumitems, Number(fObj.max_num_items)) + '</td>';
+    str += '                    <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxnum\')">&nbsp;Maximum number of items &nbsp;</td>';
+    str += '                        <td>' + numinput_str('f' + lnum + '_max_num_items_', 'max_num_items', '', 1, ewzG.maxNumitems, Number(fObj.max_num_items));
+    str += '                        &nbsp; &nbsp; Overrideable by webforms: &nbsp; ' + checkboxinput_str('f' + lnum + '_override_', 'override', fObj.override ) + '</td>'
     str += '                    </tr>';
     str += '                </table>';
     str += '             </div>';
@@ -86,9 +88,12 @@ function layout_str(lnum, fObj) {
     str += '                      ( <i>Items affected by restrictions are outlined in red and may not be edited</i> <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'restr\')"> &nbsp;)</p>';
     str += '                <div class="ewz_95">';
     str += '                   <div  id="ewz_sortable_f' + lnum + '_" >';
+    // <br> needed at top and bottom to drag a field to the top or bottom
+    str += '<br>';
     for (i = 0; i < fObj.forder.length; ++i) {
         str += field_str(lnum, fObj.forder[i], fObj.fields[fObj.forder[i]]);
     }
+    str += '<br>';
     str += '                   </div>';
     str += '                   <p>';
     str += '                      <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'ftype\')">&nbsp;Add another field: &nbsp; ';
@@ -253,6 +258,7 @@ function add_layout_button_str() {
 function field_str(lnum, i, fObj) {
     'use strict';
     var fld, fid, str;
+
     fld = 'fields[' + i + ']';
     fid = "f" + lnum + '_fields' + i + '_';
     str = '<div id="' + fid + 'field_mbox_" class="postbox closed">';
@@ -381,22 +387,21 @@ function opt_row_str(fdid, fdld, rownum, opts) {
     str += '</tr>';
     return str;
 }
-/* return the html for setting the specific select-option data - options, labels and max of each allowed */
+/* return the html for setting the specific radio button data -- ie a dummy because fdata is required */
 /* called by type_data_field_str */
 function rad_fields_str(fdid, fdld, oObj)
 {
     'use strict';
     return '<tr><td><input type="hidden" id="' + fdid + '" name="' +  fdld + '[radio]"></td></tr>';
 }
-/* return the html for setting the specific select-option data - options, labels and max of each allowed */
+/* return the html for setting the specific checkbutton data -- ie max num allowed */
 /* called by type_data_field_str */
 function chk_fields_str(fdid, fdld, oObj)
 {
     'use strict';
     var chk_maxnum = oObj.chkmax ? Number(oObj.chkmax) : '';
     
-    var str = '<tr><td><input type="hidden" id="' + fdid + '" name="' +  fdld + '[checkbox]"></td></tr>';
-    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'chkmax\')"> &nbsp; (optional) Maximum number that may be checked</td>';
+    var str = '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'chkmax\')"> &nbsp; (optional) Maximum number that may be checked</td>';
     str += '    <td>' + numinput_str(fdid + "chkmax_", fdld + "[chkmax]", 'no max', 1, 100, chk_maxnum) + '</td></tr>';
     return str;
      
@@ -602,16 +607,14 @@ function setup_layout(for_lnum, from_lnum) {
 function disable_max_vals(jLayout) {
     'use strict';
     var jMaxNum, opt_max_limit, mni_min;
-
     jMaxNum = jLayout.find('select[name="max_num_items"]');
     opt_max_limit = jMaxNum.val();
     mni_min = 0;
 
     jLayout.find("select[id$='_maxnum_']").each(function() {
         var jselect, optval;
-
         jselect = jQuery(this);
-        if( !jselect.closest('table[class="ewz_field"]').find('input[id$="_field_ident_"]').val() == 'followupQ' ){
+        if( !(jselect.closest('table[class="ewz_field"]').find('input[id$="_field_ident_"]').val() == 'followupQ') ){
             optval = jselect.val();
             if (optval > mni_min) {
                 mni_min = optval;
@@ -798,7 +801,7 @@ function add_field(add_field_btn, field_type) {
 
     form = jQuery(add_field_btn).closest('form[id^="cfg_form"]');
     cnum = form.find('div[id$="field_mbox_"]').length;
-    newid = form.attr("id").replace('cfg_form_', '') + 'fields' + cnum + '_';
+    newid = form.attr("id").replace('cfg_form_', '') + 'fieldsX' + cnum + '_';
     lnum = form.attr("id").replace('cfg_form_f', '').replace('_', '');
     fdata = {};
 
@@ -828,7 +831,7 @@ function add_field(add_field_btn, field_type) {
     data.field_type = field_type;
     data.required = 0;
     data.ss_column = '-1';
-    form.find('div[id^="ewz_sortable"]').append(jQuery(field_str(lnum, cnum, data)));
+    form.find('div[id^="ewz_sortable"]').append(jQuery(field_str(lnum, 'X' + cnum, data)));
     jQuery('h3[id="field_title_' + newid + '"]').html("-- New Field --");
 
     // fire a change event on the spreadsheet column select boxes to disable used columns
@@ -1019,15 +1022,14 @@ function get_layout_num(element) {
     return dv.attr("id").replace('ewz_admin_layouts_f', '').replace('_', '');
 }
 
-/* called on submit */
+/* called on submit, err_alert disables submit */
 function ewz_check_layout_input(form, do_check) {
     'use strict';
     var ok, jform, lnum, maxnumitems, maxs;
-
     ok = true;
     jform = jQuery(form);
     lnum = jform.attr("id").replace('cfg_form_f', '').replace('_', '');
-
+    jQuery('#lsub_f' + lnum + '_').prop("disabled", true);
     if (do_check) {
         try {
             // remove leading and trailing spaces from all inputs
@@ -1036,19 +1038,19 @@ function ewz_check_layout_input(form, do_check) {
             });
             // no layout name
             if (!jform.find('input[id$="_layout_name_"]').val()) {
-                alert(ewzG.errmsg.layoutname);
+                err_alert( lnum, ewzG.errmsg.layoutname);
                 return false;
                 
             }
             // no max num items
             maxnumitems = jform.find('select[id$="_max_num_items_"]').val();
             if (!maxnumitems) {
-                alert(ewzG.errmsg.maxnumitems);
+                err_alert( lnum, ewzG.errmsg.maxnumitems);
                 return false;
             }
             // no fields
             if (!jform.find('div[id^="field_mbox_"]')) {
-                alert(ewzG.errmsg.nofields);
+                err_alert( lnum, ewzG.errmsg.nofields);
                 return false;
             }
             /* cant return from function from inside filter, so use 'ok' flag */
@@ -1056,14 +1058,14 @@ function ewz_check_layout_input(form, do_check) {
             jform.find('input[id$="_field_header_"]').filter(function() {
                 return  ('' == jQuery(this).val().replace(/^\s+|\s+$/g, ''));
             }).each(function() {
-                alert(ewzG.errmsg.colhead);
+                err_alert( lnum, ewzG.errmsg.colhead);
                 ok = false;
             });
             // missing identifier
             jform.find('input[id$="field_ident_"]').filter(function() {
                 return !jQuery(this).val().replace(/^\s+|\s+$/g, '').match(/^[a-z][a-z0-9_\-]+$/i);
             }).each(function() {
-                alert(ewzG.errmsg.ident);
+                err_alert( lnum, ewzG.errmsg.ident);
                 ok = false;
             });
             // followup cannot be image type
@@ -1072,20 +1074,20 @@ function ewz_check_layout_input(form, do_check) {
             }).filter(function() {
                 return ( 'img' == jQuery(this).closest('tbody').find('select[id$="_field_type_"]').val());
             }).each(function() {
-                alert( ewzG.errmsg.followimg);
+                err_alert( lnum,  ewzG.errmsg.followimg);
                 ok = false;
             });
             // invalid max_img_w
             jform.find('input[id$="_max_img_w_"]').each(function() {
                 if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
-                    alert(ewzG.errmsg.maximgw);
+                    err_alert( lnum, ewzG.errmsg.maximgw);
                     ok = false;
                 }
             });
             // invalid max_img_h
             jform.find('input[id$="_max_img_h_"]').each(function() {
                 if (!jQuery(this).val().match(/^[1-9][0-9]*$/)) {
-                    alert(ewzG.errmsg.maximgh);
+                    err_alert( lnum, ewzG.errmsg.maximgh);
                     ok = false;
                 }
             });
@@ -1094,7 +1096,7 @@ function ewz_check_layout_input(form, do_check) {
                 if( jQuery(this).val().match(/^ *$/)) {
                      jQuery(this).val(0);
                 } else if (!jQuery(this).val().match(/^[0-9][0-9]*$/)) {
-                    alert(ewzG.errmsg.minlongestdim);
+                    err_alert( lnum, ewzG.errmsg.minlongestdim);
                     ok = false;
                 }
             });
@@ -1103,23 +1105,24 @@ function ewz_check_layout_input(form, do_check) {
                 jQuery(this).val(jQuery(this).val().replace(/[Mm]$/, ''));
                 maxs = jQuery(this).val();
                 if (!maxs) {
-                    alert(ewzG.errmsg.nomaximgsz);
+                    err_alert( lnum, ewzG.errmsg.nomaximgsz);
                     ok = false;
                     return;
                 }
                 if (!maxs.match(/^[0-9]?[0-9]?\.?[0-9]+$/)) {
-                    alert(ewzG.errmsg.maximgsz);
+                    err_alert( lnum, ewzG.errmsg.maximgsz);
                     ok = false;
                     return;
                 }
                 if (parseFloat(maxs) > parseFloat(ewzG.maxUploadMb)) {
-                    alert(ewzG.errmsg.sysmaxsz);
+                    err_alert( lnum, ewzG.errmsg.sysmaxsz);
                     ok = false;
                     return;
                 }
                 // Warn about potential problems but allow if user okays
                 if (parseFloat(maxs) * maxnumitems >= parseFloat(ewzG.maxTotalMb)) {
                     if (!confirm(ewzG.errmsg.sysmaxup)) {
+                        jQuery('#lsub_f' + lnum + '_').prop("disabled", false);
                         ok = false;
                     }
                 }
@@ -1128,12 +1131,12 @@ function ewz_check_layout_input(form, do_check) {
             jform.find('input[id$="_label_"]').each(function() {
                 var lab = jQuery(this).val();
                 if (!lab) {
-                    alert(ewzG.errmsg.optlabel);
+                    err_alert( lnum, ewzG.errmsg.optlabel);
                     ok = false;
                     return;
                 }
                 if (lab.match(/[^A-Za-z0-9_\- ]/)) {
-                    alert(ewzG.errmsg.option);
+                    err_alert( lnum, ewzG.errmsg.option);
                     ok = false;
                 }
             });
@@ -1143,7 +1146,7 @@ function ewz_check_layout_input(form, do_check) {
                     var jfield_table = jQuery(this).closest('table[class="ewz_field"]');
                     var header = jfield_table.find('input[id$="_field_header_"]').val();
                     if(jfield_table.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').size() < 1 ){
-                        alert( header + ': ' +  ewzG.errmsg.optioncount );
+                        err_alert( lnum,  header + ': ' +  ewzG.errmsg.optioncount );
                         ok = false;
                     }
                 }
@@ -1152,33 +1155,33 @@ function ewz_check_layout_input(form, do_check) {
             jform.find('input[id$="_value_"]').each(function() {
                 var oval = jQuery(this).val();
                 if (!oval) {
-                    alert(ewzG.errmsg.optvalue);
+                    err_alert( lnum, ewzG.errmsg.optvalue);
                     ok = false;
                     return;
                 }
-                if (oval.match(/[^A-Za-z0-9_\- ]/)) {
-                    alert(ewzG.errmsg.option);
+                if (oval.match(/[^A-Za-z0-9_\-]/)) {
+                    err_alert( lnum, ewzG.errmsg.option);
                     ok = false;
                 }
             });
             // restriction must have a message
             jform.find('input[id$="__msg_"]').each(function() {
                 if (!jQuery(this).val()) {
-                    alert(ewzG.errmsg.restrmsg);
+                    err_alert( lnum, ewzG.errmsg.restrmsg);
                     ok = false;
                 }
             });
             // text input must have maxchars
             jform.find('select[id$="_maxstringchars_"]').each(function() {
                 if (!jQuery(this).val().replace(/^\s+|\s+$/g, '')) {
-                    alert(ewzG.errmsg.maxnumchar);
+                    err_alert( lnum, ewzG.errmsg.maxnumchar);
                     ok = false;
                 }
             });
             // img must have set of allowed types
             jform.find('select[id$="_allowed_image_types_"]').each(function() {
                 if (!jQuery(this).val()) {
-                    alert(ewzG.errmsg.imgtypes);
+                    err_alert( lnum, ewzG.errmsg.imgtypes);
                     ok = false;
                 }
             });
@@ -1188,20 +1191,25 @@ function ewz_check_layout_input(form, do_check) {
 
                 if (any.length < 1) {
                     if (!confirm((ewzG.errmsg.all_any))) {
+                        jQuery('#lsub_f' + lnum + '_').prop("disabled", false);
                         ok = false;
                     }
                 } else if (any.length < 2) {
                     if (!confirm(ewzG.errmsg.one_any)) {
+                        jQuery('#lsub_f' + lnum + '_').prop("disabled", false);   
                         ok = false;
                     }
                 }
             });
 
         } catch (except1) {
+            jQuery('#lsub_f' + lnum + '_').prop("disabled", false);
             return false;
         }
     }
-
+    if(!ok){
+        jQuery('#lsub_f' + lnum + '_').prop("disabled", false); 
+    }
     if (ok || !do_check) {
         try {
             // enable all the disabled stuff so right data gets sent
@@ -1226,4 +1234,10 @@ function ewz_check_layout_input(form, do_check) {
         }
     }
     return false;       // must do this to prevent re-sending via regular submit
+}
+
+function err_alert( layoutnum, msg )
+{
+    jQuery('#lsub_f' + layoutnum + '_').prop("disabled", false);
+    alert( msg);
 }

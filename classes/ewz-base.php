@@ -13,6 +13,12 @@ abstract class Ewz_Base
 
     abstract public function delete();
 
+    // get from database given key
+    abstract protected function create_from_id( $id );
+
+    // create from uploaded data
+    abstract protected function create_from_data( $data );
+
     public static function validate_using_javascript(){
         // normally returns true
         // return false to force all validation to be done on server,
@@ -88,7 +94,7 @@ abstract class Ewz_Base
         if( is_string( $val )){
             return preg_match( '/^[0-9]+$/', $val );
         } else {
-            return is_int( $val );
+            return ( is_int( $val ) && ( $val >= 0 ) );
         }
     }
 

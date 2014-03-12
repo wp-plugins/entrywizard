@@ -28,6 +28,7 @@ class Ewz_Layout extends Ewz_Base
     // data stored on db
     public $layout_name;
     public $max_num_items;
+    public $override;
     public $restrictions;
     public $extra_cols;      // columns for the spreadsheet generated from WP member data and other tables
 
@@ -40,6 +41,7 @@ class Ewz_Layout extends Ewz_Base
     public static $varlist = array(
 	'layout_name'   => 'string',
 	'max_num_items' => 'integer',
+        'override'      => 'boolean',
 	'restrictions'  => 'array',
 	'extra_cols'    => 'array',
     );
@@ -47,12 +49,17 @@ class Ewz_Layout extends Ewz_Base
     // items selectable for display in spreadsheet
     protected static $display_data_item =
         // a value containing '>' is interpreted so that origin='object', value='property>key' becomes 'object->property[key]'
+        // a value containing '|' is interpreted so that origin='object', value='property|key' where property is an array 
+        //          becomes the concatenation of all object->property[key] values in the array
+        //          e.g. item_data is an array of data whose keys are the field_ids
+        //             item_data|pexcerpt becomes the concatenation of all uploaded excerpts for all image fields in the item
         // other values are interpreted so that origin='object', value='property' becomes 'object->property'
         array(
               'att' => array(  'header' => 'Attached To',   'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'item_data>attachedto' ),
               'aat' => array(  'header' => 'Added Title',   'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'item_data|ptitle' ),
               'aae' => array(  'header' => 'Added Excerpt', 'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'item_data|pexcerpt' ),
               'aac' => array(  'header' => 'Added Content', 'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'item_data|pcontent' ),
+              'add' => array(  'header' => 'Added Item Data','dobject'=> 'item', 'origin' => 'EWZ Item',    'value' => 'item_data>admin_data' ),
               'dlc' => array(  'header' => 'Last Changed',  'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'last_change' ),
               'dtu' => array(  'header' => 'Upload Date',   'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'upload_date' ),
               'iid' => array(  'header' => 'WP Item ID',    'dobject' => 'item', 'origin' => 'EWZ Item',    'value' => 'item_id' ),
@@ -104,9 +111,7 @@ class Ewz_Layout extends Ewz_Base
     }
 
     /**
-     * Brief
-     *
-     * Longer
+     * Get an extra data item ( user, item webform or custom info ) for display
      *
      * @param  $dobj       data source object: Ewz_Webform, Ewz_Item, Ewz_Custom or WP_User
      * @param  $keyholder  array with keys 'dtu',  'nam', ... -- extra data required for display
@@ -122,6 +127,7 @@ class Ewz_Layout extends Ewz_Base
         }
         $value = '';
         if( is_array( $keyholder ) ){
+            // may be used for custom data arrays
             foreach( $keyholder as $key ){
                 if( isset( $dobj->$key ) ){
                     $value .= $dobj->$key;
@@ -197,6 +203,21 @@ class Ewz_Layout extends Ewz_Base
     }
 
     /**
+     * Return the number of items allowed
+     *
+     * @param   int   $layout_id
+     * @return  int
+     */
+    public static function get_num_items( $layout_id )
+    {
+	global $wpdb;
+        assert( Ewz_Base::is_pos_int( $layout_id ) );
+	$num = $wpdb->get_var( $wpdb->prepare( "SELECT max_num_items  FROM " .
+                EWZ_LAYOUT_TABLE . " WHERE layout_id = %d",
+		$layout_id ) );
+	return $num;
+    }
+    /**
      * Return a string consisting of the html options for selecting a layout
      * NB: must return in layout_id order to match get_all_layouts
      * @param   callback    $class_or_obj  Class of filter function that must return true for the layout_id
@@ -212,7 +233,7 @@ class Ewz_Layout extends Ewz_Base
         assert( Ewz_Base::is_nn_int( $selected_id ) );
 	$options = array();
 	$layouts = $wpdb->get_results( "SELECT layout_id, layout_name  FROM " .
-                EWZ_LAYOUT_TABLE . " ORDER BY layout_id" );
+                                       EWZ_LAYOUT_TABLE . " ORDER BY layout_id", OBJECT );
 	foreach ( $layouts as $layout ) {
 	    if ( call_user_func( array( $class_or_obj,  $filter ), $layout->layout_id ) ) {
 		if ( $layout->layout_id == $selected_id ) {
@@ -441,8 +462,6 @@ class Ewz_Layout extends Ewz_Base
             throw new EWZ_Exception( "Name '$this->layout_name' already in use for this layout"  );
 	}
 
-	// $field_id_arr = array_map( create_function('$v', 'return $v->field_id;' ), $this->fields );
-	// ewzdbg("field_id_arr", $field_id_arr);
 	// make sure restrictions apply to fields belonging to the layout
 	foreach ( $this->restrictions as $restr ) {
 	    foreach ( array_keys( $restr ) as $key ) {
@@ -505,6 +524,7 @@ class Ewz_Layout extends Ewz_Base
 	$data = stripslashes_deep( array(
 	    'layout_name' => $this->layout_name,
 	    'max_num_items' => $this->max_num_items,
+	    'override' => $this->override ? 1 : 0,
 	    'restrictions' => serialize( stripslashes_deep( $this->restrictions ) ),
 	    'extra_cols' => serialize( stripslashes_deep( $this->extra_cols ) ),
 		) );
@@ -536,6 +556,7 @@ class Ewz_Layout extends Ewz_Base
                 }
             }
 	}
+        
         // save the restrictions again
         if(  $havenewfield && $this->restrictions ){
 	    $rows = $wpdb->update( EWZ_LAYOUT_TABLE, 
@@ -596,6 +617,11 @@ class Ewz_Layout extends Ewz_Base
                     $this->layout_id );
 	}
 
+        $all = self::get_all_layouts();
+        if( count( $all ) < 2 ){
+            throw new EWZ_Exception( "Attempt to delete the only layout ( id=$this->layout_id )" );
+	}
+
         $webforms = Ewz_Webform::get_webforms_for_layout( $this->layout_id );
         if( $delete_forms ){
             foreach( $webforms as $wform ){
@@ -609,6 +635,7 @@ class Ewz_Layout extends Ewz_Base
                 throw new EWZ_Exception( "Attempt to delete layout with $n associated webforms." );
             }
 	}
+
 	foreach ( $this->fields as $field ) {
 	    $field->delete();
 	}

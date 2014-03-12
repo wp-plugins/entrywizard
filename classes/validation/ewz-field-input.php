@@ -30,8 +30,10 @@ class Ewz_Field_Input extends Ewz_Input
         if ( !array_key_exists( 'required', $this->input_data ) ) {
             $this->input_data['required'] = false;
         }
-        if( 'img' ==  $this->input_data['field_type'] && !array_key_exists( 'canrotate', $this->input_data['fdata'] ) ){
-            $this->input_data['fdata']['canrotate'] = false;
+        if( 'img' ==  $this->input_data['field_type'] ){
+            if( !array_key_exists( 'canrotate', $this->input_data['fdata'] ) || !$this->input_data['fdata']['canrotate'] ){
+                $this->input_data['fdata']['canrotate'] = false;
+            } 
         }
         return true;
    }
@@ -54,7 +56,7 @@ class Ewz_Field_Input extends Ewz_Input
             break;
         case 'chk':
             break;
-        default:   throw new EWZ_Exception( 'Invalid value ' . $this->input_data['field_type'] . ' for field type' );
+        default:   throw new EWZ_Exception( 'Invalid value for field type: ' . $this->input_data['field_type'] );
         }
 
         return true;
@@ -73,8 +75,8 @@ class Ewz_Field_Input extends Ewz_Input
         $req_field_data = array('maxstringchars');
         $all_field_data = array('maxstringchars', 'fieldwidth', 'ss_col_fmt');
         foreach ( $req_field_data as $req ) {
-            if ( !array_key_exists( $req, $field ) ) {
-                throw new EWZ_Exception( "Missing required item '$req' for a text input" );
+            if ( !array_key_exists( $req, $field )|| preg_match( '/^ *$/', $field[$req] ) ) {
+                throw new EWZ_Exception( "Missing required item $req for a text input" );
             }
         }
         foreach ( $field as $name => $val ) {
@@ -87,7 +89,7 @@ class Ewz_Field_Input extends Ewz_Input
 
             if ( 'maxstringchars' == $name ) {
                 if ( !preg_match( '/^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
                 if( !$val ){
                     $field[$name] = EWZ_MAX_STRING_LEN;  // changing, cant use $val on left
@@ -97,7 +99,7 @@ class Ewz_Field_Input extends Ewz_Input
             }
             if ( ( 'fieldwidth' == $name ) ) {
                 if ( !preg_match( '/^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
                 if( !$val ){
                     $field[$name] = EWZ_MAX_FIELD_WIDTH;  // changing, cant use $val on left
@@ -106,7 +108,7 @@ class Ewz_Field_Input extends Ewz_Input
             }
             if ( 'ss_col_fmt' == $name ){
                 if ( !preg_match( '/^-1$|^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
                 $field[$name] = ( int )$val;    // changing, cant use $val on left
             }
@@ -119,7 +121,7 @@ class Ewz_Field_Input extends Ewz_Input
      *
      * @param  array  $field  input image field to check
      */
-    private static function valid_img_input( $field )
+    private static function valid_img_input( &$field )
     {
         assert( is_array( $field ) );
 
@@ -128,9 +130,15 @@ class Ewz_Field_Input extends Ewz_Input
         $opt_field_data = array( 'canrotate' );
 
         foreach ( $req_field_data as $req ) {
-            if ( !array_key_exists( $req, $field ) ) {
-                throw new EWZ_Exception( "Missing required item $req " );
-            }
+            if( is_string( $field[$req] ) ){
+                if ( !array_key_exists( $req, $field ) || preg_match( '/^ *$/', $field[$req] ) ) {
+                    throw new EWZ_Exception( "Missing required item $req " );
+                }
+            } else {
+                if ( !array_key_exists( $req, $field ) || ( count( $field[$req] ) == 0 ) ) {
+                    throw new EWZ_Exception( "Missing required item $req " );
+                }
+            }      
         }
         foreach ( $field as $name => $val ) {
             if ( !in_array( $name, $req_field_data ) &&
@@ -143,7 +151,7 @@ class Ewz_Field_Input extends Ewz_Input
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
                 if ( isset( $val ) && !preg_match( '/^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
                 if( !$val ){
                     $field[$name] = EWZ_DEFAULT_DIM;
@@ -155,32 +163,36 @@ class Ewz_Field_Input extends Ewz_Input
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
                 if ( isset( $val ) && !preg_match( '/^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
                 if( !$val ){
                     $val = EWZ_DEFAULT_MIN_LONGEST;
                 }
-                $val = ( int ) $val;
+                $field[$name] = ( int ) $val;
             } elseif ( $name == 'max_img_size' ) {
                 if( !is_string( $val ) ){
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
                 if ( isset( $val ) && !preg_match( '/^\d?\d?\.?\d+$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$name' for $val"  );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'"  );
+                }
+                if( $val > EWZ_MAX_SIZE_MB ){
+                     throw new EWZ_Exception( "Maximum upload file size must be no more than " . EWZ_MAX_SIZE_MB . "MB"  );
                 }
                 if( !$val ){
                     $val = EWZ_MAX_SIZE_MB;
                 }
-                $val = (int)$val;
+                $field[$name] = (int)$val;
 
             } elseif ( $name == 'canrotate' ) {
                 if( !is_string( $val ) ){
                     throw new EWZ_Exception( "Bad input data format for $name ");
                 }
                 if ( $val != "1" ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
-                $val = ( bool ) $val;
+                $field[$name] = true;
+               
             } elseif ( $name == 'allowed_image_types' ) {
                 if ( !is_array( $val ) ) {
                     throw new EWZ_Exception( "Invalid value '$val' for allowed image type"  );
@@ -195,9 +207,9 @@ class Ewz_Field_Input extends Ewz_Input
                 }
             } elseif( 'ss_col_w' == $name  ||  'ss_col_h' == $name || 'ss_col_o' == $name ){
                 if ( isset( $val ) && !preg_match( '/^-1$|^\d*$/', $val ) ) {
-                    throw new EWZ_Exception( "Invalid value '$val' for $name" );
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
                 }
-                $val = ( int ) $val;
+                $field[$name] = ( int ) $val;
             }
             if ( $name == 'max_img_size' && $val > EWZ_MAX_SIZE_MB ) {
                 throw new EWZ_Exception( "Max image size '$val' too large" );
@@ -219,8 +231,8 @@ class Ewz_Field_Input extends Ewz_Input
         $req_field_data = array('label', 'value', 'maxnum');
         foreach ( $req_field_data as $req ) {
             foreach ( $fdata['options'] as $key => $val ) {
-                if ( !array_key_exists( $req, $val ) ) {
-                    throw new EWZ_Exception( "Missing required item '$req' for option list");
+                if ( !array_key_exists( $req, $val ) ||  preg_match( '/^ *$/', $val[$req] )  ) {
+                    throw new EWZ_Exception( "Missing required item $req for option list");
                 }
             }
         }
@@ -238,22 +250,22 @@ class Ewz_Field_Input extends Ewz_Input
                        switch ( $optkey ) {
                            case 'maxnum':
                                if ( !preg_match( '/^\d*$/', $optval ) ) {
-                                   throw new EWZ_Exception( "Invalid value '$optval' for  $optkey");
+                                   throw new EWZ_Exception( "Invalid value for field option $optkey : $optval");
                                }
                                $fdata[$name][$key][$optkey] = ( int )$optval;  // changing, cant use optval
                                break;
                            case 'value':
-                               if ( preg_match( '/[^A-Za-z0-9_\- ]/', $optval ) ) {
-                                   throw new EWZ_Exception( "Invalid value '$optval' for $optkey" );
+                               if ( preg_match( '/[^A-Za-z0-9_\-]/', $optval ) ) {
+                                   throw new EWZ_Exception( "Invalid value for field option $optkey : $optval" );
                                }
                                break;
                            case 'label':
                                if ( preg_match( '/[^A-Za-z0-9_\- ]/', $optval ) ) {
-                                   throw new EWZ_Exception( "Invalid value '$optval' for $optkey" );
+                                   throw new EWZ_Exception( "Invalid value for field option $optkey : $optval" );
                                }
                                break;
                            default:
-                                   throw new EWZ_Exception( "Invalid value '$optval' for $optkey" );
+                                   throw new EWZ_Exception( "Invalid value for field option $optkey : $optval" );
                        }
                    }
                }

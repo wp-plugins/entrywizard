@@ -457,30 +457,6 @@ function ewz_upload_callback() {
 
 add_action( 'wp_ajax_ewz_upload', 'ewz_upload_callback' );
 
-/**
- * Attach Image Files - handle ajax call
- *
- * Called via the Attach button on the List page
- * Javascript ajax handler displays the returned message always
- */
-function ewz_attach_imgs_callback() {
-    if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
-        try {
-            $done = ewz_check_and_attach_imgs();
-            echo $done; // message containing count of attached images
-            exit();
-        } catch (Exception $e) {
-            error_log( "EWZ: ewz_attach_imgs_callback " . $e->getMessage() );
-            echo $e->getMessage();
-            exit();
-        }
-    } else {
-        error_log( "EWZ:  ewz_attach_imgs_callback check_admin_referer failed" );
-        echo "Insufficient permissions - may have expired";
-    }
-}
-
-add_action( 'wp_ajax_ewz_attach_imgs', 'ewz_attach_imgs_callback' );
 
 
 /**
@@ -506,30 +482,6 @@ function ewz_set_ipp_callback() {
 }
 add_action( 'wp_ajax_ewz_set_ipp', 'ewz_set_ipp_callback' );
 
-
-/**
- * Delete Items Via List Page - handle ajax call
- *
- * Called via the Apply button on the List page
- * Javascript ajax handler displays the returned message always
- */
-function ewz_batch_delete_callback() {
-    if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
-        try {
-            $done = ewz_batch_delete_items() ;
-            echo $done;
-            exit();
-        } catch (Exception $e) {
-            error_log( "EWZ: ewz_admin_del_items_callback " . $e->getMessage() );
-            echo $e->getMessage();
-            exit();
-        }
-    } else {
-        error_log( "EWZ:  ewz_admin_del_items check_admin_referer failed" );
-        echo "Insufficient permissions - may have expired";
-    }
-}
-add_action( 'wp_ajax_ewz_batch_delete', 'ewz_batch_delete_callback' );
 
 
 /**

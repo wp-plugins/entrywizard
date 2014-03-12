@@ -42,6 +42,8 @@ class Ewz_Item_List_Input extends Ewz_Input
                     'ifield'       => array( 'type' => 'seq',       'req' => false,   'val' => ''               ),  // img col for attach, if more than one
                     'img_comment'  => array( 'type' => 'bool',      'req' => false,   'val' => ''               ),  // comments allowed on imgs being attached?
                     'img_size'     => array( 'type' => 'limited',   'req' => $is_att, 'val' => ewz_get_img_sizes() ), // copy image when attaching
+                    'orderby'      => array( 'type' => 'seq',       'req' => false,   'val' => ''               ),  // column to order by
+                    'order'        => array( 'type' => 'limited',   'req' => false,   'val' => array( 'asc','desc' ) ),
                     'page'         => array( 'type' => 'fixed',     'req' => false,    'val' => 'entrywizlist' ), 
                     'paged'        => array( 'type' => 'seq',       'req' => false,   'val' => ''               ),  // pagination
                     'uploaddays'   => array( 'type' => 'seq',       'req' => false,   'val' => '0'              ),

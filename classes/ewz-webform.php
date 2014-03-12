@@ -18,6 +18,7 @@ class Ewz_Webform extends Ewz_Base {
     public $webform_id;
     // database
     public $layout_id;
+    public $num_items;
     public $webform_title;
     public $webform_ident;
     public $upload_open;
@@ -36,12 +37,14 @@ class Ewz_Webform extends Ewz_Base {
     // Dont include webform_id
     public static $varlist = array(
         'layout_id' => 'integer',
+        'num_items'  => 'integer',
         'webform_title' => 'string',
         'webform_ident' => 'string',
         'upload_open' => 'boolean',
         'open_for' => 'array',
         'prefix' => 'string',
         'apply_prefix' => 'boolean',
+        'attach_prefs' => 'string',
     );
 
     /**
@@ -105,6 +108,18 @@ class Ewz_Webform extends Ewz_Base {
         $wcount = $wpdb->get_var( $wpdb->prepare( "SELECT count(*) FROM " . EWZ_WEBFORM_TABLE . " WHERE  webform_id = %d", $webform_id ) );
         return ( 1 == $wcount );
     }
+
+    /**
+     * Deal with upgrade -- set num_items field in webforms 
+     * 
+     */
+    public static function set_num_items(){
+        global $wpdb;
+        $wpdb->query("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
+                     "   SET num_items = ( SELECT  max_num_items from " .  EWZ_LAYOUT_TABLE . " lay " .
+                     " WHERE lay.layout_id = wf.layout_id ) " );
+    }
+
 
     /*     * ****************** Construction ************************* */
 
@@ -176,6 +191,10 @@ class Ewz_Webform extends Ewz_Base {
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform', $id );
         }
+        $layout = new Ewz_Layout( $dbwebform['layout_id'] );
+        if( !$layout->override ||  !$dbwebform['num_items'] ){
+            $dbwebform['num_items'] = $layout->max_num_items;
+        }
         $this->set_data( $dbwebform );
     }
 
@@ -194,6 +213,10 @@ class Ewz_Webform extends Ewz_Base {
                         EWZ_WEBFORM_TABLE . " WHERE webform_ident=%s", $ident ), ARRAY_A );
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform', $ident );
+        }
+        $layout = new Ewz_Layout( $dbwebform['layout_id'] );
+        if( !$layout->override ||  !$dbwebform['num_items'] ){
+            $dbwebform['num_items'] = $layout->max_num_items;
         }
         $this->set_data( $dbwebform );
     }
@@ -612,7 +635,10 @@ class Ewz_Webform extends Ewz_Base {
                         }
                     }
                 }
-                if ( ( 'img' == $field->field_type ) && ( $field_value_arr['value'] == 'ewz_img_upload' ) ) {
+                // filename columns will be set by get_file_data_for_ss
+                if ( ( 'img' == $field->field_type ) && 
+                     isset( $field_value_arr['value'] ) && 
+                     ( $field_value_arr['value'] == 'ewz_img_upload' ) ) {
                     $itemrow[$field->ss_column] = '';
                 }
             }
@@ -787,6 +813,7 @@ class Ewz_Webform extends Ewz_Base {
 
         $data = stripslashes_deep( array(
             'layout_id' => $this->layout_id,
+            'num_items' => $this->num_items,
             'webform_title' => $this->webform_title,
             'webform_ident' => $this->webform_ident,
             'upload_open' => $this->upload_open ? 1 : 0,
@@ -794,7 +821,7 @@ class Ewz_Webform extends Ewz_Base {
             'prefix' => $this->prefix,
             'apply_prefix' => $this->apply_prefix ? 1 : 0,
                 ) );
-        $datatypes = array( '%d', '%s', '%s', '%d', '%s', '%s' );
+        $datatypes = array( '%d','%d', '%s', '%s', '%d', '%s', '%s' );
 
         if ( $this->webform_id ) {
             $rows = $wpdb->update( EWZ_WEBFORM_TABLE, $data, array( 'webform_id' => $this->webform_id ), $datatypes, array( '%d' ) );

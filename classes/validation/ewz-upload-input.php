@@ -15,7 +15,7 @@ class Ewz_Upload_Input extends Ewz_Input
 
         $this->layout = $in_layout;
 
-        // Set the rdata value for the image upload fields
+        // Set the rdata value for the image upload fields ( should have been done by js anyway )
         // Needs to be done before validation
         if ( $in_files ) {
             foreach ( $in_files['rdata']['name'] as $row => $uploaded_fileinfo ) {
@@ -75,6 +75,7 @@ class Ewz_Upload_Input extends Ewz_Input
         $optcounts = array();
         $chkcount = array();
         foreach ( $value as $rownum => $input_row ) {
+            $rownum1 = $rownum + 1;
             foreach ( $this->layout->restrictions as $restr ) {
                 $row_matches_restr[$restr['msg']] = true;   // may set to false during check below
             }
@@ -83,7 +84,7 @@ class Ewz_Upload_Input extends Ewz_Input
                     throw new EWZ_Exception( "Row $rownum: invalid data"  );
                 }
                 if ( !$val && $fields[$field_id]->required ) {
-                    throw new EWZ_Exception( "Row $rownum: " . $fields[$field_id]->field_header . ' is required.' );
+                    throw new EWZ_Exception(  $fields[$field_id]->field_header . " is required ( row $rownum1 )." );
                 }
 
                 switch ( $fields[$field_id]->field_type ) {
@@ -105,19 +106,22 @@ class Ewz_Upload_Input extends Ewz_Input
                     if( !isset( $chkcount[$field_id] ) ){
                         $chkcount[$field_id] = 0;
                     }
-                    if( $val ){
-                        ++$chkcount[$field_id];                            
+                    $value[$rownum][$field_id] = self::validate_rad_data( $val, $chkcount[$field_id] );  
+                    if( $value[$rownum][$field_id] ){
+                        ++$chkcount[$field_id];
                     }
-                    self::validate_rad_data( $value[$rownum][$field_id], $chkcount[$field_id] );  // may change it's input
                     break;
                 case 'chk':
                     if( !isset( $chkcount[$field_id] ) ){
                         $chkcount[$field_id] = 0;
                     }
-                    if( $val == 'on' ){
+                    $value[$rownum][$field_id] = self::validate_chk_data( $fields[$field_id], 
+                                                                          $val,                     
+                                                                          $chkcount[$field_id]
+                                                                          );
+                    if( $value[$rownum][$field_id] ){
                         ++$chkcount[$field_id];
                     }
-                    self::validate_chk_data(  $fields[$field_id], $value[$rownum][$field_id], $chkcount[$field_id] );  // may change it's input
                     break;
                 default:
                     throw new EWZ_Exception( "Invalid field type " . $fields[$field_id]->field_type );
@@ -260,36 +264,38 @@ class Ewz_Upload_Input extends Ewz_Input
 
     /**
      * Validate checkbox input
+     * Check input is boolean and check the counts
      *
      * @param   array   $fdata  input field data
-     * @param   string  $val    input value
-     * @param   int     $count  number of items with this field checked
-     * @return  string  $msg  Error message, empty if no error.
+     * @param   string  $val    input string convertible to boolean
+     * @param   string  $count  input integer current count of checks for this checkbox
+     * @return  boolean
      */
-    private static function validate_chk_data( $field, &$val, $count )
+    private static function validate_chk_data( $field, $val, $count )
     {
         assert( is_object( $field ) );
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );
-        if( !self::bool( $val, '' ) ){
+        if( !self::bool( $val, '' ) ){                  // changes $val to boolean
             throw new EWZ_Exception( "Invalid value <$val> for checkbox input" );
         }   
-        if ( isset( $field->fdata['chkmax'] ) && $field->fdata['chkmax']  ) {
+        if ( isset( $field->fdata['chkmax'] ) && $field->fdata['chkmax'] && $val ) {
             if ( intval($field->fdata['chkmax'] ) < $count ) {
                 throw new EWZ_Exception( "Too many items checked for $field->field_header"  );
             }
         }     
-        return true;
+        return $val;
     }
+
 
     /**
      * Validate radiobutton input
      *
-     * @param   array   $fdata  input field data
-     * @param   string  $val    input value
-     * @return  string  $msg  Error message, empty if no error.
+     * @param   string  $val    input string convertible to boolean
+     * @param   int     $count  current count of items with this button checked
+     * @return  boolean
      */
-    private static function validate_rad_data(  &$val, $count )
+    private static function validate_rad_data(  $val, $count )
     {
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );
@@ -300,7 +306,7 @@ class Ewz_Upload_Input extends Ewz_Input
         if( 1 < $count ){
             throw new EWZ_Exception( "More than one radiobutton checked" );
         } 
-        return true;
+        return $val;
     }
  
 }

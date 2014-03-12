@@ -22,6 +22,11 @@ function ewz_followup( $atts ) {
     $layouts = array();
     $webforms = array();
 
+    /* ****************** */
+    /* Check user status  */
+    /* ****************** */
+    get_currentuserinfo();
+
     // the field params that we assume are the same for all webforms
     $followup_data = array(
                            'fdata' =>  array(),
@@ -30,6 +35,9 @@ function ewz_followup( $atts ) {
                            'field_header' => '',
                             );
     try{
+        if ( !is_user_logged_in() ) {
+            return 'Sorry, you must be logged in to see this.';
+        }
         // get the followup field.
         // this assumes all the webforms use the same layout, or at least have
         // exactly the same specs for the 'followupQ' field
@@ -41,12 +49,17 @@ function ewz_followup( $atts ) {
 
         // prefix each show item with "p" to match the way it is stored on the database
         $show_data = array();
+        $show_admin_data = false;
         if( array_key_exists( 'show', $atts ) ){
             foreach( explode( ',', $atts['show'] ) as $data ){
-                if( !in_array( $data, array( 'title', 'excerpt', 'content' ) ) ){
+                if( !in_array( $data, array( 'title', 'excerpt', 'content','item_data' ) ) ){
                     throw new EWZ_Exception(  'Invalid data specification in shortcode' );
                 }
-                array_push( $show_data,  "p$data" );
+                if( $data == 'item_data'){
+                    $show_admin_data = true;
+                } else {
+                    array_push( $show_data,  "p$data" );
+                }
             }
         }
         foreach( $idents as $ident ){
@@ -91,9 +104,10 @@ function ewz_followup( $atts ) {
     // generate output
     $output = '';
     if( $followup_data['field_type'] ){
-        $output .= '<form id="foll_form" autocomplete="off" method="POST" action="' . esc_js( esc_attr( get_permalink() ) ) . '" >';
+        $output .= '<form id="foll_form" autocomplete="off" method="POST" onSubmit="return f_validate()" action="' . esc_js( esc_attr( get_permalink() ) ) . '" >';
         $output .= wp_nonce_field( 'ewzupload', 'ewzuploadnonce', true, false );
     }
+    $output .= '<div class="ewz_overflow" id="scrollablediv">';
 
     $rownum = 0;
     foreach( $idents as $ident ){
@@ -101,18 +115,21 @@ function ewz_followup( $atts ) {
         $webform = $webforms[$ident];
         $layout = $layouts[$ident];
         $webform->layout = $layout;
-        $output .= "<h2>$webform->webform_title</h2>\n";
         $items = Ewz_Item::get_items_for_webform( $webform->webform_id, true );
-        $output .= ewz_followup_display(
+        $output .= "<h2>$webform->webform_title</h2>\n";
+        if( $items ){
+            $output .= ewz_followup_display(
                                         $rownum,
                                         $items,
                                         $layout->fields,
                                         $webform->webform_id,
-                                        $show_data
+                                        $show_data,
+                                        $show_admin_data
                                         );
-        $output .= '<br>';
-        array_push( $ewzF['webforms'], $webform );
-        $rownum += count( $items );
+            $output .= '<br>';
+            array_push( $ewzF['webforms'], $webform );
+            $rownum += count( $items );
+        }
     }
 
     $ewzF['jsvalid'] = Ewz_Base::validate_using_javascript();     // this is set to false for testing server validation
@@ -121,8 +138,10 @@ function ewz_followup( $atts ) {
     wp_localize_script( "ewz-followup", "ewzF",  $ewzF );
 
     if( $followup_data['field_type'] ){
-        $output .= '<br><center><input type="submit" onclick="return f_validate()"></center></form>';
+        $output .= '</div>';
+        $output .= '<br><center><button type="submit" id="f_submit">Submit</button></center></form><br><br>';
     }
+    
     return $output;
 }
 
@@ -166,12 +185,13 @@ function ewz_process_followup_input( $input )
 
  * @return  html string
  */
-function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id, $show_data ){
+function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id, $show_data, $show_admin_data ){
     assert( Ewz_Base::is_nn_int( $init_rownum ) );
     assert( is_array( $stored_items ) );
     assert( is_array( $fields ) );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( is_array( $show_data ) );
+    assert( is_bool( $show_admin_data ) );
 
     $rownum = $init_rownum;
 
@@ -191,6 +211,10 @@ function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id
         foreach ( $fields_arr as $n => $field ) {
             assert( $n < count( $fields ) );
             $output .=   '<th>' . esc_html( $field->field_header ) . '</th>';
+        }
+        // admin_data column
+        if( $show_admin_data ){
+            $output .=   '<th> </th>';
         }
         $output .=    '</tr></thead><tbody>';
 
@@ -218,6 +242,10 @@ function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id
                     $output .= '</td>';
                 }
             }
+            // admin_data column
+            if( $show_admin_data ){
+                $output .=  ewz_display_admin_data( $item );
+            }
             $output .= '</tr>';
             ++$rownum;
         }
@@ -227,6 +255,18 @@ function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id
     return $output;
 }
 
+
+function ewz_display_admin_data( $item ){
+     assert( is_object( $item ) );
+     $str= '';
+     if ( array_key_exists( 'admin_data', $item->item_data ) ) {
+        $str = '<td class="admin_data">' . esc_attr( $item->item_data['admin_data'] ) . '</td>';
+     } else {
+         $str = '<td></td>';
+     }
+     return $str;
+}
+  
 /**
  * Return the html string for the display of an image field with extra uploaded data
  *
@@ -264,15 +304,8 @@ function ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $i
     assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( in_array( $field->field_type, array( 'str', 'opt', 'img', 'rad', 'chk' ) ) );
-    assert( is_int( $savedval ) ||  is_string( $savedval ) || $savedval === null );
+    assert( is_bool($savedval ) || is_int( $savedval ) ||  is_string( $savedval ) || $savedval === null );
     assert( is_null( $item_id ) || Ewz_Base::is_pos_int( $item_id ) );
-
-    if( $field->field_type == 'rad' ){
-        if( !$savedval && $rownum === 0 ){
-            $savedval = 1;
-        }
-        $rownum = 0;        // only one return value, rdata[] won't be handled properly
-    }
 
     if( !is_null( $item_id ) ){
         $name = "rdata[$rownum][" . $item_id . "]";
@@ -373,7 +406,7 @@ function ewz_display_chk_followup_field( $name, $webform_id, $savedval )
     $ename = esc_attr( $name );
 
     $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-      return '<input type="checkbox"  name="' . $ename .
+      return '<input type="checkbox"  value="1" name="' . $ename .
                    '" id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
           ($savedval ? ' checked="checked" ' : '') .
             '>';

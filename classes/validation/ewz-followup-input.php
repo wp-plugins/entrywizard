@@ -157,7 +157,8 @@ class Ewz_Followup_Input extends Ewz_Input
     /**
      * Validate radio button data
      * 
-     * @param    $val   input data, should be boolean type, gets changed to 0 or 1
+     * @param    $val   input data, string convertible to boolean, gets changed to  true or false
+     * @param    $count  integer  current count of items checked via this button
      * @return   boolean true,  exception if data not valid
      */
     private static function validate_rad_data(  &$val, $count ){
@@ -176,14 +177,15 @@ class Ewz_Followup_Input extends Ewz_Input
      * Validate checkbox data
      * 
      * @param    $chkmax max number of checked items allowed ( ignored if 0 )
-     * @param    $val   input data, should be boolean type, gets changed to 0 or 1
+     * @param    $val   input data, string convertible to boolean, gets changed to true or false
+     * @param    $count  current count of items with this value for this checkbox
      * @return   boolean true,  exception if data not valid
      */
     private static function validate_chk_data( $chkmax, &$val, $count ){
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $chkmax ) );
         assert( Ewz_Base::is_nn_int( $count ) );
-        if( !self::bool( $val, '' ) ){               // changes $val to int 0 or 1
+        if( !self::bool( $val, '' ) ){               // changes $val to true or false
             throw new EWZ_Exception( "Invalid checkbox input" );
         }
         if ( isset( $chkmax ) && $chkmax  ) {

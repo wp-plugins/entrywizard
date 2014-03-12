@@ -109,7 +109,11 @@ function data_management_str( evnum, eObj ){
     var str='';
     str +=   '<h4>Data Management</h4>';
     if(eObj.can_manage_webform){
+        str +=  '<table class="ewz_csv_upload"><tr>';
         str +=  xtra_data_upload_str(  evnum, eObj );
+        str +=  '</tr><tr>';        
+        str +=  itmcsv_data_upload_str(  evnum, eObj );
+        str +=  '</tr></table>';
     }
     /**** NB: action is item_list, not webform here, and requires 'get' method for pagination ********/
     str +=   '<form method="GET" action="' + ewzG.list_page  + '" id="data_form_ev' + evnum + '_">';
@@ -117,7 +121,7 @@ function data_management_str( evnum, eObj ){
     str +=   '    <input type="hidden" name="page" value="entrywizlist">';
     str +=   '    <input type="hidden" name="ewzmode" value="list">';
     str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
-    str +=   '    <br><br><br><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'datasel\')"> &nbsp; With selected items:';
+    str +=   '    <br>&nbsp;<img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'datasel\')">&nbsp; With selected items:';
 
     if( eObj.hasOwnProperty('field_options' )){
 
@@ -158,7 +162,7 @@ function webform_data_str(evnum, eObj) {
     var divid = 'usel' + evnum + '_',
         clickstr = 'user_select(' + "'" + divid + "'" + ')',
         str = '';
-    str += '<form method="post" action="" id="cfg_form_ev' + evnum + '_" onSubmit="return ewz_check_webform_input(this, ewzG.jsvalid)">';
+    str += '<form method="post" action="" id="cfg_form_ev' + evnum + '_" onSubmit="return ewz_check_webform_input(this,' +  evnum + ', ewzG.jsvalid)">';
     str += '  <div class="ewzform">';
     str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
     str +=   '    <input type="hidden" name="ewzmode" value="webform">';
@@ -180,6 +184,12 @@ function webform_data_str(evnum, eObj) {
     }
     str +=   '            <td></td>';
     str +=   '        </tr>';
+
+    if(eObj.canOverride){
+    str +=   '        <tr id="override' + evnum + '" ><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'numitems\')">&nbsp;Maximum number of items:</td> ';
+    str +=   '            <td>' + numinput_str("num_items_" + evnum, "num_items", '', 1, 30, eObj.num_items ) + '</td>';
+    str +=   '        </tr>';
+    }  
 
     str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
     str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
@@ -244,17 +254,35 @@ function xtra_data_upload_str(  evnum, eObj ){
     'use strict';
     var str = '',
         inputid = 'csv_data_' + evnum + '_';
-    str +=   '<form method="post" enctype="multipart/form-data" action="" id="csv_form_ev' + evnum + '_"  onSubmit="return ewz_check_csv_input( \'' + inputid + '\' ) ">';
+    str +=   '<td><form method="post" enctype="multipart/form-data" action="" id="csv_form_ev' + evnum + '_"  onSubmit="return ewz_check_csv_input("csv",' + evnum + ', \'' + inputid + '\' ) ">';
     str += '  <div class="ewzform">';
     str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
     str +=   '    <input type="hidden" name="ewzmode" value="csv">';
     str +=   '    <div class="ewz_numc"></div>';
 
-    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'csv\')">&nbsp;Upload extra data for the webform: ';
-    str +=   '    <input  id="' + inputid + '" name="csv_data" type="file" > &nbsp; ';
-    str +=   '    <button type="submit" id="csv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload</button>';
+    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'csv\')">&nbsp; Upload extra per-image data for the webform: ';
+    str +=   '    <input  id="' + inputid + '" name="csv_data" type="file" >';
+    str +=   '    <button type="submit" id="csv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload Image Data</button>';
     str +=   ' </div>';
-    str +=   '</form>';
+    str +=   '</form></td>';
+    return str;
+}
+/* Return the html string for the Admin Data Upload form */
+function itmcsv_data_upload_str(  evnum, eObj ){
+    'use strict';
+    var str = '',
+        inputid = 'itmcsv_data_' + evnum + '_';
+    str +=   '<td><form method="post" enctype="multipart/form-data" action="" id="itmcsv_form_ev' + evnum + '_"  onSubmit="return ewz_check_csv_input("itmcsv",' + evnum + ', \'' + inputid + '\' ) ">';
+    str += '  <div class="ewzform">';
+    str +=   '    <input type="hidden" name="webform_id" value="' + eObj.webform_id + '">';
+    str +=   '    <input type="hidden" name="ewzmode" value="itmcsvdata">';
+    str +=   '    <div class="ewz_numc"></div>';
+
+    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'itmcsv\')">&nbsp; Upload extra per-item &nbsp; data for the webform: &nbsp;';
+    str +=   '    <input  id="' + inputid + '" name="itmcsv_data" type="file" >';
+    str +=   '    <button type="submit" id="itmcsv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload Item Data</button>';
+    str +=   ' </div>';
+    str +=   '</form></td>';
     return str;
 }
 
@@ -330,7 +358,7 @@ function select_layout_str( evnum, eObj ){
     'use strict';
     var str = '';
     str +=   '                 <td>';
-    str +=   '                    <select id="layout_id' + evnum + '" name="layout_id" >';
+    str +=   '                    <select id="layout_id' + evnum + '" name="layout_id" onChange=disable_override(' + evnum + ')>';
     str +=                           eObj.layouts_options;
     str += '                      </select>';
     str +=   '                 </td>';
@@ -341,6 +369,9 @@ function select_layout_str( evnum, eObj ){
 }
 /************************ Functions That Change The Page  ****************************************/
 
+function disable_override(evnum){
+    jQuery("#override" + evnum).hide();
+}
 
 function user_select(id){
     'use strict';
@@ -407,6 +438,7 @@ function add_new_webform(){
     newform.can_manage_webform = true;
     newform.can_edit_webform = true;
     newform.can_download = true;
+    newform.can_override = false;
     newform.itemcount = 0;
     newform.upload_open = false;
     newform.open_for_string = "";
@@ -416,6 +448,7 @@ function add_new_webform(){
     newform.webform_ident = '';
     newform.prefix = '';
     newform.apply_prefix = true;
+    
     jQnew = jQuery(ewz_management(num, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");
@@ -442,15 +475,17 @@ function add_new_webform(){
 
 
 /* Validation */
-function ewz_check_csv_input(file_input_id){
+function ewz_check_csv_input(ftype, evnum, file_input_id){
     'use strict';
     var  theFile = document.getElementById(file_input_id).files[0],
           mb;
+    jQuery('#' + ftype+'_btn_' + evnum ).prop("disabled", true);
     if(theFile !== null){
 
         // get selected file element
         mb =  Math.floor( theFile.size / 1048576 );
         if( mb > ewzG.maxUploadMb ){
+            jQuery('#'+ftype+'_btn_' + evnum ).prop("disabled", false);
             alert( 'Sorry, your file size is ' + mb + 'M, which is bigger than the allowed maximum of ' + ewzG.maxUploadMb + 'M' );
             return false;
         }
@@ -458,6 +493,7 @@ function ewz_check_csv_input(file_input_id){
         var theName = theFile.name;
         if( ( theType.length > 0 && theType != "text/csv" ) ||
             ( theName.length > 0 && !/\.csv$/.test(theName)  ) ){
+            jQuery('#'+ftype+'_btn_' + evnum ).prop("disabled", false);
             alert( theFile.name + ': Found filename: ' +  theName + ', detected type: ' + theType + '.  Sorry, the file must be of type "text/csv"' );
             return false;
         }
@@ -465,37 +501,39 @@ function ewz_check_csv_input(file_input_id){
     return true;
 }
 
-function ewz_check_webform_input(form, do_js_check){
+function ewz_check_webform_input(form, evnum, do_js_check){
     'use strict';
     var jform,
         pref;
+    jform = jQuery(form);
+    if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
+        !jform.find('input[id^="prefix_"]').val().trim( ).length ){
+        jform.find('input[id^="apply_prefix"]').prop('checked', false );
+    }
     if( do_js_check) {
+        jQuery('#cfg_form_wf' +  evnum + '_').prop("disabled", true);
         try{
-            jform = jQuery(form);
-            if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
-                !jform.find('input[id^="prefix_"]').val().trim( ).length ){
-                jform.find('input[id^="apply_prefix"]').prop('checked', false );
-            }
-            if(!jform.find('input[id^="webform_title_ev"]').val()){
-                alert(ewzG.errmsg.formTitle);
+            if(!jform.find('input[id^="webform_title_ev"]').val().trim( )){
+                err_alert(evnum, ewzG.errmsg.formTitle);
                 return false;
             }
             if(!jform.find('input[id^="webform_ident_ev"]').val()){
-                alert(ewzG.errmsg.formIdent);
+                err_alert(evnum, ewzG.errmsg.formIdent);
                 return false;
             }
             if(!jform.find('input[id^="webform_ident_ev"]').val().match(/^[a-z0-9_\-]+$/i)){
-                alert(ewzG.errmsg.formIdent);
+                err_alert(evnum, ewzG.errmsg.formIdent);
                 return false;
             }
             pref = jform.find('input[id^="prefix_"]').val();
             if(!pref.match(/^[\[\]A-Z0-9~\-_]*$/i)){
-                alert(ewzG.errmsg.formPrefix);
+                err_alert(evnum, ewzG.errmsg.formPrefix);
                 return false;
             }
             return true;
         } catch(except) {
-            alert("Sorry, there was an unexpected error: " + except.message);
+            jQuery('#cfg_form_wf' +  evnum + '_').prop("disabled", false);
+            err_alert( evnum, "Sorry, there was an unexpected error: " + except.message);
             return false;
         }
     } else {
@@ -503,4 +541,7 @@ function ewz_check_webform_input(form, do_js_check){
     }
 }
 
-
+function err_alert(evnum, msg){
+    jQuery('#cfg_form_wf' +  evnum + '_').prop("disabled", false);
+    alert(msg);
+}

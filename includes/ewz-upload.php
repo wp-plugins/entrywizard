@@ -45,7 +45,7 @@ function ewz_show_webform( $atts )
         try{
             //error_log("EWZ: uploading (old form) for " . $_SERVER["REMOTE_ADDR"]);
             // had problems with more than 10 3M images
-            $n = $webformdata['layout']->max_num_items;
+            $n = $webformdata->num_items;
             $timelimit = ini_get('max_execution_time');
             if( 15 * $n > $timelimit ){
                 set_time_limit ( 15 * $n );
@@ -68,13 +68,13 @@ function ewz_show_webform( $atts )
     try{
 
         $stored_items = Ewz_Item::get_items_for_webform( $webform_id,  true );
-
     } catch( Exception $e ) {
         $errmsg .= $e->getMessage();
     }
 
     $ewzG = ewz_get_layout_info( $webformdata['layout'] );  // grabs all required layout data
     $ewzG['webform_id'] = $webform_id;
+    $ewzG['num_items'] = $webformdata['webform']->num_items;
     $ewzG['errmsg'] = $errmsg;
     $ewzG['thumb_height'] = 100;        // TODO - make this configurable
     $ewzG['has_data'] = ( count( $stored_items ) > 0 );
@@ -204,7 +204,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     $output .= '<input type="hidden" name="layout_id" value="' . esc_attr( $webform->layout_id ) . '">';
     $output .= '<input type="hidden" name="webform_id" value="' .  esc_attr( $webform_id ) . '">';
     $output .= '<input type="hidden" name="identifier" value="' . esc_attr( $webform->webform_ident ) . '">';
-    $output .= '<div class="ewz_overflow">';
+    $output .= '<div id="scrollablediv_'. esc_attr( $webform_id ) . '" class="ewz_overflow">';
     $output .= "\n";
     $output .= '<table class="ewz_padded ewz_upload_table">';
     $output .= "\n";
@@ -239,7 +239,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
         ++$row;
     }
     // add blank rows to fill to max_num_items
-    while ( $row < $layout->max_num_items ) {
+    while ( $row < $webform->num_items ) {
         $output .="<tr id='row" . $row . "_" . esc_attr( $webform_id ) . "'>";
 
         foreach ( $fields_arr as $field ) {
@@ -262,6 +262,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     // progress bar above submit button so visible after submit is clicked.
     $esc_wid = esc_attr( $webform_id );
     $output .= '      <div class="ewz_progress" >';
+    $output .= '            <div id="pleasewait_' . $esc_wid . '"></div>';
     $output .= '            <div id="progress_info_' . $esc_wid . '">';
     $output .= '                <div id="complete_' . $esc_wid . '">';
     $output .= '                   <div id="progress_bar_' . $esc_wid . '"></div>';
@@ -303,7 +304,7 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
     assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( in_array( $field->field_type, array( 'str', 'opt', 'img', 'rad', 'chk' ) ) );
-    assert( is_string( $savedval ) || $savedval === null || $savedval === 1 || $savedval === 0 );
+    assert( is_string( $savedval ) || is_bool( $savedval ) || $savedval === null || $savedval === 1 || $savedval === 0 );
 
     $name    = "rdata[$rownum][" . $field->field_id . "]";
 
@@ -487,7 +488,7 @@ function ewz_display_chk_form_field( $name, $webform_id, $savedval )
 
     $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
       return '<input type="checkbox"  name="' . $ename .
-                   '" id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
+                   '" value="1"  id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
           ($savedval ? ' checked="checked" ' : '') .
             '>';
 }
@@ -518,12 +519,15 @@ function ewz_get_layout_info( $layout )
     $ewzG['isize_err'] = "Sorry, this image will not be accepted.\nIt does not fit within the required bounds of: ";
     $ewzG['fsize_err'] = "Sorry, this file will not be accepted.\nIts size ( %d ) is greater than the limit of ";
 
-    $ewzG['wait'] = 'Upload complete, processing takes a moment .... ';
+    $ewzG['wait'] = 'PLEASE WAIT until all processing is finished and the screen refreshes.';
+    $ewzG['complete'] = 'PLEASE WAIT. Upload is complete, processing may take a few moments .... ';
+    $ewzG['oldform'] = 'PLEASE WAIT until all processing is finished and the screen refreshes.  Upload may take some time, depending on image size and network speed.  More feedback is available using a browser with better support for HTML5.';    
     $ewzG['iBytesUploaded'] = 0;
     $ewzG['iBytesTotal'] = 0;
     $ewzG['iPreviousBytesLoaded'] = 0;
     $ewzG['iMaxFileBytes'] = EWZ_MAX_SIZE_BYTES;
     $ewzG['timer'] = 0;
+    $ewzG['inProgress'] = false;
     $ewzG['sResultFileSize'] = '';
 
     return $ewzG;
@@ -622,7 +626,6 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
     // and add the uploaded file data to the item data
 
     $post_arr = ewz_to_upload_arr( $webform_id, $postdata, $layout->fields );
-
     /* ********************************************************* */
     /* Process the items                                         */
     /* If there is matching data stored, update the database     */
@@ -658,7 +661,7 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
         }
         if( $data ){
             try {
-                $item_obj = new Ewz_Item( $data );
+                $item_obj = new Ewz_Item( $data );     
                 $item_obj->save();
             } catch( Exception $e ) {
                 $errs .= $e->getMessage();
@@ -688,9 +691,7 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
     foreach ( $postdata['rdata'] as $row => $datavalues ) {
         // there may be missing rows, so $rows may not be 0,1,2...
         foreach ( $datavalues as $field_id => $val ) {
-            if ( $val ) {
                 $upload[$row]['data'][$field_id] = array( "field_id" => $field_id, "value" => $val );
-            }
         }
     }
     if ( array_key_exists( 'item_id', $postdata ) ) {
@@ -900,21 +901,22 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 
     // Max dimensions are always set for landscape mode.
     // If rotation allowed and image is in portrait format, interchange max width and height
-    if ( $canrot && ($h > $w) ) {
+    if ( $canrot && ( $h > $w ) ) {
         $tmp = $maxw;
         $maxw = $maxh;
         $maxh = $tmp;
     }
 
-    if ( ($w > $maxw) || ($h > $maxh) ) {
+    if ( ( $w > $maxw ) || ( $h > $maxh ) ) {
         $msg = "Image dimensions $w x $h do not fit within the allowed dimensions of $maxw pixels wide x $maxh pixels high";
         if ( $canrot ) {
             $msg .= " ( or $maxh pixels wide x $maxw  pixels high ) ";
         }
         return $msg;
     }
-    $longest = $w > $h ? $w : $h;
-    if ( ($longest < $minld ) ) {
+    $longest = ( $w > $h ) ? $w : $h;
+
+    if ( $longest < $minld  ) {
         return "Longest image dimension is $longest pixels, which is too small for this application.\n\nIt can be enlarged up to " .
                 esc_html( "$maxw pixels wide x $maxh pixels high" );
     }
@@ -957,7 +959,7 @@ function ewz_validate_and_upload( )
         }
 
         // had problems with more than 10 3M images
-        $n = $webformdata['layout']->max_num_items;
+        $n = $webformdata['webform']->num_items;
         $timelimit = ini_get('max_execution_time');
         if( 15 * $n > $timelimit ){
             set_time_limit ( 15 * $n );
@@ -1002,7 +1004,7 @@ function ewz_check_upload_atts( $atts )
  */
 function ewz_display_item( $field, $value ) {
     assert( is_object( $field ) );
-    assert( is_string( $value ) || in_array( $value, array( null, 1, 0 ), true ) );
+    assert( is_string( $value ) || is_bool( $value ) || in_array( $value, array( null, 1, 0 ), true ) );
     if(  'opt' == $field->field_type ){
         foreach( $field->fdata['options'] as $n => $opt ){
             assert( $n < count($field->fdata['options']));
@@ -1011,7 +1013,7 @@ function ewz_display_item( $field, $value ) {
             }
         }
     } elseif( 'rad' == $field->field_type || 'chk' == $field->field_type ){
-        if ( $value == '1' ) {
+        if ( $value  ) {
             return 'checked';
         } else {
             return '';

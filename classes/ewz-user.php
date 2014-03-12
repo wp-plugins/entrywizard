@@ -21,5 +21,6 @@ class Ewz_User
 	}
 	return $options;
     }
+
 }
 

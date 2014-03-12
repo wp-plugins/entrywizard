@@ -224,8 +224,6 @@ class Ewz_Field extends Ewz_Base
                 );
         if ( Ewz_Base::is_pos_int( $init ) ) {
             $this->create_from_id( $init );
-        } elseif ( is_array( $init ) && !isset( $init['field_type'] ) ) {
-            $this->create_from_ident( $init );
         } elseif ( is_array( $init ) ) {
             $this->create_from_data( $init );
         }
@@ -305,17 +303,17 @@ class Ewz_Field extends Ewz_Base
        }
 
         // check for key duplication
-        $used1 = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_FIELD_TABLE .
-                        " WHERE layout_id = %d AND field_header = %s AND field_id != %d",
-                                          $this->layout_id, $this->field_header, $this->field_id ) );
-        if ( $used1 > 0 ) {
-            throw new EWZ_Exception( 'Field name ' . $this->field_header . ' already in use for this layout' );
-        }
-        $used2 = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_FIELD_TABLE .
-                        " WHERE layout_id = %d AND field_ident = %s AND field_id != %d",
-                                          $this->layout_id, $this->field_ident, $this->field_id ) );
-        if ( $used2 > 0 ) {
-            throw new EWZ_Exception( 'Field identifier ' . $this->field_ident . ' already in use for this layout' );
+       
+        $existing = $wpdb->get_results( $wpdb->prepare( "SELECT field_header, field_ident  FROM " . EWZ_FIELD_TABLE .
+                                                        " WHERE layout_id = %d AND field_id != %d",
+                                                        $this->layout_id, $this->field_id ), ARRAY_A );
+        foreach( $existing as $itm ){
+            if( $itm['field_header'] == $this->field_header ){
+                throw new EWZ_Exception( 'Field name ' . $this->field_header . ' already in use for this layout' );
+            } 
+            if( $itm['field_ident'] == $this->field_ident ){
+                throw new EWZ_Exception( 'Field identifier ' . $this->field_ident . ' already in use for this layout' );
+            }            
         }
 
         // -1 is essentially null for ss_column

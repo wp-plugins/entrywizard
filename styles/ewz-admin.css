@@ -5,10 +5,11 @@
     width: 100%;
     height: 100%;
     background: #000;
-    opacity: 0.8;
-    filter: alpha(opacity=80);
+    opacity: 0.7;
+    filter: alpha(opacity=70);
     z-index:50;
 }
+
 .ewz_padded td { padding: 20px 10px 20px 10px !important;}
 .ewz_pcentre {
     padding-top: 5px;
@@ -44,6 +45,14 @@
     vertical-align:middle;
 }
 
+table.ewz_csv_upload{
+    border: 0px;
+}
+
+table.ewz_csv_upload td{
+    padding-right: 20px;
+    padding-top: 15px;
+}
 
 table.ewz_border{ border-collapse: collapse;
                   border: 1px solid black;
@@ -72,7 +81,8 @@ table.ewz_border{ border-collapse: collapse;
 
 .ewz_field_opts td{ padding-left: 15px;
                     padding-right: 15px;}
-.ewz_field_opts { margin-left: 20px; }
+.ewz_field_opts { margin-left: 20px;
+                  padding-top: 20px;}
 
 .ewz_field > tbody > tr > td {   padding: 10px;
                                  vertical-align:middle;

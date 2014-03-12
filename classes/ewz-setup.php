@@ -48,10 +48,13 @@ class Ewz_Setup
         $ids1 = self::create_base_layout1();
         $ids2 = self::create_base_layout2();
 
-        $webform_id1 = self::create_sample_webform( "Example Competition Form", "example", $ids1['layout_id'] );
-        $webform_id2 = self::create_sample_webform( "Image Pair Form", "pair", $ids2['layout_id'] );
+        $webform_id1 = self::create_sample_webform( "Example Competition Form", "example", $ids1['layout_id'], 
+                                                    $ids1['max_num_items'], $ids1['override'] );
+        $webform_id2 = self::create_sample_webform( "Image Pair Form", "pair", $ids2['layout_id'], 
+                                                    $ids2['max_num_items'], $ids2['override'] );
 
-        self::create_sample_data1( EWZ_IMG_UPLOAD_DIR, $webform_id2, "pair", $ids2 );
+        self::create_sample_data1( EWZ_IMG_UPLOAD_DIR, $webform_id1, "example", $ids1 );
+        self::create_sample_data2( EWZ_IMG_UPLOAD_DIR, $webform_id2, "pair", $ids2 );
         self::set_initial_permissions();
     }
 
@@ -77,6 +80,7 @@ class Ewz_Setup
                                            layout_id smallint(6) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                            layout_name char(60) NOT NULL UNIQUE,
                                            max_num_items smallint(3) NOT NULL,
+                                           override tinyint(1) NOT NULL DEFAULT 0,
                                            restrictions longtext NULL,
                                            extra_cols longtext NULL
                                                      );";
@@ -98,6 +102,7 @@ class Ewz_Setup
         $create_webform_sql = "CREATE TABLE $webform_table (
                                                 webform_id smallint(6) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                                 layout_id smallint(6) NOT NULL,
+                                                num_items tinyint(4) UNSIGNED NOT NULL,
                                                 webform_title varchar(100) NOT NULL UNIQUE,
                                                 webform_ident char(15) NOT NULL UNIQUE,
                                                 prefix char(25) NULL,
@@ -156,7 +161,7 @@ class Ewz_Setup
         if ( CLEANUP_ON_DEACTIVATE ) {
             self::uninstall_ewz();
         }
-        error_log( "EWZ: deactivated" );
+        error_log( "EWZ: EntryWizard deactivated" );
     }
 
     /* ***************************************************
@@ -290,7 +295,7 @@ class Ewz_Setup
                                              'ss_col_w'  => 14,
                                              'max_img_h' => 1024,
                                              'ss_col_h'  => 15,
-                                             'canrotate' => 1,
+                                             'canrotate' => true,
                                              'ss_col_o'  => 16,
                                              'max_img_size' => 1,
                                              'min_longest_dim' => 800,
@@ -306,6 +311,7 @@ class Ewz_Setup
         $rows_affected = $wpdb->insert( $layout_table,
                                         array( 'layout_name' => "Sample Competition Layout",
                                                'max_num_items' => 4,
+                                               'override' => 0,
                                                'restrictions' => '',
                                                'extra_cols' => ''
                                                ),
@@ -378,7 +384,7 @@ class Ewz_Setup
         $xtra_data = array( "mnm" => 1,
                             "mem" => 2,
                             "dtu" => 10,
-                            "iid" => -1,
+                            "iid" => 9,
                             "mid" => -1,
                             "mli" => 7,
                             );
@@ -394,6 +400,8 @@ class Ewz_Setup
                       'field_id3'=>$field_id3,
                       'field_id4'=>$field_id4,
                       'layout_id'=>$layout_id1,
+                      'max_num_items'=>4,
+                      'override'=>0,
                       );
     }
 
@@ -411,7 +419,7 @@ class Ewz_Setup
                             'field_ident'  => 'Division',
                             'required'     => 1,
                             'pg_column'    => 0,
-                            'ss_column'    => 7,
+                            'ss_column'    => 5,
                             'fdata'        => array( 'options' => array( array('value' => 'N',
                                                                                'label' => 'Nature',
                                                                                'maxnum' => 2,
@@ -427,14 +435,23 @@ class Ewz_Setup
                                                                          ),
                                                      ),
                             );
-
+        $cb_field2 = array(
+                            'field_type'   => 'chk',
+                            'field_header' => 'Comments',
+                            'field_ident'  => 'comments',
+                            'required'     => 0,
+                            'pg_column'    => 1,
+                            'ss_column'    => 4,
+                            'fdata'        => array( 'chkmax' => 2 ),
+                           );
+                                                                               
         $title_field2 = array(
                               'field_type' => 'str',
                               'field_header' => 'Caption',
                               'field_ident' => 'caption',
                               'required' => 0,
-                              'pg_column' => 1,
-                              'ss_column' => 9,
+                              'pg_column' => 2,
+                              'ss_column' => 3,
                               'fdata' => array(
                                                'fieldwidth' => 20,
                                                'maxstringchars' => 50,
@@ -442,19 +459,28 @@ class Ewz_Setup
                                                ),
                               );
 
+        $rad_field2 = array(
+                            'field_type'   => 'rad',
+                            'field_header' => 'Monochrome',
+                            'field_ident'  => 'mono',
+                            'required'     => 0,
+                            'pg_column'    => 3,
+                            'ss_column'    => 2,
+                            'fdata'        => array( ),
+                           );
         $orig_field2 = array(
                              'field_type' => 'img',
                              'field_header' => 'Original Image',
                              'field_ident' => 'original',
                              'required' => 0,
-                             'pg_column' => 2,
-                             'ss_column' => 10,
+                             'pg_column' => 4,
+                             'ss_column' => 1,
                              'fdata' => array(
                                               'max_img_w' => 1280,
                                               'ss_col_w'  => -1,
                                               'max_img_h' => 1024,
                                               'ss_col_h'  => -1,
-                                              'canrotate' => 0,
+                                              'canrotate' => false,
                                               'ss_col_o'  => -1,
                                               'max_img_size' => 1,
                                               'min_longest_dim' => 800,
@@ -469,14 +495,14 @@ class Ewz_Setup
                               'field_header' => 'Final Image',
                               'field_ident' => 'final',
                               'required' => 1,
-                              'pg_column' => 3,
+                              'pg_column' => 5,
                               'ss_column' => 0,
                               'fdata' => array(
                                                'max_img_w' => 1280,
                                                'ss_col_w'  => 14,
                                                'max_img_h' => 1024,
                                                'ss_col_h'  => 15,
-                                               'canrotate' => 0,
+                                               'canrotate' => false,
                                                'ss_col_o'  => 16,
                                                'max_img_size' => 1,
                                                'min_longest_dim' => 800,
@@ -498,7 +524,7 @@ class Ewz_Setup
 
 
         // insert the fields
-        $rows_affected1 = $wpdb->insert( $field_table,
+        $rows_affected0 = $wpdb->insert( $field_table,
                                         array( 'layout_id' => $layout_id2,
                                                'field_type' => $div_field2['field_type'],
                                                'field_header' => $div_field2['field_header'],
@@ -507,6 +533,19 @@ class Ewz_Setup
                                                'pg_column' => $div_field2['pg_column'],
                                                'ss_column' => $div_field2['ss_column'],
                                                'fdata' => serialize( $div_field2['fdata'] )
+                                               ) );
+        $field_id0 = $wpdb->insert_id;
+        assert( $rows_affected0 === 1 );
+
+        $rows_affected1 = $wpdb->insert( $field_table,
+                                        array( 'layout_id' => $layout_id2,
+                                               'field_type' => $cb_field2['field_type'],
+                                               'field_header' => $cb_field2['field_header'],
+                                               'field_ident' => $cb_field2['field_ident'],
+                                               'required' => $cb_field2['required'],
+                                               'pg_column' => $cb_field2['pg_column'],
+                                               'ss_column' => $cb_field2['ss_column'],
+                                               'fdata' => serialize( $cb_field2['fdata'] )
                                                ) );
         $field_id1 = $wpdb->insert_id;
         assert( $rows_affected1 === 1 );
@@ -527,6 +566,20 @@ class Ewz_Setup
 
         $rows_affected3 = $wpdb->insert( $field_table,
                                         array('layout_id' => $layout_id2,
+                                              'field_type' => $rad_field2['field_type'],
+                                              'field_header' => $rad_field2['field_header'],
+                                              'field_ident' => $rad_field2['field_ident'],
+                                              'required' => $rad_field2['required'],
+                                              'pg_column' => $rad_field2['pg_column'],
+                                              'ss_column' => $rad_field2['ss_column'],
+                                              'fdata' => serialize( $rad_field2['fdata'] )
+                                              ) );
+        $field_id3 = $wpdb->insert_id;
+        assert( $rows_affected3 === 1 );
+
+
+        $rows_affected4 = $wpdb->insert( $field_table,
+                                        array('layout_id' => $layout_id2,
                                               'field_type' => $orig_field2['field_type'],
                                               'field_header' => $orig_field2['field_header'],
                                               'field_ident' => $orig_field2['field_ident'],
@@ -536,10 +589,10 @@ class Ewz_Setup
                                               'fdata' => serialize( $orig_field2['fdata'] )
                                               ) );
 
-        $field_id3 = $wpdb->insert_id;
-        assert( $rows_affected3 === 1 );
+        $field_id4 = $wpdb->insert_id;
+        assert( $rows_affected4 === 1 );
 
-        $rows_affected4 = $wpdb->insert( $field_table,
+        $rows_affected5 = $wpdb->insert( $field_table,
                                         array('layout_id' => $layout_id2,
                                               'field_type' => $final_field2['field_type'],
                                               'field_header' => $final_field2['field_header'],
@@ -550,23 +603,23 @@ class Ewz_Setup
                                               'fdata' => serialize( $final_field2['fdata'] )
                                               ) );
 
-        $field_id4 = $wpdb->insert_id;
-        assert( $rows_affected4 === 1 );
+        $field_id5 = $wpdb->insert_id;
+        assert( $rows_affected5 === 1 );
 
         $restr_data = array();
 
         $extra_data = array(
-                            "dtu" => 13,   //~~
+                            "dtu" => 11,   //~~
                             "iid" => 8, //~~
-                            "mem" => 18, //~~
+                            "mem" => 12, //~~
                             "mid" => -1,//~~
-                            "mli" => 17, //~~
-                            "mnm" => 2, //~~
+                            "mli" => 13, //~~
+                            "mnm" => 10, //~~
                             "wfm" => -1,//~~
-                            "wft" => 5,//~~
+                            "wft" => 9,//~~
                             "wid" => -1,//~~
-                            "custom1" => 3,//~~
-                            "custom2" => 1,//~~
+                            "custom1" => 13,//~~
+                            "custom2" => 6,//~~
                             );
 
         $wpdb->update( $layout_table,
@@ -575,22 +628,26 @@ class Ewz_Setup
                              ),
                        array('layout_id' => $layout_id2), array('%s')
                        );
-        return array( 'field_id1'=>$field_id1,
+        return array('field_id0'=>$field_id0,
+                     'field_id1'=>$field_id1,
                       'field_id2'=>$field_id2,
                       'field_id3'=>$field_id3,
                       'field_id4'=>$field_id4,
-                      'layout_id'=>$layout_id2
+                      'field_id5'=>$field_id5,
+                      'layout_id'=>$layout_id2,
+                      'max_num_items'=>5,
+                      'override'=>0,
                       );
-
     }
 
-    public static function create_sample_webform( $webform_title, $webform_ident, $layout_id )
+    public static function create_sample_webform( $webform_title, $webform_ident, $layout_id, $num_items )
     {
         global $wpdb;
         // no assert
         $webform_table = EWZ_WEBFORM_TABLE;
         $rows_affected = $wpdb->insert( $webform_table,
                                         array('layout_id' => $layout_id,
+                                              'num_items' => $num_items,
                                               'webform_title' => $webform_title,
                                               'webform_ident' => $webform_ident,
                                               'upload_open' => 1,
@@ -613,15 +670,7 @@ class Ewz_Setup
         $url =  EWZ_IMG_UPLOAD_URL . '/' . $webform_ident;
 
 
-        $files = array( $ids['field_id3'] => array( "field_id"  => $ids['field_id3'],
-                                      "thumb_url" => "{$url}/sample1-thumb.jpg",
-                                      "fname"     => "{$path}/sample1.jpg",
-                                      "type"      => "image/jpg",
-                                      "width"     => 677,
-                                      "height"    => 1024,
-                                      "orient"    => "P",
-                                      ),
-                        $ids['field_id4'] => array( "field_id"  => $ids['field_id4'],
+        $files = array( $ids['field_id4'] => array( "field_id"  => $ids['field_id4'],
                                       "thumb_url" => "{$url}/sample2-thumb.jpg",
                                       "fname"     => "{$path}/sample2.jpg",
                                       "type"      => "image/jpg",
@@ -629,18 +678,86 @@ class Ewz_Setup
                                       "height"    => 960,
                                       "orient"    => "L",
                                       ),
+                        );
+        $data = array(
+                       $ids['field_id1'] => array( "field_id" => $ids['field_id1'],
+                                     "value"    => "P"
+                                     ),
+                       $ids['field_id2'] => array( "field_id" => $ids['field_id2'],
+                                     "value"    => "A"
+                                      ),
+                       $ids['field_id3'] => array( "field_id" => $ids['field_id3'],
+                                     "value"    => "My Beautiful Image"
+                                     ),
+                       $ids['field_id4'] => array( "field_id" => $ids['field_id4'],
+                                     "value"    => "ewz_img_upload"
+                                     ),
+                      );
+        $user_id = 1;
+
+        $rows_affected = $wpdb->insert( $item_table,
+                                         array( 'user_id'     => $user_id,
+                                                'webform_id'  => $webform_id,
+                                                'last_change' => current_time( 'mysql' ),
+                                                'upload_date' => current_time( 'mysql' ),
+                                                'item_files'  => serialize( $files ),
+                                                'item_data'   => serialize( $data )
+                                                          )
+                                        );
+        assert( $rows_affected === 1 );
+
+        $dir =  EWZ_IMG_UPLOAD_DIR . '/' . $webform_ident;
+        if( !file_exists( $dir ) ){
+            mkdir( $dir );
+        }
+        copy( dirname( __FILE__ ) . '/../images/sample2-thumb.jpg', "{$dir}/sample2-thumb.jpg" );
+        copy( dirname( __FILE__ ). '/../images/sample2.jpg', "{$dir}/sample2.jpg" );
+    }
+
+    public static function create_sample_data2(  $dir, $webform_id, $webform_ident, $ids ){
+        global $wpdb;
+        // no assert
+
+        $item_table = EWZ_ITEM_TABLE;
+        $path = EWZ_IMG_UPLOAD_DIR . '/' . $webform_ident;
+        $url =  EWZ_IMG_UPLOAD_URL . '/' . $webform_ident;
+
+
+        $files = array( $ids['field_id4'] => array( "field_id"  => $ids['field_id4'],
+                                      "thumb_url" => "{$url}/sample1-thumb.jpg",
+                                      "fname"     => "{$path}/sample1.jpg",
+                                      "type"      => "image/jpg",
+                                      "width"     => 677,
+                                      "height"    => 1024,
+                                      "orient"    => "P",
+                                      ),
+                        $ids['field_id5'] => array( "field_id"  => $ids['field_id5'],
+                                      "thumb_url" => "{$url}/sample3-thumb.jpg",
+                                      "fname"     => "{$path}/sample3.jpg",
+                                      "type"      => "image/jpg",
+                                      "width"     => 677,
+                                      "height"    => 1024,
+                                      "orient"    => "P",
+                                      ),
 
                         );
-        $data = array( $ids['field_id1'] => array( "field_id" => $ids['field_id1'],
+        $data = array(
+                       $ids['field_id0'] => array( "field_id" => $ids['field_id0'],
                                      "value"    => "N"
+                                     ),
+                       $ids['field_id1'] => array( "field_id" => $ids['field_id1'],
+                                     "value"    => false
                                      ),
                        $ids['field_id2'] => array( "field_id" => $ids['field_id2'],
                                      "value"    => "My Image"
                                       ),
                        $ids['field_id3'] => array( "field_id" => $ids['field_id3'],
-                                     "value"    => "ewz_img_upload"
+                                     "value"    => true
                                      ),
                        $ids['field_id4'] => array( "field_id" => $ids['field_id4'],
+                                     "value"    => "ewz_img_upload"
+                                     ),
+                       $ids['field_id5'] => array( "field_id" => $ids['field_id5'],
                                      "value"    => "ewz_img_upload"
                                      ),
                       );
@@ -664,8 +781,8 @@ class Ewz_Setup
 
         copy( dirname( __FILE__ ) . '/../images/sample1-thumb.jpg', "{$dir}/sample1-thumb.jpg" );
         copy( dirname( __FILE__ ) . '/../images/sample1.jpg', "{$dir}/sample1.jpg" );
-        copy( dirname( __FILE__ ) . '/../images/sample2-thumb.jpg', "{$dir}/sample2-thumb.jpg" );
-        copy( dirname( __FILE__ ). '/../images/sample2.jpg', "{$dir}/sample2.jpg" );
+        copy( dirname( __FILE__ ) . '/../images/sample3-thumb.jpg', "{$dir}/sample3-thumb.jpg" );
+        copy( dirname( __FILE__ ). '/../images/sample3.jpg', "{$dir}/sample3.jpg" );
 
 
     }

@@ -25,7 +25,7 @@ function ewz_check_and_process_layouts()
     // set up the 'pg_column' field values
     foreach ( $pdata['forder'] as $col => $value ) {
         $mat = array( );
-        preg_match( '/forder_f(\d+)_c(\d+)_/', $value, $mat );
+        preg_match( '/forder_f(\d+)_c(X?\d+)_/', $value, $mat );
         assert( 3 == count( $mat ) );
         $field = $mat[2];
         $pdata['fields'][$field]['pg_column'] = $col;
@@ -86,10 +86,21 @@ function ewz_layout_menu()
         foreach ( $editable_layouts as $k => $layout ) {
             // add an "forder" ( array ) component to the layout to specify the field order
             // -- saves having to sort by pg_column in javascript
+            // fields should already be sorted in the correct order 
+            $n = 0;
+            $bad = 0;
             $forder = array();
             foreach ( $layout->fields as $fid => $f ) {
-                $forder[$f->pg_column] = $fid;
+                $forder[$n] = $fid;
+                if( $n !== $f->pg_column ){
+                    ++$bad;
+                }
+                $n++;
             }
+            if( $bad ){
+                // can happen if there was a double submit. 
+                $message .= "\nSorry, there was an error in saving the field order for layout {$layout->layout_name} ( possibly caused by a duplicate submission ). Please try again.";
+            }   
             $editable_layouts[$k]->forder = $forder;
         }
 
@@ -119,8 +130,8 @@ function ewz_layout_menu()
                                     "maxstringchars" => EWZ_MAX_STRING_LEN,
                                     "ss_col_fmt" => "-1" );
         $ewzG['empty_opt'] = array( "value" => "", "label" => "", "maxnum" => 0 );
-        $ewzG['empty_rad'] = array( "checked" => false);
-        $ewzG['empty_chk'] = array( "checked" => false,  "maxnum" => 0 );
+        $ewzG['empty_rad'] = array( );
+        $ewzG['empty_chk'] = array( "maxnum" => 0 );
 
         $ewzG['helpIcon'] = plugins_url( 'images/help.png', dirname( __FILE__ ) );
         $ewzG['maxUploadMb'] = EWZ_MAX_SIZE_MB;
@@ -236,8 +247,12 @@ function ewz_layout_menu()
                 <p>The shortcode "ewz_show_webform" generates a webform with N rows, where
                     N is the maximum number of items, and a column for each field
                 </p>
+                <p>Users may alter the data they enter so long as the webform is open for uploads. 
+                   Text, Dropdown, Radio and Checkbox data may be changed, but the only way to alter uploaded 
+                   images is to delete the entire item and re-submit.  <i>Multiple image fields for an item must all be
+                   uploaded at the same time.</i></p>
 
-                <p>If some values in the "Maximum number of items" dropbox are disabled, it it because
+                <p>If some values in the "Maximum number of items" selection list are disabled, it it because
                    you have set a larger maximum for one of the options in a drop-down field.</p>
 
                 <p>Note that your environment or your web hosting company puts three limits on
@@ -264,6 +279,7 @@ function ewz_layout_menu()
                 </p>
             </div>
 
+            
             <!-- HELP POPUP fields -->
             <div id="field_help" class="wp-dialog" >
                 <p>The <b>shortcode</b> "ewz_show_webform" generates a webform.  The form appears as a table with
@@ -295,7 +311,7 @@ function ewz_layout_menu()
             <!-- HELP POPUP restrictions -->
             <div id="restr_help" class="wp-dialog" >
                 <p>Normally, any combination of allowed field values is allowed.
-                    There may be occasions where you wish to disallow some particular combination
+                    There may, however, be occasions where you wish to disallow some particular combination.
                 </p>
                 <p>For instance, you may have a field <i>Type</i> with values <i>Digital</i>,
                     <i>Print</i> or <i>Slide</i>, and a field for an uploaded image <i>File</i>.
@@ -304,9 +320,9 @@ function ewz_layout_menu()
                 </p>
                 <p>To do this, you may create a restriction forbidding the combination
                     <i>Type=Digital</i> and <i>File=Blank</i>, with the message
-                    "A Digital type must have an uploaded file".
+                    "A Digital type must have an uploaded image file".
                 </p>
-                <p>If a user clicks "Save Changes" when any item has one of these combinations,
+                <p>If a user clicks "Save Changes" when any item has one of these forbidden combinations,
                     your message will pop up and the upload will not work.
                 </p>
                 <p><br><b>Set up all your fields and click "Save Changes" first before adding
@@ -314,6 +330,10 @@ function ewz_layout_menu()
                         some items within the field may no longer be edited. These fields are
                         indicated by a red outline. If you need to change them, you must first
                         delete the restriction.
+                </p>
+                <p>NOTE: restrictions will <b>not</b> be enforced on "followup" fields ( fields with the
+                   special identifier "followupQ" ).  For further information about followup fields
+                   see the help button at the top of the webforms page.
                 </p>
             </div>
 
@@ -350,6 +370,10 @@ function ewz_layout_menu()
                             Clicking the button for a second item automatically unchecks the first.</li>
                     </ol>
                 </p>
+                <p>Users may alter the data they enter so long as the webform is open for uploads. 
+                   Text, Dropdown, Radio and Checkbox data may be changed, but the only way to alter uploaded 
+                   images is to delete the entire item and re-submit.  <i>Multiple image fields for an item must all be
+                   uploaded at the same time.</i></p>
             </div>
 
             <!-- HELP POPUP field identifier -->
@@ -499,7 +523,7 @@ function ewz_layout_menu()
                      <li><b>"EWZ Webform data"</b> is mainly set by the administrator on the WebForms page. 
                           The WP Webform ID is a numeric identifier created by Wordpress.</li>
                      <li><b>"Custom data"</b> is optional. Wordpress stores some information about a
-                         user, but there are plugins, like CIMI User Extra Fields,  that allow you
+                         user, but there are plugins, like CIMI User Extra Fields or S2Member,  that allow you
                          to add more information.<br>
                          If you have such a plugin, and if it provides a function to access the
                          information, you may tell EntryWizard about it -- see the "ewz-extra.txt"
@@ -507,6 +531,23 @@ function ewz_layout_menu()
                   </ul>
                </p>
             </div>
+
+            <!-- HELP POPUP name -->
+            <div id="name_help" class="wp-dialog" >
+                 <p>The name you set for the layout will appear as an option in the "Layouts" drop-down selection on the WebForms page.</p>  
+            </div>
+
+            <!-- HELP POPUP maxnum -->
+            <div id="maxnum_help" class="wp-dialog" >
+                 <p>The "Maximum number of items" controls the number of rows appearing in the upload form.</p>
+                 <p>If you check "Overrideable by webforms", then any webform using this layout may change this number.
+                 <p>If a webform overrides the "Maximum number of items", any maximum numbers set for individual drop-down selection 
+                     fields are <b>not</b> affected.  So if you set such maxima on individual fields, think carefully before checking
+                     "Overrideable by webforms".</p>
+                 <p>If some values in the "Maximum number of items" selection list are disabled, it it because
+                    you have set a larger maximum for one of the options in a drop-down field.</p>  
+            </div>
+
         </div>
     </div> <!-- wrap -->
 

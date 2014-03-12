@@ -92,6 +92,17 @@ class Ewz_Item_List extends WP_List_Table
         return $columns;
     }
 
+   function get_sortable_columns() {
+       $sortable_columns = array();
+       foreach ( $this->headers as $n => $header ) {
+           if ( $n > 0 ) { 
+               $sortable_columns[$n] = array( $n, false ); 
+               ++$n;
+           }
+       }
+       return $sortable_columns;
+    }
+
    /**
     * Return the array of bulk actions to be shown in the drop-down
     * Also note that list tables are not automatically wrapped in <form> elements,
@@ -115,7 +126,6 @@ class Ewz_Item_List extends WP_List_Table
         return $actions;
     }
 
-    // TODO: column sorting
     function prepare_items()
     {
         $user_id = get_current_user_id();
@@ -132,7 +142,7 @@ class Ewz_Item_List extends WP_List_Table
         $columns = $this->get_columns();
         assert( is_array( $columns ) );
         $hidden = array();
-        $sortable = array();
+        $sortable = $this->get_sortable_columns();
         $this->_column_headers = array($columns, $hidden, $sortable);
 
         $data = $this->ewz_rows;

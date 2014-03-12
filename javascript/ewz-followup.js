@@ -40,10 +40,22 @@ function init_ewz_followup() {
     jQuery('input[name="ewzuploadnonce"]').each(function(index) {
         jQuery(this).attr('id', 'ewzuploadnonce' + index);
     });
-
+    var tablew = 0;
+    jQuery('#scrollablediv').find('table[class="ewz_upload_table"]').each(function(){
+               if(jQuery(this).outerWidth() > tablew ){ tablew = jQuery(this).outerWidth(); }
+    });
+    var scrollw = jQuery('#scrollablediv').innerWidth();
+    if ( scrollw <= tablew ){
+        var sub = 'at the bottom of the page';
+        if(ewzF.f_field){
+            sub = "just above the submit button";
+        }
+        jQuery('#scrollablediv').prepend("<i>The available space is too narrow to display all of this form.<br>You should see <b>a scrollbar " +
+                                          sub + ".</i></b>");
+    }
 }
 
-function f_fix_radios_chks(rad_name){
+function f_fix_radios(rad_name){
     jQuery("#foll_form").find( 'input[type="radio"][name="' + rad_name + '"]' ).each( function(){
         var jrad = jQuery(this);
         if( jrad.prop( "checked" ) ){
@@ -53,7 +65,10 @@ function f_fix_radios_chks(rad_name){
         }
         jrad.prop("disabled", true);
     });
+}
 
+
+function f_fix_cbs(){
     jQuery("#foll_form").find( 'input[type="checkbox"][id^="rdata_"]' ).each( function(){
         var jchk = jQuery(this);
         if( !jchk.prop( "checked" ) ){
@@ -155,38 +170,44 @@ function f_options_check( field){
 
 
 /* validation                                           */
-function f_check_data( jinput ) {
+function f_check_missing( field ) {
     'use strict';
-    var status;
-    var fval;
+    var status = true;
+    jQuery('#foll_form').find('[id^="rdata_"]').each(function() {
+        try {
+            var fval = f_get_value( jQuery(this) );
+            if( ewzF.f_field.required && ( 1 > fval[0].length ) ){
+                status = false;
+                alert( "Field " + ewzF.f_field.field_header + " is required" );
+            }
 
-    try {
-        status = true;
-        fval = f_get_value( jinput );
-        if( ewzF.f_field.required && ( 1 > fval[0].length ) ){
+        } catch (except) {
+            alert("** Sorry, there was an unexpected error: " + except.message);
             status = false;
-            alert( "Field " + ewzF.f_field.field_header + " is required" );
         }
-        return status;
-
-    } catch (except) {
-        alert("** Sorry, there was an unexpected error: " + except.message);
-        return false;
-    }
-
+    });
+    return status;
 }
 
 
 function f_validate(){
-    var no_errs = true;
+    jQuery('#f_submit').prop("disabled", true);
 
-    no_errs  = no_errs && f_options_check( ewzF.f_field );
-
-    f_fix_radios_chks('radioFollowup');
-
-    if( ewzF.jsvalid ){        
-        return no_errs;
-    } else {
+    if( !ewzF.jsvalid ){
+        f_fix_radios('radioFollowup');
+        f_fix_cbs();
         return true;
-    } 
+    } else {
+        var no_errs = true;
+        no_errs  = no_errs && f_check_missing( );
+        no_errs  = no_errs && f_options_check( ewzF.f_field );
+        if( !no_errs ){
+            // ie found some errors, cancel submit and allow further changes
+            jQuery('#f_submit').prop("disabled", false);
+            return false;
+        }
+        f_fix_radios('radioFollowup');
+        f_fix_cbs();
+        return true;
+    }
 }
