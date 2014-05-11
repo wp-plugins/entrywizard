@@ -2,6 +2,7 @@
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
 require_once( EWZ_PLUGIN_DIR . '/classes/ewz-base.php' );
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 
     /* used only in asserts */
     function ewz_is_valid_ewz_path( $val ) {
@@ -102,7 +103,7 @@ function ewz_option_list( $opts ){
  *
  * Replace .ext with  something like "-200x150.ext", following
  *              the convention used by Wordpress
- * @param   $fname  input filename
+ * @param   $fpath  input filename ( full path )
  * @return  $fname with .ext replaced by -thumb.ext
  */
 function ewz_thumbfile_path( $fpath ){

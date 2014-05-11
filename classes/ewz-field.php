@@ -39,6 +39,7 @@ class Ewz_Field extends Ewz_Base
         'required'     => 'boolean',
         'pg_column'    => 'integer',
         'ss_column'    => 'integer',
+        'append'       => 'boolean',
         'fdata'        => 'array',
     );
 
@@ -74,17 +75,18 @@ class Ewz_Field extends Ewz_Base
      *
      * @param   int     $layout_id
      * @param   string  $orderby   column to sort by - either 'ss_column' or 'pg_column'
+     * @param   int     $inc_followup   Ewz_Layout::INCLUDE_FOLLOWUP or Ewz_Layout::EXCLUDE_FOLLOWUP 
      * @return  array   of Ewz_Fields
      */
-    public static function get_fields_for_layout( $layout_id, $orderby, $inc_followup = true )
+    public static function get_fields_for_layout( $layout_id, $orderby, $inc_followup = Ewz_Layout::INCLUDE_FOLLOWUP )
     {
         global $wpdb;
         assert( Ewz_Base::is_pos_int( $layout_id ) );
-        assert( is_bool( $inc_followup )  ||  $inc_followup == 1 ||  $inc_followup == 0);
+        assert( $inc_followup == Ewz_Layout::INCLUDE_FOLLOWUP || $inc_followup == Ewz_Layout::EXCLUDE_FOLLOWUP );
         assert( 'ss_column' == $orderby || 'pg_column' == $orderby );
 
         $incfollow = '';
-        if( ! $inc_followup ){
+        if( $inc_followup == Ewz_Layout::EXCLUDE_FOLLOWUP ){
             $incfollow = ' AND  field_ident != "followupQ" ';
         }
         $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id  FROM " . EWZ_FIELD_TABLE . " WHERE layout_id = %d $incfollow ORDER BY $orderby",
@@ -186,7 +188,7 @@ class Ewz_Field extends Ewz_Base
      *
      * Calls parent::base_set_data with the list of variables and the data structure
      *
-     * @param  array  $data: input data
+     * @param  array  $data input data
      * @return none
      */
     public function set_data( $data )
@@ -240,7 +242,7 @@ class Ewz_Field extends Ewz_Base
     /**
      * Create a new field from the field_id by getting the data from the database
      *
-     * @param  int  $id: the field id
+     * @param  int  $id the field id
      * @return none
      */
     protected function create_from_id( $id )
@@ -362,9 +364,10 @@ class Ewz_Field extends Ewz_Base
             'required' => $this->required ? 1 : 0,
             'pg_column' => $this->pg_column,
             'ss_column' => (  '' === $this->ss_column ) ? '-1' : $this->ss_column,
+            'append' => $this->append ? 1 : 0,
             'fdata' => serialize( $this->fdata )
                 ) );
-        $datatypes = array('%d', '%s', '%s', '%s', '%d', '%d', '%d', '%s');
+        $datatypes = array('%d', '%s', '%s', '%s', '%d', '%d', '%d','%d', '%s');
 
         if ( $this->field_id ) {
             $rows = $wpdb->update( EWZ_FIELD_TABLE, $data,

@@ -1,7 +1,7 @@
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php");
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-base.php' );
 
 /*
  * Base class for input validation
@@ -35,7 +35,7 @@ abstract class Ewz_Input {
     const REGEX_BOOL  = '/^[01]$/';
 
 
-    protected $input_data = array( );
+    protected $input_data = array();
     protected $rules;
 
     function __construct( $form_data ) {
@@ -46,17 +46,17 @@ abstract class Ewz_Input {
 
     public function validate( ) {
         // Validate each form field
-        foreach( $this->rules as $field => $specs ){
-            if( $specs['req'] && !isset( $this->input_data[$field] ) ){
-                throw new EWZ_Exception( get_class( $this ) . ": $field is required.");
+        foreach ( $this->rules as $field => $specs ) {
+            if ( $specs['req'] && ! isset( $this->input_data[$field] ) ) {
+                throw new EWZ_Exception( get_class( $this ) . ": $field is required." );
             }
         }
         foreach ( $this->input_data as $field => $value ) {
-            if( empty( $value ) || ( $value == "0" ) ){
-                if( $this->rules[$field]['type'] == 'noval' ){
+            if ( empty( $value ) || ( $value == '0' ) ){
+                if ( $this->rules[$field]['type'] == 'noval' ) {
                     return true;
                 } elseif (  $this->rules[$field]['req'] ) {
-                    throw new EWZ_Exception( get_class( $this ) . ": $field is required.");
+                    throw new EWZ_Exception( get_class( $this ) . ": $field is required." );
                 } else {
                     $this->input_data[$field] = $this->rules[$field]['val'];
                 }
@@ -67,16 +67,16 @@ abstract class Ewz_Input {
                  * checking whether a field has one of a given set of values
                  *
                  */
-                if( !isset( $this->rules[$field] ) ){
+                if ( ! isset( $this->rules[$field] ) ){
                     throw new EWZ_Exception( get_class( $this ) . " found unexpected data $field: " . $value );
                 }
-                if( $value == 'on' ){
+                if ( $value == 'on' ){
                     $this->input_data[$field] = '1';
                 }
-                if( $value == 'off' ){
+                if ( $value == 'off' ){
                     $this->input_data[$field] = '0';
                 }
-                if( !call_user_func_array(
+                if ( ! call_user_func_array(
                                           array( $this, $this->rules[$field]['type'] ),   // function to call
                                           array( &$this->input_data[$field], $this->rules[$field]['val'] )    // args to pass
                                           ) ){
@@ -140,20 +140,20 @@ abstract class Ewz_Input {
                  ( preg_match( self::REGEX_ALPHA_NUM, $value ) ) );
     }
 
-    protected static function seq( &$value, $arg  ) {
+    protected static function to_seq( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
-        $ok= ( is_string( $value ) &&
+        $ok = ( is_string( $value ) &&
                  ( strlen( $value ) <= 10 ) &&
                  preg_match( self::REGEX_SEQ, $value ) );
         $value = (int)$value;
         return $ok;
     }
 
-    protected static function int1( &$value, $arg  ) {
+    protected static function to_int1( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
-        $ok= ( is_string( $value ) &&
+        $ok = ( is_string( $value ) &&
                  ( strlen( $value ) <= 10 ) &&
                  preg_match( self::REGEX_INT1, $value ) );
         $value = (int)$value;
@@ -164,28 +164,28 @@ abstract class Ewz_Input {
         assert( is_array( $value ) );
         assert( is_array( $arg ) );
         assert( is_bool( $allow1 ) );
-        assert( Ewz_Base::is_nn_int($arg[0] ) );
-        assert( Ewz_Base::is_nn_int($arg[1] ) );
+        assert( Ewz_Base::is_nn_int( $arg[0] ) );
+        assert( Ewz_Base::is_nn_int( $arg[1] ) );
 
-        if( !is_array( $value ) ){
+        if ( ! is_array( $value ) ){
             return false;
         }
         $c = count( $value );
-        foreach( $value as $val ){
-            if( !is_string( $val ) ){
+        foreach ( $value as $val ){
+            if ( ! is_string( $val ) ){
                 return false;
             }
-            if( $allow1 ){
-                if( !preg_match( self::REGEX_INT1, $val ) ){
+            if ( $allow1 ){
+                if ( ! preg_match( self::REGEX_INT1, $val ) ){
                  return false;
                 }
             } else {
-                if( !preg_match( self::REGEX_INT, $val ) ){
+                if ( ! preg_match( self::REGEX_INT, $val ) ){
                     return false;
                 }
             }
         }
-        if( $c > $arg[1] || $c < $arg[0] ){
+        if ( $c > $arg[1] || $c < $arg[0] ){
             return false;
         }
         return true;
@@ -200,10 +200,10 @@ abstract class Ewz_Input {
         return self::is_int_arr( $value, $arg, true  );
     }
 
-    protected static function string( &$value, $arg  ) {
+    protected static function to_string( &$value, $arg  ) {
         assert( is_string( $value ) );
         assert( isset( $arg ) );
-        if( is_string( $value ) ){
+        if ( is_string( $value ) ){
             // decode entities previously encoded for html display
             $value = html_entity_decode( $value );
             return true;
@@ -212,14 +212,14 @@ abstract class Ewz_Input {
         }
     }
 
-    protected static function bool( &$value, $arg  ) {
+    protected static function to_bool( &$value, $arg  ) {
         assert( is_string( $value ) || $value == null );
         assert( isset( $arg ) );
-        if( !( in_array( $value, array( '1', 1, 'on', 0, '0', 'off' ) ) ) ){
+        if ( ! ( in_array( $value, array( '1', 1, 'on', 0, '0', 'off' ) ) ) ){
             $value = false;
             return false;
         }
-        switch( $value ){
+        switch ( $value ) {
         case 1:
         case '1':
         case 'on':
@@ -244,7 +244,7 @@ abstract class Ewz_Input {
         assert( isset( $limits[1] ) );
         assert( Ewz_Base::is_pos_int( $limits[0] ) );
         assert( Ewz_Base::is_pos_int( $limits[1] ) );
-        if( !is_string( $value ) ){
+        if ( ! is_string( $value ) ){
             return false;
         }
         $len = strlen( $value );

@@ -20,9 +20,9 @@ class Ewz_Followup_Input extends Ewz_Input
         $this->chkmax = isset( $followup_data['fdata']['chkmax'] ) ?  $followup_data['fdata']['chkmax'] : 0;
         
         $this->rules = array(
-                             'ewzuploadnonce'   => array( 'type' => 'unonce', 'req' =>  true,  'val' => '' ),
-                             '_wp_http_referer' => array( 'type' => 'string', 'req' =>  false, 'val' => '' ),
-                             'rdata'            => array( 'type' => 'v_rdata', 'req' => true,  'val' => '' ),
+                             'ewzuploadnonce'   => array( 'type' => 'unonce',    'req' =>  true,  'val' => '' ),
+                             '_wp_http_referer' => array( 'type' => 'to_string', 'req' =>  false, 'val' => '' ),
+                             'rdata'            => array( 'type' => 'v_rdata',   'req' => true,  'val' => '' ),
                              );
         $this->validate();
     }
@@ -102,7 +102,7 @@ class Ewz_Followup_Input extends Ewz_Input
     {
         assert( is_string( $val ) );
         assert( is_array( $fdata ) );
-        if( !self::string( $val, '' ) ){               // also encodes the string
+        if( !self::to_string( $val, '' ) ){               // also encodes the string
             throw new EWZ_Exception( "Invalid format for text input" );
         }
         $val = str_replace('\\', '', $val );  // messes up stripslashes and serialize. Its hard
@@ -164,7 +164,7 @@ class Ewz_Followup_Input extends Ewz_Input
     private static function validate_rad_data(  &$val, $count ){
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );
-        if( !self::bool( $val, '' ) ){               // changes $val to int 0 or 1
+        if( !self::to_bool( $val, '' ) ){               // changes $val to int 0 or 1
             throw new EWZ_Exception( "Invalid radio button input" );
         }
         if ( 1 < $count ) {
@@ -185,7 +185,7 @@ class Ewz_Followup_Input extends Ewz_Input
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $chkmax ) );
         assert( Ewz_Base::is_nn_int( $count ) );
-        if( !self::bool( $val, '' ) ){               // changes $val to true or false
+        if( !self::to_bool( $val, '' ) ){               // changes $val to true or false
             throw new EWZ_Exception( "Invalid checkbox input" );
         }
         if ( isset( $chkmax ) && $chkmax  ) {

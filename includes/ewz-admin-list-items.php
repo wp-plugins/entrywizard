@@ -7,6 +7,7 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-item-list.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-common.php' );
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_CUSTOM_DIR . 'ewz-custom-data.php' );
 
 /**
@@ -496,8 +497,8 @@ function ewz_list_items() {
 /**
  * Return the html for the display of the criteria used to select the items
  *
- * @param    $field_opt   array of fields and their selected values
- * @param    $uploaddays  show only items uploaded within the last $uploaddays
+ * @param    $field_opts   array of fields and their selected values
+ * @param    $extra_opts   show only items uploaded within the last $uploaddays
  * @return   html
  */
 function  ewz_get_opt_display_string( $field_opts, $extra_opts ){

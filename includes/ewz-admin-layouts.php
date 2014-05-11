@@ -1,7 +1,9 @@
+
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-base.php' );
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-field.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-layout.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-layout-input.php' );
@@ -29,6 +31,12 @@ function ewz_check_and_process_layouts()
         assert( 3 == count( $mat ) );
         $field = $mat[2];
         $pdata['fields'][$field]['pg_column'] = $col;
+
+        // ignore "append" in first column
+        if( ( $col == 0 ) && $pdata['fields'][$field]['append'] ){
+           $pdata['fields'][$field]['append'] = false;
+        } 
+
     }
 
     // create empty values for 'restrictions' and 'extra_cols' if they dont exist
@@ -118,7 +126,7 @@ function ewz_layout_menu()
         // get option list of editable layouts sorted by layout_id to match the order of the layout objects
         $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'Ewz_Permission', 'can_edit_layout' ) ) );
         $ewzG['nonce_string'] = $nonce_string;
-        $ewzG['message'] =  wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
+        $ewzG['message'] =  wp_strip_all_tags( $message );   // alerts cant show html tags
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname( __FILE__ ) );
         $ewzG['empty_img'] = array( "max_img_w" => EWZ_DEFAULT_DIM,
                                     "max_img_h" => EWZ_DEFAULT_DIM,
@@ -178,8 +186,7 @@ function ewz_layout_menu()
                 "but is much slower. Go ahead anyway?' ,
         );
 
-        // TO DO: own version of wp_localize_script?
-        // use of $ewzG1.var = ewzG  is a hack to get around the fact that  wp_localize_script
+        // use of $ewzG1.var = ewzG  is a hack to get around the fact that wp_localize_script
         // runs html_entity_decode on scalar values.  Our data is already processed where it needs to be,
         // and some of it contains html entities which should not be decoded.
 
@@ -209,7 +216,6 @@ function ewz_layout_menu()
 
             </div>
         </div>
-
         <div id="help-text" style="display:none">
             <!-- HELP POPUP image min dimensions -->
             <div id="longestdim_help" class="wp-dialog" >
@@ -217,6 +223,17 @@ function ewz_layout_menu()
                 <p>If set to a few pixels less that the maximum longest dimension it may also be used to set a "target" dimension. 
                 <p>Some software may size an image 1 or 2 pixels smaller than the dimension requested, so this value should normally be at least 1 or 2 pixels smaller than the maximum dimension</p>    
             </div>
+
+            <!-- HELP POPUP append -->
+            <div id="append_help" class="wp-dialog" >
+              <p>If your theme does not allow a sufficiently wide page width, a webform ( after clicking "Add, Change or Delete" ) may
+              display only with a horizontal scrollbar.</p>
+              <p>To avoid this, you may wish to display more than one field in a single table cell. 
+                 Checking "Append to Previous Column in Webform" will accomplish this.
+                 Each field so checked will be displayed in a extra line in the previous column, instead of in a column of its own.</p>
+              <p>For the first column, this option is ignored</p>
+            </div>
+
             <!-- HELP POPUP image dimensions -->
             <div id="imgdim_help" class="wp-dialog" >
                  <p>A user attempting to upload an image with width or height greater than the maxima set here will receive an error message.</p>
@@ -283,29 +300,35 @@ function ewz_layout_menu()
             <!-- HELP POPUP fields -->
             <div id="field_help" class="wp-dialog" >
                 <p>The <b>shortcode</b> "ewz_show_webform" generates a webform.  The form appears as a table with
-                     the number of rows equal to the "maximum number of items" set above, and with a column 
-                     for each field you create. <br>
+                     the number of rows equal to the "maximum number of items" set above, and with 
+                     (normally -- see "Append to Previous Column in Webform")
+                     a column for each field you create. <br>
                      Each field may be a text input, an image upload, a drop-down selection, a checkbox or
                      a radio button.
                 </p>
+                <ul>
+                   <li>
                      <p>The <b>order</b> of the fields in the webform may be changed by dragging the "postboxes", which
                      are the long bars containing the field titles, up or down.
                     (To move a postbox to the top you may have to drag the top one down, instead)
-                </p>
-                <p> <i><b>Too many fields</b>, or fields that are too wide</i>, may make a form that is too wide
+                   </li>
+                   <li><b>Too many fields, or fields that are too wide</b>, may make a form that is too wide
                     to display on the viewer's monitor.  In that case, the form will display with a
-                    scrollbar at the bottom, which is not very user-friendly. <br>
+                    scrollbar at the bottom, which is not very user-friendly. <br><br>
                     The width available for the form depends on the Wordpress theme. Some themes make it 
-                    easy to change the width, others may require some custom coding to do it.<br>
+                    easy to change the width, others may require some custom coding to do it.<br><br>
+                    If your form is too wide, you may wish to compress the layout by using the 
+                    "Append to Previous Column in Webform" option on some fields.<br><br>
                     When designing your layout, keep testing the view with different window widths and font sizes.
-                    If possible, view it on different monitors with different resolutions.
-                </p>
-                <p> If a <b>restriction</b> has been created that forbids a certain combination of field
-                    values, the field may no longer be deleted, and its type may no longer be changed.
-                    If it is a drop-down field with a restriction on one or more options, those options
-                    may not be deleted, and their values may not be changed.<br>
+                    If possible, view it on different monitors with different resolutions.<br><br>
+                </li>
+                <li> If a <b>restriction</b> has been created that forbids a certain combination of field
+                    values, fields affected may no longer be deleted, and their type may no longer be changed.
+                    If a restriction involves one or more options in a drop-down field, those options
+                    may not be deleted, and their values may not be changed.<br><br>
                     Items that may no longer be changed for this reason are outlined in red.
-                </p>
+                </li>
+               </ul>
             </div>
 
             <!-- HELP POPUP restrictions -->
@@ -389,11 +412,20 @@ function ewz_layout_menu()
                     This makes sure that a filename containing it should be accepted by most
                     systems.
                 </p>
-                <p>( If the identifier has the special value 'followQ', the field is treated as a  
-                     followup field, which is not displayed by the 'ewz_show_webform' shortcode.
-                     It is the only input field shown by the 'ewz_followup' shortcode.<br>
-                     There is a more detailed explanation of the 'ewz_followup' shortcode at the 
-                      top of the Webforms page. )
+                <hr />
+                <b><i> For users of the ewz_followup shortcode only</i></b>
+                <p> The ewz_followup shortcode is designed to give a user an overview of all the items they have  uploaded
+                    to a set of webforms, together with one optional additional field ( textbox, checkbox, etc ).<br />
+                    <br /><br />
+                   There are certain special values for the identifier that will cause a change in EntryWizard's behaviour.
+                   <ul>
+                     <li> If the identifier has the special value 'followQ', the field is treated as a  
+                     "followup" field, which is not displayed by the 'ewz_show_webform' shortcode.
+                     It is the <u>only input</u> field shown by the 'ewz_followup' shortcode.</li>
+                     <li> If the field contains 'XFQ' as part of it's identifier, the field will <b>not</b> be displayed by 
+                     the followup shortcode.</li>
+                   </ul>
+                     There is further information on using the 'ewz_followup' shortcode at the  top of the Webforms page.
                 </p>
             </div>
 

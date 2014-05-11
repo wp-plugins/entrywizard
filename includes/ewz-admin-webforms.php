@@ -1,6 +1,7 @@
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-user.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-input.php' );
@@ -28,7 +29,6 @@ function ewz_process_uploaded_admin_data( $webform_id )
        return( "No uploaded files");
    }
    $csvfile_data = $_FILES['itmcsv_data'];
-   $file_tmp_name = $csvfile_data['tmp_name'];
 
    //Browsers don't always get the type right
    //if( 'text/csv' != $csvfile_data['type'] ){
@@ -38,6 +38,8 @@ function ewz_process_uploaded_admin_data( $webform_id )
    if( $csvfile_data['error'] ){
      throw new EWZ_Exception( 'Failed to upload .csv file of admin data' );
    }
+
+   $file_tmp_name = $csvfile_data['tmp_name'];
    if ( !is_readable($file_tmp_name) ) {
        throw new EWZ_Exception( 'Failed to read uploaded .csv file of admin data' );
    }
@@ -56,8 +58,9 @@ function ewz_process_uploaded_admin_data( $webform_id )
                if( !is_numeric( $item_id ) ){
                    throw new EWZ_Exception( "File is not in correct format - please read help." );
                }
-               $item = new Ewz_Item( $item_id );
+               $item = new Ewz_Item( intval( $item_id ) );
                if( $item->webform_id == $webform_id ){
+                   // set_uploaded_admin_data sanitizes the data
                    $item->set_uploaded_admin_data( $data[0] );
                    ++$n;
                } else {
@@ -91,9 +94,8 @@ function ewz_process_uploaded_csv( $webform_id )
    if( !isset( $_FILES['csv_data'] ) ){
        return( "No uploaded files");
    }
-   $csvfile_data = $_FILES['csv_data'];
-   $file_tmp_name = $csvfile_data['tmp_name'];
 
+   $csvfile_data = $_FILES['csv_data'];
    //Browsers don't always get the type right
    //if( 'text/csv' != $csvfile_data['type'] ){
    //    throw new EWZ_Exception( "File type is " . $csvfile_data['type'] . ", should be text/csv" );
@@ -102,6 +104,8 @@ function ewz_process_uploaded_csv( $webform_id )
    if( $csvfile_data['error'] ){
      throw new EWZ_Exception( 'Failed to upload .csv file' );
    }
+
+   $file_tmp_name = $csvfile_data['tmp_name'];
    if ( !is_readable($file_tmp_name) ) {
        throw new EWZ_Exception( 'Failed to read uploaded .csv file' );
    }
@@ -120,7 +124,7 @@ function ewz_process_uploaded_csv( $webform_id )
                if( !is_numeric( $item_id ) ){
                    throw new EWZ_Exception( "File is not in correct format - please read help." );
                }
-               $item = new Ewz_Item( $item_id );
+               $item = new Ewz_Item( intval( $item_id ) );
                if( $item->webform_id == $webform_id ){
                    $item->set_uploaded_info( array_pad( $data, 4, '' ) );
                    ++$n;
@@ -169,6 +173,7 @@ function ewz_webforms_menu()
                // function in ewz_admin.php, which is hooked to plugins_loaded
 
            case  'webform':
+
                // validate all input data ( except uploaded files )
                $input = new Ewz_Webform_Input( array_merge( $_POST, $_GET ) );
                $webform = new Ewz_Webform( $input->get_input_data() );
@@ -194,7 +199,7 @@ function ewz_webforms_menu()
                break;
 
            default:
-               throw new EWZ_Exception( 'Invalid Input ', 'mode=' . $_POST['ewzmode'] );
+               throw new EWZ_Exception( 'Invalid Input ', 'mode=' . preg_replace( '/[^a-z0-9 _-]/i', '_', $_POST['ewzmode'] ) );
            }
        } catch( Exception $e ) {
           $message .= $e->getMessage();
@@ -250,6 +255,7 @@ function ewz_webforms_menu()
                                                          $webform->layout_id );
             $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
             $base_options = $webform->layouts_options;
+            $webform->close_time_opts = ewz_option_list(  ewz_html_esc( $webform->get_close_opt_array() ) );
         }
 
         /*******************************/
@@ -265,6 +271,10 @@ function ewz_webforms_menu()
                 $openwebform_id = $formid;
             }
         }
+        $ewzG['now'] = current_time('mysql');
+        $ewzG['tz'] = get_option('timezone_string') ;
+        $ewzG['dateFormat'] = Ewz_Base::toDatePickerFormat( get_option( 'date_format' ) );
+
         $ewzG['openform_id'] = $openwebform_id;
         $ewzG['message'] = wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
         $ewzG['base_options'] = $base_options;
@@ -308,29 +318,39 @@ function ewz_webforms_menu()
 
         <!-- HELP POPUP shortcode -->
         <div id="shortcode_help" class="wp-dialog" >
-         <h2>The ewz_show_webform shortcode</h2>
+         <b><i>The ewz_show_webform shortcode</i></b>
          <p>The shortcode <b>&nbsp; &#91;ewz_show_webform &nbsp; identifier="xxx"&#93;</b> &nbsp; inserts the 
             webform with identifier "xxx" into your page. 
            (You set the identifier when you create the webform using this page.)</p>
              <hr>
-         <h2>The ewz_followup shortcode</h2>
+         <b><i>The ewz_followup shortcode</i></b>
+          
          <p>It is also possible to display a read-only summary of all the  data uploaded 
-            by the user, in different webforms, using the shortcode<br>
-            <b>&#91;ewz_followup &nbsp; idents="ident1,ident2,ident3" &nbsp; show="item_data,content"&#93;</b>
-          </p>
-         <p>This will display, in read-only form, all data uploaded by the user via the webforms
-            with identifiers "ident1","ident2" or "ident3", plus "item_data" and "content" items uploaded by the administrator</p>
-         <p>The "show" parameter may include any ( or none ) of "title","excerpt","content","item_data" provided these items
-            were uploaded using the "extra image data" or  "extra item data" forms in the 
-            Data Management area of the webforms page.
-         </p>
-             <hr>
-         <p><i>If the webforms all use a layout that contains the same special field with identifier "followupQ" </i>,
-             the followup display will become a form with this one field as an input for each item.
-            Data entered in it will be stored and may be downloaded as usual. </p>
-          <p>A "followupQ" field may not be of "Image File" type.</p> 
-          <p>A "followupQ" field will not be displayed if the "ewz_show_webform" shortcode is used.</p> 
-          <p>Restrictions will not be enforced on followup fields.</p>
+            by the user, via specified webforms, using the shortcode<br>
+            <b>&#91;ewz_followup &nbsp; idents="ident1,ident2,ident3" &nbsp; show="item_data,content"&#93;</b>        
+         <ul>
+           <li>The parameter "idents" lists the identifiers of all webforms to be displayed, separated by commas.</li>
+           <li>The parameter "show" lists extra information to be displayed. <br />
+           The "show" parameter may include any ( or none ) of "title","excerpt","content","item_data" provided these items
+           were uploaded using the "extra image data" or  "extra item data" forms in the 
+           Data Management area of the webforms page. </li>
+         </ul>
+
+         <b><i>Special Field Identifiers</i></b>
+         <ul>
+           <li> If the identifier has the special value 'followQ', the field is treated as a  
+           "followup" field, which is not displayed by the 'ewz_show_webform' shortcode.
+           It is the <u>only input</u> field shown by the 'ewz_followup' shortcode.
+           Data entered in it will be stored and may be downloaded as usual. 
+           </li>
+           <li> If the field contains 'XFQ' as part of it's identifier, the field will <b>not</b> be displayed by 
+           the followup shortcode.</li>
+           <li>A "followupQ" field may not be of "Image File" type.</li> 
+           <li>Restrictions will not be enforced on "followupQ" fields.</li>
+         </ul>
+         <i>( The motivation for this was the use by some camera clubs of a yearly "Second Chance" competition
+              in which previously uploaded images could be re-submitted for a second chance if they did not 
+              place in the competition they were originally entered in. )</i>
         </div>
 
         <!-- HELP POPUP wlayout -->
@@ -346,6 +366,17 @@ function ewz_webforms_menu()
         <div id="numitems_help" class="wp-dialog" >
            <p>If the layout allows it, this option overrides the "Maximum number of items" set in the layout.</p>
            <p>It has no effect on any maximum numbers set in the layout for drop-down selection fields.</p>
+        </div>
+
+        <!-- HELP POPUP autoclose -->
+        <div id="autoclose_help" class="wp-dialog" >
+           <p>The webform may be set to close itself automatically after a specified date/time 
+             ( in the timezone specified by your site settings ).
+              After that time, users will only see the "Sorry, not open for upload" message. 
+           </p>
+           <p>If error logging is turned on (in wp-config.php), the close action will be logged.  
+              The time shown in the log will be first time the site was accessed after the set closing time.
+           </p>
         </div>
 
         <!-- HELP POPUP identifier -->
@@ -485,9 +516,8 @@ function ewz_webforms_menu()
                 The prefix may contain the  following expressions, which will
                 be replaced as indicated:
             <table class="ewz_border">
-                <tbody><tr><th class="b">Expression</th><th class="b">Replacement</th></tr>
-
-
+                <thead><tr><th class="b">Expression</th><th class="b">Replacement</th></tr></thead>
+                <tbody>
                     <tr><td class="b">[~WFM] </td>
                         <td class="b"> Identifier for this webform</td></tr>
                     <tr><td class="b">[~UID] </td>

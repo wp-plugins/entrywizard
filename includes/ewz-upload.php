@@ -45,7 +45,7 @@ function ewz_show_webform( $atts )
         try{
             //error_log("EWZ: uploading (old form) for " . $_SERVER["REMOTE_ADDR"]);
             // had problems with more than 10 3M images
-            $n = $webformdata->num_items;
+            $n = $webformdata['webform']->num_items;
             $timelimit = ini_get('max_execution_time');
             if( 15 * $n > $timelimit ){
                 set_time_limit ( 15 * $n );
@@ -134,13 +134,13 @@ function ewz_get_webform_data( $atts )
     if( !$webform->open_for_current_user() ){
         $data['failmsg'] = '<div class="ewz-err"><h2>' . 
             $webform->webform_title . 
-            '</h2><p>Sorry, this form is not currently open for uploads.</p></div>';
+            "</h2>\n\n<p>Sorry, this form is not currently open for uploads.</p></div>";
         return $data;
     }
 
     $data['user_id'] = get_current_user_id();
     $data['webform'] = $webform;
-    $data['layout'] = new Ewz_Layout( $webform->layout_id, false );
+    $data['layout'] = new Ewz_Layout( $webform->layout_id, Ewz_Layout::EXCLUDE_FOLLOWUP );
     return $data;
 }
 
@@ -206,29 +206,58 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     $output .= '<input type="hidden" name="identifier" value="' . esc_attr( $webform->webform_ident ) . '">';
     $output .= '<div id="scrollablediv_'. esc_attr( $webform_id ) . '" class="ewz_overflow">';
     $output .= "\n";
-    $output .= '<table class="ewz_padded ewz_upload_table">';
+    $output .= '<table class="ewz_upload_table ewz_padded">';
     $output .= "\n";
 
+    $append = array_map ( create_function( '$v', 'return $v->append == 1;' ),  $fields_arr );
+    $append[ count($fields_arr) ] = false;
+
     //  header line
-    $output .= '   <tr>';
+    $output .= '<thead>   <tr>';
     foreach ( $fields_arr as $n => $field ) {
-       assert( $n<count($fields_arr) );
+        assert( $n < count($fields_arr) );
         $reqflag = $field->required ? '*' : ' ';
-        $output .= "   <th>$reqflag" . esc_html( $field->field_header ) . '</th>';
+        if( $append[$n] ){
+            $output .= ' / <br \>';
+        } else {
+            $output .= "<th>";
+        }
+        if( !( $append[$n] || $append[$n+1] ) ){
+            $output .= $reqflag;
+        }
+        $output .= esc_html( $field->field_header );
+        if( !$append[$n+1] ){
+            $output .= '</th>';
+        }
     }
     if( $has_data ){
         $output .= '     <th class="btn"></th>';
     }
-    $output .= "   </tr>\n";
+    $output .= "   </tr></thead><tbody>\n";
+
 
     // item rows
     $row = 0;
     foreach ( $stored_items as $p => $item ) {
         assert( $p<count($stored_items ) );
         $output .='<tr id="row' . $row . '_' . esc_attr( $webform_id ) . '">';
-        foreach ( $fields_arr as $field ) {
+        foreach ( $fields_arr as $n => $field ) {
+            $reqflag = $field->required ? '*' : ' ';
             $savedval = ewz_get_saved_value( $field, $item );
-            $output .= '<td>' . ewz_display_webform_field( $row, $webform_id, $savedval, $field ) . '</td>';
+            if( $append[$n] ){
+                $output .= '<br \><br \>';
+            } else {
+                $output .= '<td>';
+            }
+            if( $append[$n] || $append[$n+1] ){
+           
+                $output .= "<label for='rdata_{$row}__{$field->field_id}__$webform_id'>" .  $reqflag . esc_html( $field->field_header ) . ':</label>';
+            }
+            
+            $output .= ewz_display_webform_field( $row, $webform_id, $savedval, $field );
+            if( !$append[$n+1] ){
+                $output .= '</td>';
+            }
         }
         $output .= '<td><input type="hidden"   name="item_id[' . $row . ']" value="' .
                 esc_attr( $item->item_id ) . '">';
@@ -242,8 +271,20 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     while ( $row < $webform->num_items ) {
         $output .="<tr id='row" . $row . "_" . esc_attr( $webform_id ) . "'>";
 
-        foreach ( $fields_arr as $field ) {
-            $output .= '<td>' . ewz_display_webform_field( $row, $webform_id, '', $field ) . '</td>';
+        foreach ( $fields_arr as $n => $field ) {
+            $reqflag = $field->required ? '*' : ' ';
+            if( $append[$n] ){
+                $output .= '<br \><br \>';
+            } else {
+                $output .= '<td>';
+            }
+            if( $append[$n] || $append[$n+1] ){
+                $output .= "<label for='rdata_{$row}__{$field->field_id}__$webform_id'>" .  $reqflag . esc_html( $field->field_header ) . ':</label>';
+            }
+            $output .=  ewz_display_webform_field( $row, $webform_id, '', $field );
+            if( !$append[$n+1] ){
+                $output .= '</td>';
+            }
         }
         if( $has_data ){
              $output .= '<td class="btn"></td>';
@@ -561,26 +602,48 @@ function ewz_current_status( $stored_items, $fields, $name, $webform_id ) {
 
     $output = '<div id="ewz_stored_' . esc_attr( $webform_id ) . '">';
     if ( count( $stored_items ) > 0 ) {
-        $output .= "Currently stored on the server for $name: <br><br>";
+        $output .= "Currently stored on the server for $name: <br \><br \>";
 
-        $output .= '<table id="datatable_' . esc_attr( $webform_id ) . '"  class="ewz_upload_table"><thead>';
+        $output .= '<table id="datatable_' . esc_attr( $webform_id ) . '"  class="ewz_upload_table ewz_padded"><thead>';
+
+        $append = array_map ( create_function( '$v', 'return $v->append == 1;' ),  $fields_arr );
+        $append[ count($fields_arr) ] = false;
+
+
         $output .= '   <tr>';
         foreach ( $fields_arr as $n => $field ) {
             assert( $n < count($fields));
-            $output .=   '<th>' . esc_html( $field->field_header ) . '</th>';
+            if( $append[$n] ){
+                $output .= ' / <br \>';
+            } else {
+                $output .= "<th>";
+            }
+            $output .=  esc_html( $field->field_header );
+            if( !$append[$n+1] ){
+                $output .= '</th>';
+            }
         }
         $output .=    '</tr></thead><tbody>';
         foreach ( $stored_items as $m => $item ) {
             assert( $m < count($stored_items));
             $output .= '<tr>';
-            foreach ( $fields_arr as  $field ) {
-                $output .= '<td>';
+            foreach ( $fields_arr as $n => $field ) {
+                if( $append[$n] ){
+                    $output .= '<br \><br \>';
+                } else {
+                    $output .= '<td>';
+                }
+                if( $append[$n] || $append[$n+1] ){
+           
+                    $output .='<b>' . esc_html( $field->field_header ) . ":</b> ";
+                }
+
                 if ( 'img' == $field->field_type ) {
                     // an image field
                     if ( array_key_exists( $field->field_id, $item->item_files ) ) {
                         if ( is_array( $item->item_files[$field->field_id] ) ) {
                             $output .= '<img src="' . esc_attr( $item->item_files[$field->field_id]['thumb_url'] ) . '">';
-                            $output .= '<br>' . esc_html( basename( $item->item_files[$field->field_id]['fname'] ) );
+                            $output .= '<br \>' . esc_html( basename( $item->item_files[$field->field_id]['fname'] ) );
                         } else {
                             $output .= esc_html( $item->item_files[$field->field_id] );
                         }
@@ -591,7 +654,9 @@ function ewz_current_status( $stored_items, $fields, $name, $webform_id ) {
                         $output .= esc_html( ewz_display_item( $field, $item->item_data[$field->field_id]['value'] ) );
                     }
                 }
-                $output .= '</td>';
+                if( !$append[$n+1] ){
+                    $output .= '</td>';
+                }
             }
             $output .= '</tr>';
         }
@@ -620,7 +685,7 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
     /*     * ************************** */
     /* Get the field information */
     /*     * ************************** */
-    $layout = new Ewz_Layout( $postdata['layout_id'], false );
+    $layout = new Ewz_Layout( $postdata['layout_id'], Ewz_Layout::EXCLUDE_FOLLOWUP );
 
     // Reformat the post data to a more usable form,  upload any files,
     // and add the uploaded file data to the item data
@@ -727,6 +792,7 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
                         $prefix = $webform->do_substitutions( $subst_data );
                     }
                     try{
+                        // sanitize $prefix.$filename and if ok save the uploaded image
                         $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $prefix.$filename, $row, $fields[$field_id] );
                     } catch( Exception $e ){
                         $upload[$row]['files'][$field_id]['fname'] = '___' . $e->getMessage();
@@ -950,12 +1016,14 @@ function ewz_user_delete_item( $item_id ){
 function ewz_validate_and_upload( )
 {
     if ( $_POST && isset( $_POST['identifier'] ) && is_string( $_POST['identifier'] ) ) {
-        $atts = array( 'identifier' => $_POST['identifier'] );
+        // first grab the webform data, since layout is needed for full validation. 
+        // Do a quick sanitization of $_POST['identifier'] before passing it -- later it's compared to allowed values.
+        $atts = array( 'identifier' => preg_replace( '/[^a-z0-9 _-]/i', '_', $_POST['identifier'] ) );
         $webformdata = ewz_get_webform_data( $atts );
 
         // not logged in or form not open - display the html failmsg
         if ( array_key_exists( 'failmsg', $webformdata ) ) {
-            return "Failed to get form:  " . $webformdata['failmsg'];
+            return wp_strip_all_tags( $webformdata['failmsg'] );
         }
 
         // had problems with more than 10 3M images
@@ -989,7 +1057,7 @@ function ewz_check_upload_atts( $atts )
     }
     $idents = Ewz_Webform::get_all_idents();
     if ( !in_array( $atts['identifier'], $idents ) ) {
-        throw new EWZ_Exception(  'Invalid identifier ' . $atts['identifier'] . ' in shortcode' );
+        throw new EWZ_Exception(  'Invalid identifier "' . $atts['identifier'] . '" in shortcode' );
     }
 }
 

@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 3.8.1
-Stable tag: 1.1.0
+Tested up to: 3.9.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,11 +17,12 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 * They may set up any number of different "layouts" ( specifications of what information to ask for and what limits to enforce ), assigning an identifier to each.   
 
-* An example of the sort of rules a layout is able to specify might be something like this:
+* An example of the sort of rules a layout is able to specify might look something like this:
 
-    +  Each image must have: - a short title; 
-                             - a category which must be one of "Nature", "Photojournalism", "Still Life" or "Portrait"; 
-                             - a type which must be one of "Digital", "Slide" or "Print" 
+    +  Each image must have: 
+         + a short title; 
+         + a "Category", which must be one of "Nature", "Photojournalism", "Still Life" or "Portrait"; 
+         + a "Format", which must be one of "Digital", "Slide" or "Print" 
     +  Up to 6 entries may be submitted, each with or without a digital version 
     +  Any image of type "Digital" must have an uploaded digital version
     +  At most 2 of the 6 images may be in the "Nature" category. 
@@ -29,9 +30,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
      
 * Each webform is given a unique alphanumeric identifier, and this identifier is used within a shortcode to insert the webform in a page or post. Any number of different webforms may be created, and one of the layouts is assigned to each one. Multiple webforms may appear on one page, although currently they have to be submitted individually. 
 
-* ( To display the upload form without a horizontal scroll may require a theme, or modification of a theme, that allows a fairly wide page. )
-
-* Each webform separately may be set as "open for upload" or "closed".  If it is open, the shortcode is replaced by the upload form.  If it is closed, the shortcode is replaced by a message saying that the upload is closed.  The webform may also be opened temporarily to specified members only.
+* Each webform separately may be set as "open for upload" or "closed".  If it is open, the shortcode is replaced by the upload form.  If it is closed, the shortcode is replaced by a message saying that the upload is closed.  A closed webform may also be opened temporarily to specified members only, and an open webform may be set to close automatically at a specified time.
 
 * When items have been uploaded, the administrator may either view the items online, or download them.  A spreadsheet (in comma-separated .csv format) showing the uploaded data together with some optional information about the users, may also be downloaded.
 
@@ -43,18 +42,20 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * There is a fine-grained permissions system allowing administrators to grant an individual user various levels of control over the webforms and layouts.
   Only logged-in users may see the webform.
 
-* ( Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow of a selection of the downloaded images using the information in the spreadsheet. )
+* Users of this plugin may also be interested in using Flexishow (https://sourceforge.net/projects/flexishow/) to run a slideshow  using the information in the spreadsheet to select the images displayed. 
 
 == Installation ==
 
 * Either
-    + Go to Plugins --> Install New and search for EntryWizard.  Click "Install Now".
+    + Go to Plugins -> Install New and search for EntryWizard.  Click "Install Now".
   Or
-    + Download and unzip the file into your plugins folder. In the administration area, go to Plugins, look for "EntryWizard", and click "activate".  
+    + Download and unzip the file into your plugins folder. 
+
+* In the administration area, go to Plugins, look for "EntryWizard", and click "activate".  
 
 * The "EntryWizard" links should appear on the administration sidebar.
 
-* NB: If you are using the "DB Cache Reloaded Fix" plugin, you need to add "EWZ_|ewz_" to the cache filter (where it says "Do not cache queries that contains this input contents").  If you don't do this, users will not get immediate feedback when they upload, but will have to wait for the cache to expire.  Some other caching plugins may also need to be configured in this way.
+* **Use With Caching Plugins**: Caching plugins may need to be configured so they do not cache EntryWizard data.  For example, if you are using the "DB Cache Reloaded Fix" plugin, you need to add "EWZ_|ewz_" to the cache filter (where it says "Do not cache queries that contains this input contents").  If you don't do this, users will not get immediate feedback when they upload, but will have to wait for the cache to expire.  
 
  
 = Usage =
@@ -62,9 +63,9 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * The initial setup comes with two sample layouts and one sample webform.  The sample webform has been assigned the identifier "example".
   To show the sample webform on your page, simply include the shortcode
 
-       [ewz_show_webform identifier="example"]
+       **[ewz_show_webform identifier="example"]**
 
-   in the page where you wish the form to appear.  
+   in the page or post where you wish the form to appear.  
   
 * Quickstart for the impatient:
 
@@ -73,10 +74,10 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
   2. Give it a new title and save it.
 
   3. In the EntryWizard->Webforms admin page, click "Add a new Webform".  In the new webform:
-             + give it a name and an identifier
-             + select your newly-created layout
-             + click "Open for Uploads"
-             + save the webform
+             * give it a name and an identifier
+             * select your newly-created layout
+             * click "Open for Uploads"
+             * save the webform
 
   4. Create a new test page, containing 
             [ewz_show_webform identifier="xxx"]
@@ -109,8 +110,15 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 3. Error message shown to user ( in a recent version of Firefox ).
 4. Downloading the images and spreadsheet.
 
+
 == Changelog ==
 
+= 1.2.0 =
+* Allow for compressing several columns into one in the webform view 
+* Facility to schedule the automatic closing of a webform
+* Fields with 'XFQ' in their identifiers are not displayed in the followup form
+* Minor changes to the followup form display
+* Use the local timezone when adding a date to the filename of a downloaded file
 
 = 1.1.0 =
 * allow webforms to override the number of items set in the layout
@@ -205,19 +213,18 @@ CHANGE: Require a minimum longest dimension for uploaded images instead of a min
 
 Enhancements planned eventually (in no particular order):
 
+* Make the shortcode easier to edit within the TinyMCE editor
+
 * Copy restrictions when copying a layout
 
-* Customize the "Upload closed" message, the thumbnail height, and some other parameters
+* Customize the "Upload closed" message, thumbnail height, font colors and some other parameters
 
 * Optional overall upload fields in addition to those attached to each image
 
 * Text-area field
 
-* Possible option of a two-line row for each item in the webform, if the layout requires too much horizontal space,
-  and an option to override some narrow page widths 
-
 * Some sort of archiving mechanism, so webforms that will no longer be used do not show up on the administration page, even if the images are still on the server.
 
+* Better support for uploads using more than one image per item, and for pages containing more than one webform
+
 * Internationalization?
-
-

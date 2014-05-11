@@ -11,6 +11,9 @@ require_once( EWZ_PLUGIN_DIR . "classes/ewz-base.php");
 
 class Ewz_Item extends Ewz_Base {
 
+    const USER_ITEMS = 1;
+    const ALL_ITEMS = 0;
+
     // key
     public $item_id;
     // database
@@ -56,15 +59,16 @@ class Ewz_Item extends Ewz_Base {
      * Return an array of items attached to the input webform_id
      *
      * @param   int $webform_id
-     * @param   boolean $user_only
+     * @param   int $user_only     self::USER_ITEMS (belonging to logged-in user)
+     *                             or self::ALL_ITEMS 
      * @return  array of Ewz_Items
      */
     public static function get_items_for_webform( $webform_id, $user_only ) {
         global $wpdb;
         assert( Ewz_Base::is_pos_int( $webform_id ) );
-        assert( is_bool( $user_only ) );
+        assert( $user_only == self::USER_ITEMS || $user_only == self::ALL_ITEMS );
         $clause = "";
-        if ( $user_only ) {
+        if ( $user_only == self::USER_ITEMS ) {
             $clause = " AND user_id = " . get_current_user_id();
         }
         $list = $wpdb->get_results( $wpdb->prepare(
@@ -293,10 +297,9 @@ class Ewz_Item extends Ewz_Base {
      * @param $data ( field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ] )
      * @return none
      */
-    public function set_uploaded_info( $data ) {
-        assert( is_array( $data ) );
-        $ddata = $data;
-        // $data is expected to have the following structure:
+    public function set_uploaded_info( $ddata ) {
+        assert( is_array( $ddata ) );
+        // $ddata is expected to have the following structure:
         // field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ]
         $col = 1;
         while ( isset( $ddata[0] ) ) {
@@ -348,7 +351,7 @@ class Ewz_Item extends Ewz_Base {
      * This function must also validate, since the input comes from a
      * user-written text file, not a web page which would be validated earlier.
      *
-     * @param $data ( field_ident, data )
+     * @param $admin_data ( field_ident, data )
      * @return none
      */
     public function set_uploaded_admin_data( $admin_data ) {

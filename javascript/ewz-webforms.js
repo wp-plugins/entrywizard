@@ -8,11 +8,13 @@ function toggle_hidden_controls(checkbox){
     'use strict';
     fixConsole();
     var jcheckbox = jQuery(checkbox),
-         jtable = jcheckbox.closest('form');
+           jtable = jcheckbox.closest('form');
     if(jcheckbox.prop("checked")){
         jtable.find('[class="ewz_hideable"]').hide();
+        jtable.find('[class="ewz_showable"]').show();
     } else {
         jtable.find('[class="ewz_hideable"]').show();
+        jtable.find('[class="ewz_showable"]').hide();
     }
 }
 
@@ -43,6 +45,14 @@ function init_ewz_webforms(){
             jQuery('input[name="ewznonce"]').each(function(index){
                 jQuery(this).attr('id', 'ewznonce'+index);
             });
+
+            jQuery( "#auto_date_" + i  ).datepicker( {showOtherMonths: true,
+                                                      selectOtherMonths: true,
+                                                      dateFormat:  ewzG.dateFormat,
+                                                      constrainInput: true,
+                                                      minDate: 0,
+                                                      maxDate: "+1y" 
+                                                     });
         }
         if( ewzG.message ){
             alert(  ewzG.message.replace(/~/g,"\n")  );
@@ -53,6 +63,7 @@ function init_ewz_webforms(){
         }
         add_expander();
         //console.log(ewzG);
+
    }
 }
 
@@ -202,12 +213,22 @@ function webform_data_str(evnum, eObj) {
     str +=   '            <td>' + checkboxinput_str('upload_open' + evnum + '_', 'upload_open', eObj.upload_open ) + '</td>';
     str +=   '            <td>  <div id="open_for_' + evnum + '_" class="ewz_hideable"><i>' + eObj.open_for_string + '</i></div> </td>';
     str +=   '        </tr>';
+
+    str +=   '        <tr class="ewz_showable"><td> <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'autoclose\')">&nbsp;Close Automatically:</td>';
+    str +=   '             <td>' + checkboxinput_str("auto_close_" + evnum, "auto_close", eObj.auto_close );         
+    str +=   '            &nbsp;  &nbsp;  Date: ' + textinput_str("auto_date_" + evnum, "auto_date", 15, eObj.auto_date);
+    str +=   '           </td><td>Time: <select name="auto_time" id="auto_time_' + evnum + '">' + eObj.close_time_opts + '</select>';
+    str +=   '                ( ' + ewzG.tz + ' )  &nbsp; <i>Current date-time is ' + ewzG.now + '</i></td>';
+    str +=   '        </tr>';
+
+
 if(eObj.user_options){
     str +=   '        <tr class="ewz_hideable">';
     str +=   '            <td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'openfor\')">&nbsp;Show user selection list</td>';
     str +=   '            <td><input type="checkbox"  id="show_uselect_' + evnum + '" onChange="' + clickstr + '"></td>';
     str +=   '            <td><div id="' + divid + '" style="display:none">';
-    str +=   '                  Open for selected users only:<br><select  multiple="multiple" size="8" name="o_user[]" id="o_user_' + evnum + '_">' +  eObj.user_options + '</select>';
+    str +=   '                  Open for selected users only:<br><select  multiple="multiple" size="8" name="o_user[]" id="o_user_' + evnum + '_">';
+    str +=                           eObj.user_options + '</select>';
     str +=   '                </div></td>';
     str +=   '        </tr>';
 }

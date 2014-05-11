@@ -31,6 +31,6 @@ class EWZ_Exception extends Exception {
         error_log( "EWZ: $logmsg~{ $file, line " . parent::getLine() . " }~" );
 
         $preamble = "*** EntryWizard ERROR ***\n";
-        parent::__construct( "$preamble $user_message" );
+        parent::__construct( "$preamble $user_message", 0, null );
     }
 }

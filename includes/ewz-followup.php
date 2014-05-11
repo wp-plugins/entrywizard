@@ -64,7 +64,7 @@ function ewz_followup( $atts ) {
         }
         foreach( $idents as $ident ){
             if ( !in_array( $ident, $valid_idents ) ) {
-                throw new EWZ_Exception(  'Invalid identifier ' . $ident . ' in shortcode' );
+                throw new EWZ_Exception(  'Invalid identifier "' . $ident . '" in shortcode' );
             }
             $webforms[$ident] = new Ewz_Webform( $ident );
             $layouts[$ident] = new Ewz_Layout( $webforms[$ident]->layout_id );
@@ -89,6 +89,7 @@ function ewz_followup( $atts ) {
         try{
             $input = new Ewz_Followup_Input( stripslashes_deep( $_POST ), $followup_data );
             ewz_process_followup_input( $input->get_input_data() );
+            $message = "Items updated successfully.";
          } catch( Exception $e ) {
             $message .= $e->getMessage();
             $message .= "\n";
@@ -117,6 +118,7 @@ function ewz_followup( $atts ) {
         $webform->layout = $layout;
         $items = Ewz_Item::get_items_for_webform( $webform->webform_id, true );
         $output .= "<h2>$webform->webform_title</h2>\n";
+
         if( $items ){
             $output .= ewz_followup_display(
                                         $rownum,
@@ -208,43 +210,48 @@ function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id
     if ( count( $stored_items ) > 0 ) {
         $output .= '<table id="datatable_' . esc_attr( $webform_id ) . '"  class="ewz_upload_table"><thead>';
         $output .= '   <tr>';
-        foreach ( $fields_arr as $n => $field ) {
-            assert( $n < count( $fields ) );
-            $output .=   '<th>' . esc_html( $field->field_header ) . '</th>';
-        }
         // admin_data column
         if( $show_admin_data ){
             $output .=   '<th> </th>';
+        }
+        foreach ( $fields_arr as $n => $field ) {
+            assert( $n < count( $fields ) );
+            // in this followup page only, ignore fields whose identifier contains the string XFQ
+            if(  strpos( $field->field_ident, 'XFQ' ) === false ){
+                $output .=   '<th>' . esc_html( $field->field_header ) . '</th>';
+            }
         }
         $output .=    '</tr></thead><tbody>';
 
         foreach ( $stored_items as $m => $item ) {
             assert( $m < count($stored_items));
             $output .= '<tr>';
-            foreach ( $fields_arr as  $field ) {
-                $output .= '<td>';
-
-                // the special followup field, which is the only input on the form now
-                if( $field->field_ident == 'followupQ' ){
-                    $savedval = ewz_get_saved_value( $field, $item );
-                    $output .= ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $item->item_id );
-                }  else {
-                    // display the other fields the same way we do for the upload feedback
-                    if ( 'img' == $field->field_type ) {
-                        // an image field
-                        $output .=  ewz_display_image_field_with_data( $field, $item, $show_data );
-                    } else {
-                        // a data field
-                        if ( isset( $item->item_data[$field->field_id] ) ) {
-                            $output .= esc_html( ewz_display_item( $field, $item->item_data[$field->field_id]['value'] ) );
-                        }
-                    }
-                    $output .= '</td>';
-                }
-            }
             // admin_data column
             if( $show_admin_data ){
                 $output .=  ewz_display_admin_data( $item );
+            }
+            foreach ( $fields_arr as  $field ) {
+                if(  strpos( $field->field_ident, 'XFQ' ) === false ){
+                    $output .= '<td>';
+
+                    // the special followup field, which is the only input on the form now
+                    if( $field->field_ident == 'followupQ' ){
+                        $savedval = ewz_get_saved_value( $field, $item );
+                        $output .= ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $item->item_id );
+                    }  else {
+                        // display the other fields the same way we do for the upload feedback
+                        if ( 'img' == $field->field_type ) {
+                            // an image field
+                            $output .=  ewz_display_image_field_with_data( $field, $item, $show_data );
+                        } else {
+                            // a data field
+                            if ( isset( $item->item_data[$field->field_id] ) ) {
+                                $output .= esc_html( ewz_display_item( $field, $item->item_data[$field->field_id]['value'] ) );
+                            }
+                        }
+                        $output .= '</td>';
+                    }
+                }
             }
             $output .= '</tr>';
             ++$rownum;
@@ -260,7 +267,7 @@ function ewz_display_admin_data( $item ){
      assert( is_object( $item ) );
      $str= '';
      if ( array_key_exists( 'admin_data', $item->item_data ) ) {
-        $str = '<td class="admin_data">' . esc_attr( $item->item_data['admin_data'] ) . '</td>';
+        $str = '<td class="admin_data">' .  $item->item_data['admin_data']  . '</td>';
      } else {
          $str = '<td></td>';
      }
@@ -272,7 +279,7 @@ function ewz_display_admin_data( $item ){
  *
  * @param   $field
  * @param   $item
- * @param   $showdata
+ * @param   $show_data
  *
  * @return  html string
  */

@@ -48,7 +48,7 @@ function layout_str(lnum, fObj) {
     str = '<div id="ewz_admin_layouts_f' + lnum + '_" class="metabox-holder">';
 
     str += '    <div id="ewz_postbox-layout_f' + lnum + '_" class="postbox closed" style="display: block;" >';
-    str += '       <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br/></div>';
+    str += '       <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br /></div>';
     str += '       <h3 id="tpg_header_f' + lnum + '_"  class="hndle" onClick="toggle_postbox(this)">' + fObj.layout_name + '</h3>';
 
     /*********** General *************/
@@ -76,7 +76,7 @@ function layout_str(lnum, fObj) {
     str += '                    </tr>';
     str += '                    <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxnum\')">&nbsp;Maximum number of items &nbsp;</td>';
     str += '                        <td>' + numinput_str('f' + lnum + '_max_num_items_', 'max_num_items', '', 1, ewzG.maxNumitems, Number(fObj.max_num_items));
-    str += '                        &nbsp; &nbsp; Overrideable by webforms: &nbsp; ' + checkboxinput_str('f' + lnum + '_override_', 'override', fObj.override ) + '</td>'
+    str += '                        &nbsp; &nbsp; Overrideable by webforms: &nbsp; ' + checkboxinput_str('f' + lnum + '_override_', 'override', fObj.override ) + '</td>';
     str += '                    </tr>';
     str += '                </table>';
     str += '             </div>';
@@ -89,11 +89,11 @@ function layout_str(lnum, fObj) {
     str += '                <div class="ewz_95">';
     str += '                   <div  id="ewz_sortable_f' + lnum + '_" >';
     // <br> needed at top and bottom to drag a field to the top or bottom
-    str += '<br>';
+    str += '<br />';
     for (i = 0; i < fObj.forder.length; ++i) {
         str += field_str(lnum, fObj.forder[i], fObj.fields[fObj.forder[i]]);
     }
-    str += '<br>';
+    str += '<br />';
     str += '                   </div>';
     str += '                   <p>';
     str += '                      <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'ftype\')">&nbsp;Add another field: &nbsp; ';
@@ -131,7 +131,7 @@ function layout_str(lnum, fObj) {
     str += '                </p>';
     str += '                <div class="ewz_95">';
     str += '                   <div id="spread_f' + lnum + '_" class="postbox closed">';
-    str += '                      <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br></div>';
+    str += '                      <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br /></div>';
     str += '                      <h3 id="hspread_f' + lnum + '_" class="hndle"  onClick="toggle_postbox(this)">Select Items</h3>';
     str += '                      <div class="inside">';
     str += '                         <table class="ewz_field">';
@@ -164,7 +164,7 @@ function layout_str(lnum, fObj) {
         str += '               </button>';
     }
     str += '                </p>';
-    str += '          </div>';
+    str += '          <div id="waitmessage"></div></div>';
     str += '          </form>';
     str += '       </div>';
     str += '    </div>';
@@ -187,7 +187,7 @@ function new_restriction_str(lnum, button) {
         rnum = +(rnum) + 1;
     }
     txt = '<div id="restr_title_f' + lnum + '_r' + rnum + '_" class="ewz_subpost postbox closed">';
-    txt += '   <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br></div>';
+    txt += '   <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br /></div>';
     txt += '   <h3 id="new_restr_f' + lnum + '_r' + rnum + '_" class="hndle"  onClick="toggle_postbox(this)">-- New Restriction --</h3>';
     txt += '   <div class="inside">';
 
@@ -198,31 +198,33 @@ function new_restriction_str(lnum, button) {
 
     jcurr_form.find('select[id$="_field_type_"]').each(function(index) {
         var inside, field_id, nmstr, fieldname, isreq, fieldtype, option_list;
-
+        
         inside = jQuery(this).closest('div[class="inside"]');
         field_id = inside.find('input[name^="fields"]').filter(":hidden").val();
-        nmstr = 'restrictions[' + rnum + '][' + field_id + ']';
-        fieldname = inside.find('input[id$="field_header_"]').val();
-        isreq = inside.find('input[id$="_required_"]').filter(":checked").length;
-        fieldtype = jQuery("option:selected", this).val();
+        if( inside.find( 'input[id$="_field_ident_"]').val() != 'followupQ' ){
+            nmstr = 'restrictions[' + rnum + '][' + field_id + ']';
+            fieldname = inside.find('input[id$="field_header_"]').val();
+            isreq = inside.find('input[id$="_required_"]').filter(":checked").length;
+            fieldtype = jQuery("option:selected", this).val();
 
-        txt += '   <tr><td class="ewz_leftpad">' + ewz_esc(fieldname) + ":</td>";
-        txt += '       <td>';
+            txt += '   <tr><td class="ewz_leftpad">' + ewz_esc(fieldname) + ":</td>";
+            txt += '       <td>';
 
-        // do this in javascript instead of getting from db so it will reflect current changes
-        if ('opt' === fieldtype) {
-            option_list = '';
-            inside.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').each( function(index) {
-                var label, val;
+            // do this in javascript instead of getting from db so it will reflect current changes
+            if ('opt' === fieldtype) {
+                option_list = '';
+                inside.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').each( function(index) {
+                    var label, val;
 
-                label = jQuery(this).find('input[id$="_label_"]').val();
-                val = jQuery(this).find('input[id$="_value_"]').val();
+                    label = jQuery(this).find('input[id$="_label_"]').val();
+                    val = jQuery(this).find('input[id$="_value_"]').val();
 
-                option_list += '         <option value="' + val + '">' + label + '</option>';
-            });
+                    option_list += '         <option value="' + val + '">' + label + '</option>';
+                });
+            }
+
+            txt += field_values(fieldtype, isreq, nmstr, 'f' + lnum + '_restrictions_' + rnum + '__' + field_id + '_', option_list);
         }
-
-        txt += field_values(fieldtype, isreq, nmstr, 'f' + lnum + '_restrictions_' + rnum + '__' + field_id + '_', option_list);
     });
     txt += '       </td>';
     txt += '   </tr>';
@@ -263,7 +265,7 @@ function field_str(lnum, i, fObj) {
     fid = "f" + lnum + '_fields' + i + '_';
     str = '<div id="' + fid + 'field_mbox_" class="postbox closed">';
 
-    str += '  <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br></div>';
+    str += '  <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br /></div>';
     str += '  <h3 class="hndle" onClick="toggle_postbox(this)" id="field_title_' + fid + '">' + fObj.field_header + '</h3>';
     str += '  <div class="inside">';
     str += '     <input type="hidden" name="' + fld + '[field_id]' + '" value="' + fObj.field_id + '">';
@@ -287,9 +289,13 @@ function field_str(lnum, i, fObj) {
        rq = 'disabled';
     }
     str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'req\')">&nbsp;Required: </td>';
-    str += '           <td>' + checkboxinput_str(fid + 'required_', fld + '[required]', rq) + '</td>';
+    str += '           <td>' + checkboxinput_str(fid + 'required_', fld + '[required]', fObj.required, rq) + '</td>';
     str += '       </tr>';
 
+    str += '       <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'append\')">&nbsp;Append to Previous Column in Webform: </td>';
+    str += '           <td>' + checkboxinput_str(fid + 'append_', fld + '[append]', fObj.append ) + '</td>';
+    str += '       </tr>';
+    
     str += '     </table>';
     str += '     <div style="text-align:right; padding:10px;"> ';
     str += '        <button type="button" class="button-secondary" id="del_' + fid + '" onClick="delete_field(this)">Delete Field</button>';
@@ -329,7 +335,7 @@ function type_data_field_str(lnum, fid, fld, field_type, fdata) {
     }
     str += '</table>';
     if ('opt' === field_type) {
-        str += '<br><button type="button" id="' + fid + 'add_" class="button-secondary" onClick="add_option(this)">Add an Option</button>';
+        str += '<br /><button type="button" id="' + fid + 'add_" class="button-secondary" onClick="add_option(this)">Add an Option</button>';
     }
     return str;
 }
@@ -440,7 +446,7 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
     str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'longestdim\')">&nbsp;Minimum Longest Dimension</td>';
     str += '    <td>' + textinput_str(fdid + 'min_longest_dim_', fdld + '[min_longest_dim]', 10, iObj.min_longest_dim) + 'Pixels</td>';
     str += '</tr>';
-    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgtype\')">&nbsp;Allowed image types<br>(control-click to select more than one)</td>';
+    str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'imgtype\')">&nbsp;Allowed image types<br />(control-click to select more than one)</td>';
     str += '    <td>' + imgformat_input_str(fdid + 'allowed_image_types_', fdld + '[allowed_image_types][]', iObj.allowed_image_types) + '</td>';
     str += '</tr>';
     return str;
@@ -1212,6 +1218,8 @@ function ewz_check_layout_input(form, do_check) {
     }
     if (ok || !do_check) {
         try {
+            jform.find('div[class="waitmessage"]').html('Processing, please wait ... <img alt="Please Wait" src="' + ewzG.load_gif + '"/>');
+ 
             // enable all the disabled stuff so right data gets sent
             jform.find('select:disabled,input:disabled,button:disabled').prop("disabled", false);
 

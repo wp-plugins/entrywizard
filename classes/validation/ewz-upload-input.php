@@ -27,13 +27,13 @@ class Ewz_Upload_Input extends Ewz_Input
             }
         }
         $this->rules = array(
-                             'layout_id'        => array( 'type' => 'seq',    'req' =>  true,  'val' => '' ),
-                             'webform_id'       => array( 'type' => 'seq',    'req' =>  true,  'val' => '' ),
-                             'ewzuploadnonce'   => array( 'type' => 'unonce', 'req' =>  true,  'val' => '' ),
-                             '_wp_http_referer' => array( 'type' => 'string', 'req' =>  false, 'val' => '' ),
-                             'rdata'            => array( 'type' => 'v_rdata', 'req' => true,  'val' => '' ),
-                             'item_id'          => array( 'type' => 'v_items', 'req' => false, 'val' => '' ),
-                             'identifier'       => array( 'type' => 'ident',   'req' => true,  'val' => '' ),
+                             'layout_id'        => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
+                             'webform_id'       => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
+                             'ewzuploadnonce'   => array( 'type' => 'unonce',    'req' =>  true,  'val' => '' ),
+                             '_wp_http_referer' => array( 'type' => 'to_string', 'req' =>  false, 'val' => '' ),
+                             'rdata'            => array( 'type' => 'v_rdata',   'req' => true,  'val' => '' ),
+                             'item_id'          => array( 'type' => 'v_items',   'req' => false, 'val' => '' ),
+                             'identifier'       => array( 'type' => 'ident',     'req' => true,  'val' => '' ),
                              );
         $this->validate();
     }
@@ -57,7 +57,7 @@ class Ewz_Upload_Input extends Ewz_Input
       assert( is_array( $value ) );
       assert( $arg == '' );
       foreach ( array_keys( $value ) as $id ){
-          return self::seq( $value[$id], $arg  );      // seq potentially changes first arg
+          return self::to_seq( $value[$id], $arg  );      // seq potentially changes first arg
       }
   }
 
@@ -209,7 +209,7 @@ class Ewz_Upload_Input extends Ewz_Input
     {
         assert( is_string( $val ) );
         assert( is_array( $fdata ) );
-        if( !self::string( $val, '' ) ){               // also encodes the string
+        if( !self::to_string( $val, '' ) ){               // also encodes the string
             throw new EWZ_Exception( "Invalid format for text input" );
         }
         $val = str_replace('\\', '', $val );  // messes up stripslashes and serialize. Its hard
@@ -266,7 +266,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * Validate checkbox input
      * Check input is boolean and check the counts
      *
-     * @param   array   $fdata  input field data
+     * @param   array   $field  input field data
      * @param   string  $val    input string convertible to boolean
      * @param   string  $count  input integer current count of checks for this checkbox
      * @return  boolean
@@ -276,7 +276,7 @@ class Ewz_Upload_Input extends Ewz_Input
         assert( is_object( $field ) );
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );
-        if( !self::bool( $val, '' ) ){                  // changes $val to boolean
+        if( !self::to_bool( $val, '' ) ){                  // changes $val to boolean
             throw new EWZ_Exception( "Invalid value <$val> for checkbox input" );
         }   
         if ( isset( $field->fdata['chkmax'] ) && $field->fdata['chkmax'] && $val ) {
@@ -300,7 +300,7 @@ class Ewz_Upload_Input extends Ewz_Input
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );
  
-        if( !self::bool( $val, '' ) ){
+        if( !self::to_bool( $val, '' ) ){
             throw new EWZ_Exception( "Invalid value <$val> for radiobutton input" );
         }
         if( 1 < $count ){

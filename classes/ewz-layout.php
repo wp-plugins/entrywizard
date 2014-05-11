@@ -22,6 +22,12 @@ require_once( EWZ_CUSTOM_DIR . "ewz-custom-data.php" );
 class Ewz_Layout extends Ewz_Base
 {
 
+    const INCLUDE_FOLLOWUP = 1;
+    const EXCLUDE_FOLLOWUP = 0;
+
+    const DELETE_FORMS = 1;
+    const FAIL_IF_FORMS = 0;
+
     // key
     public $layout_id;
 
@@ -296,10 +302,11 @@ class Ewz_Layout extends Ewz_Base
     /**
      * Constructor
      *
-     * @param  mixed $init  layout_id or array of data
+     * @param  mixed  $init  layout_id or array of data
+     * @param  int    $inc_followup = self::INCLUDE_FOLLOWUP or self::EXCLUDE_FOLLOWUP
      * @return none
      */
-    public function __construct( $init, $inc_followup = 1 )
+    public function __construct( $init, $inc_followup = self::INCLUDE_FOLLOWUP )
     {
         // no assert
 	if ( is_numeric( $init ) ) {
@@ -318,14 +325,15 @@ class Ewz_Layout extends Ewz_Base
      *
      * Creates the fields array from the database
      *
-     * @param  int  $id: the layout id
+     * @param  int  $inc_followup = self::INCLUDE_FOLLOWUP or self::EXCLUDE_FOLLOWUP
+     * @param  int  $id  the layout id
      * @return none
      */
-    protected function create_from_id( $id, $inc_followup = true )
+    protected function create_from_id( $id, $inc_followup = self::INCLUDE_FOLLOWUP )
     {
 	global $wpdb;
         assert( Ewz_Base::is_pos_int( $id ) );
-        assert( is_bool( $inc_followup ) ||  $inc_followup == 1 ||  $inc_followup == 0 );
+        assert( $inc_followup == self::EXCLUDE_FOLLOWUP || $inc_followup == self::INCLUDE_FOLLOWUP );
 	$dblayout = $wpdb->get_row( $wpdb->prepare(
                 "SELECT layout_id, " .
                 implode( ',', array_keys( self::$varlist ) ) .
@@ -337,7 +345,7 @@ class Ewz_Layout extends Ewz_Base
 	$this->set_data( $dblayout );
 	$this->fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'pg_column', $inc_followup );
 
-	$this->set_usage_counts( false );
+	$this->update_usage_counts();
     }
 
     /**
@@ -361,13 +369,13 @@ class Ewz_Layout extends Ewz_Base
 
 	$this->set_data( $data );
 	$this->set_field_data( $data );
-	$this->set_usage_counts( false );
+	$this->update_usage_counts();
     }
 
     /**
      * Create a new  layout object from $data, which has no "layout_id" key
      *
-     * Set the new object's layout_id to 0
+     * Set the new object's layout_id to 0 and it's usage counts to 0
      *
      * @param array $data
      * @return none
@@ -376,10 +384,12 @@ class Ewz_Layout extends Ewz_Base
     {
         assert( is_array( $data ) );
 	$this->layout_id = 0;
+        $this->n_webforms = 0;
+        $this->n_items = 0;
+
 	$this->set_data( $data );
 	$this->set_field_data( $data );
 
-	$this->set_usage_counts( true );
 	$this->check_errors();
     }
 
@@ -406,27 +416,22 @@ class Ewz_Layout extends Ewz_Base
 
     /**
      * Set "n_webforms" and "n_items" to the counts of matching webforms/items from the database
-     *
-     * @param  boolean $is_new:  if true, set both counts to 0, otherwise get the counts from the database
      * @return  none
      */
-    protected function set_usage_counts( $is_new )
+    protected function update_usage_counts()
     {
 	global $wpdb;
-        assert( is_bool( $is_new ) );
-	if ( $is_new ) {
-	    $this->n_webforms = 0;
-	    $this->n_items = 0;
-	} else {
-	    $this->n_webforms = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " .
+       
+        $this->n_webforms = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " .
                     EWZ_WEBFORM_TABLE ." WHERE layout_id = %d", $this->layout_id ) );
 
-	    $this->n_items = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " .
+        $this->n_items = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " .
                     EWZ_ITEM_TABLE . " itm, " .  EWZ_WEBFORM_TABLE . " frm " .
                     " WHERE frm.layout_id = %d AND frm.webform_id = itm.webform_id",
                     $this->layout_id ) );
-	}
+	
     }
+
 
     /*     * ******************  Object Functions  *************** */
     public function contains_followup(){
@@ -604,12 +609,13 @@ class Ewz_Layout extends Ewz_Base
      * Delete the layout and all its fields from the database
      * Fails if any webforms use the layout
      *
-     * @param  none
+     * @param  int   $delete_forms = self::FAIL_IF_FORMS ( fail if any forms use this layout )
+     *                               or self::DELETE_FORMS (delete all forms using this layout so long as they have no items)
      * @return none
      */
-    public function delete( $delete_forms=false )
+    public function delete( $delete_forms = self::FAIL_IF_FORMS )
     {
-        assert( is_bool( $delete_forms )  || empty( $delete_forms ) );
+        assert( $delete_forms == self::DELETE_FORMS || $delete_forms == self::FAIL_IF_FORMS );
 	global $wpdb;
 
 	if ( !Ewz_Permission::can_edit_all_layouts() ) {
@@ -623,11 +629,11 @@ class Ewz_Layout extends Ewz_Base
 	}
 
         $webforms = Ewz_Webform::get_webforms_for_layout( $this->layout_id );
-        if( $delete_forms ){
+        if( $delete_forms ==  self::DELETE_FORMS ){
             foreach( $webforms as $wform ){
                 // never delete forms containing items using this function
                 // - force each form to be deleted separately
-                $wform->delete( false );
+                $wform->delete( Ewz_Webform::FAIL_IF_ITEMS );
             }
         } else {
             $n = count( $webforms );

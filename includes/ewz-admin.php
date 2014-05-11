@@ -2,6 +2,7 @@
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-base.php');
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-item.php');
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-data-input.php');
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-layouts.php');
@@ -18,30 +19,32 @@ require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-list-items.php');
 
 
 function ewz_enqueue_common_styles( ) {
+    // called in ewz_admin_init
     wp_enqueue_style( 'jquery-ui-dialog' );
     wp_enqueue_style( 'ewz-admin-style' );
 }
 
 function ewz_enqueue_common_scripts( ) {
+    // hooked in ewz_admin_menu
     wp_enqueue_script( 'ewz-common' );
 }
 
 function ewz_enqueue_layout_scripts() {
-    // called in ewz_load_js
+    // hooked in ewz_admin_menu
     wp_enqueue_script( 'ewz-admin-layouts' );
 }
 
 function ewz_enqueue_webform_scripts() {
-    // called in ewz_load_js
+    // hooked in ewz_admin_menu
     wp_enqueue_script( 'ewz-admin-webforms' );
 }
 function ewz_enqueue_permission_scripts() {
-    // called in ewz_load_js
+    // hooked in ewz_admin_menu
     wp_enqueue_script( 'ewz-admin-permissions' );
 }
 
 function ewz_enqueue_item_list_scripts() {
-    // called in ewz_load_js
+    // hooked in ewz_admin_menu
     wp_enqueue_script( 'ewz-admin-list-items' );
 }
 
@@ -113,7 +116,7 @@ function ewz_admin_init() {
             wp_register_script(
                                'ewz-admin-webforms',
                                plugins_url( 'javascript/ewz-webforms.js', dirname(__FILE__) ),
-                               array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'ewz-common' ),
+                               array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'jquery-ui-datepicker', 'ewz-common' ),
                                false,
                                true         // in footer, so $ewzG has been defined
                                );
@@ -176,7 +179,7 @@ function ewz_admin_menu() {
         }
         if ( isset( $_REQUEST['webform_id'] ) &&
              ( Ewz_Base::is_nn_int( $_REQUEST['webform_id'] ) ) &&
-             Ewz_Permission::can_manage_webform( $_REQUEST['webform_id'] ) ) {
+             Ewz_Permission::can_manage_webform( intval( $_REQUEST['webform_id'] ) ) ) {
 
             $list_hook_suffix  = add_submenu_page(
                                                   'NULL', 'EntryWizard Item List', 'ItemList',
@@ -243,13 +246,13 @@ function ewz_echo_data() {
 
             switch ( $data['ewzmode'] ) {
                 case 'spread':
-                    $webform->download_spreadsheet( $items, false );
+                    $webform->download_spreadsheet( $items, Ewz_Webform::SPREADSHEET );
                     break;
                 case 'images':
-                    $webform->download_images( $items, false );
+                    $webform->download_images( $items, Ewz_Webform::IMAGES );
                     break;
                 case 'download':
-                    $webform->download_images( $items, true );
+                    $webform->download_images( $items, Ewz_Webform::BOTH );
                     break;
                 default:
                     throw new EWZ_Exception( "Invalid mode " . $data['ewzmode'] );
@@ -295,8 +298,8 @@ function ewz_del_layout_callback() {
             exit();
         }
         try {
-            $layout = new Ewz_Layout( $_POST['layout_id'] );
-            $layout->delete( true );
+            $layout = new Ewz_Layout( intval( $_POST['layout_id'] ) );
+            $layout->delete( Ewz_Layout::DELETE_FORMS );
             echo "1";
         } catch (Exception $e) {
             echo $e->getMessage();
@@ -333,8 +336,8 @@ function ewz_del_field_callback() {
             exit();
         }
         try {
-            $layout = new Ewz_Layout( $_POST['layout_id'] );
-            $layout->delete_field( $_POST['field_id'] );
+            $layout = new Ewz_Layout( intval( $_POST['layout_id'] ) );
+            $layout->delete_field( intval( $_POST['field_id'] ) );
             echo "1";
         } catch (Exception $e) {
             echo $e->getMessage();
@@ -373,7 +376,7 @@ function ewz_del_item_callback() {
             exit();
         }
         try {
-            $status = ewz_user_delete_item( $_POST['item_id'] );
+            $status = ewz_user_delete_item( intval( $_POST['item_id'] ) );
             echo $status;
         } catch (Exception $e) {
             echo $e->getMessage();
@@ -398,13 +401,16 @@ add_action( 'wp_ajax_ewz_del_item', 'ewz_del_item_callback' );
  */
 function ewz_del_webform_callback() {
     if ( wp_verify_nonce( $_POST["ewznonce"], 'ewzadmin' ) ) {
+        if ( ob_get_length() ) {
+            ob_clean();
+        }
         if ( !(isset( $_POST['webform_id'] ) && is_numeric( $_POST['webform_id'] )) ) {
             throw new EWZ_Exception( 'Missing or non-numeric webform_id' );
             exit();
         }
         try {
-            $webform = new Ewz_Webform( $_POST['webform_id'] );
-            $webform->delete( true );
+            $webform = new Ewz_Webform( intval( $_POST['webform_id'] ) );
+            $webform->delete( Ewz_Webform::DELETE_ITEMS );
             echo "1";
             exit();
         } catch (Exception $e) {
@@ -418,7 +424,6 @@ function ewz_del_webform_callback() {
     }
 
 }
-
 add_action( 'wp_ajax_ewz_del_webform', 'ewz_del_webform_callback' );
 
 /**
@@ -427,12 +432,15 @@ add_action( 'wp_ajax_ewz_del_webform', 'ewz_del_webform_callback' );
  * Called via the Submit button on the Upload page
  * Calling page uses XMLHttpRequest, shows any text other than '1' as an alert
  */
-function ewz_upload_callback() {
+function ewz_upload_callback() { 
     //error_log("EWZ: uploading (ajax) for " . $_SERVER["REMOTE_ADDR"]);
 
     require_once( EWZ_PLUGIN_DIR . 'includes/ewz-upload.php');
 
     if ( wp_verify_nonce( $_POST["ewzuploadnonce"], 'ewzupload' ) ) {
+        if ( ob_get_length() ) {
+            ob_clean();
+        }
         // shortcode not defined within admin, need it here
         try {
             add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
@@ -454,7 +462,6 @@ function ewz_upload_callback() {
     }
 
 }
-
 add_action( 'wp_ajax_ewz_upload', 'ewz_upload_callback' );
 
 
@@ -467,6 +474,9 @@ add_action( 'wp_ajax_ewz_upload', 'ewz_upload_callback' );
  */
 function ewz_set_ipp_callback() {
     if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+        if ( ob_get_length() ) {
+            ob_clean();
+        }
         try {
             $done = ewz_set_ipp();
             echo $done;
@@ -493,6 +503,9 @@ add_action( 'wp_ajax_ewz_set_ipp', 'ewz_set_ipp_callback' );
  */
 function ewz_layout_changes_callback() {
     if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+        if ( ob_get_length() ) {
+            ob_clean();
+        }
         try {
             ewz_check_and_process_layouts();
             echo "1";
@@ -508,5 +521,4 @@ function ewz_layout_changes_callback() {
         exit();
     }
 }
-
 add_action( 'wp_ajax_ewz_layout_changes', 'ewz_layout_changes_callback' );

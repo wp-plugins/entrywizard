@@ -355,7 +355,7 @@ class Ewz_Permission {
      * Is the current user allowed to manage either the specified webform,
      *        any webform, or any webform with the specified webform's layout
      *
-     * @param  mixed    $webform   ( webform_id or Ewz_Webform )
+     * @param  mixed    $in_webform   ( webform_id or Ewz_Webform )
      * @return boolean
      */
     public static function can_manage_webform( $in_webform ) {

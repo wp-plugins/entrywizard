@@ -15,14 +15,14 @@ class Ewz_Webform_Data_Input extends Ewz_Input
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $this->rules = array(
-                             'ewzmode'          => array( 'type' => 'limited', 'req' => true,  'val' => array( 'list', 'spread', 'download', 'images' ) ),
-                             'ewznonce'         => array( 'type' => 'anonce',  'req' => true,  'val' => '' ),
-                             '_wp_http_referer' => array( 'type' => 'string',  'req' => true,  'val' => '' ),
-                             'page'             => array( 'type' => 'fixed',   'req' => true,  'val' => 'entrywizlist' ),
-                             'webform_id'       => array( 'type' => 'seq',     'req' => true,  'val' => '' ),
-                             'webform_num'      => array( 'type' => 'seq',     'req' => false, 'val' => '0' ),
-                             'fopt'             => array( 'type' => 'v_fopts', 'req' => false, 'val' => '' ),
-                             'uploaddays'       => array( 'type' => 'seq',     'req' => false, 'val' => '0' ),
+                             'ewzmode'          => array( 'type' => 'limited',   'req' => true,  'val' => array( 'list', 'spread', 'download', 'images' ) ),
+                             'ewznonce'         => array( 'type' => 'anonce',    'req' => true,  'val' => '' ),
+                             '_wp_http_referer' => array( 'type' => 'to_string', 'req' => true,  'val' => '' ),
+                             'page'             => array( 'type' => 'fixed',     'req' => true,  'val' => 'entrywizlist' ),
+                             'webform_id'       => array( 'type' => 'to_seq',    'req' => true,  'val' => '' ),
+                             'webform_num'      => array( 'type' => 'to_seq',    'req' => false, 'val' => '0' ),
+                             'fopt'             => array( 'type' => 'v_fopts',   'req' => false, 'val' => '' ),
+                             'uploaddays'       => array( 'type' => 'to_seq',    'req' => false, 'val' => '0' ),
                              );
         $this->validate();
     }

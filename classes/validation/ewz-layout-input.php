@@ -21,15 +21,15 @@ class Ewz_Layout_Input extends Ewz_Input {
         $this->rules = array(
             'fields'        => array( 'type' => 'v_fields',       'req' => true,  'val' => '' ),
             'forder'        => array( 'type' => 'v_forder',       'req' => true,  'val' => '' ),
-            'layout_id'     => array( 'type' => 'seq',            'req' => false, 'val' => '' ),
-            'layout_name'   => array( 'type' => 'string',         'req' => true,  'val' => '' ),
-            'max_num_items' => array( 'type' => 'seq',            'req' => true,  'val' => '' ),
-            'override'      => array( 'type' => 'bool',           'req' => false, 'val' => '' ),
+            'layout_id'     => array( 'type' => 'to_seq',         'req' => false, 'val' => '' ),
+            'layout_name'   => array( 'type' => 'to_string',      'req' => true,  'val' => '' ),
+            'max_num_items' => array( 'type' => 'to_seq',         'req' => true,  'val' => '' ),
+            'override'      => array( 'type' => 'to_bool',        'req' => false, 'val' => '' ),
             'ewzmode'       => array( 'type' => 'fixed',          'req' => true,  'val' => 'layout' ),
             'ewznonce'      => array( 'type' => 'anonce',         'req' => true,  'val' => '' ),
             'restrictions'  => array( 'type' => 'v_restrictions', 'req' => false, 'val' => $form_data['fields'] ),
             'action'        => array( 'type' => 'fixed',          'req' => false, 'val' => 'ewz_layout_changes' ),
-            '_wp_http_referer' => array( 'type' => 'string',      'req' => false, 'val' => '' ),
+            '_wp_http_referer' => array( 'type' => 'to_string',   'req' => false, 'val' => '' ),
             'extra_cols'    => array( 'type' => 'v_extra_cols',   'req' => false, 'val' => $xcols ),
         );
 
@@ -115,7 +115,7 @@ class Ewz_Layout_Input extends Ewz_Input {
             foreach ( $restr as $key => $value ) {
                 if ( $key == 'msg' ) {
                     if ( $value ) {
-                        if ( !self::string( $restr[$key], '' ) ) {      // also html_entity_decodes the string
+                        if ( !self::to_string( $restr[$key], '' ) ) {      // also html_entity_decodes the string
                             throw new EWZ_Exception( 'Invalid message for restriction' );
                         }
                     } else {
@@ -126,7 +126,11 @@ class Ewz_Layout_Input extends Ewz_Input {
                     $okval = in_array( "$value", array( '~*~', '~-~', '~+~' ) ) ? 1 : 0;
                     foreach ( $arg as $field_id => $field ) {
                         if ( $key == $field_id ) {
-                            $okkey = 1;
+                            if( $field['field_ident'] == 'followupQ' ){
+                                throw new EWZ_Exception( "Restrictions are not allowed on 'followup' fields");
+                            } else {
+                                $okkey = 1;
+                            }
                             if ( !$okval && $field['field_type'] == 'opt' ) {
                                 foreach ( $field['fdata']['options'] as $options ) {
                                     if ( $value == $options['value'] ) {
@@ -137,7 +141,7 @@ class Ewz_Layout_Input extends Ewz_Input {
                         }
                     }
                     if ( !$okval || !$okkey ) {
-                        throw new EWZ_Exception( "Invalid value for restriction: '$key', '$value'" );
+                        throw new EWZ_Exception( "Invalid value for restriction on field '" . $field['field_header'] . "'" );
                     }
                 }
             }

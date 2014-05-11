@@ -75,6 +75,8 @@ function do_setup(ewzG) {
     if (ewzG.errmsg) {
         alert(ewzG.errmsg.replace(/;;.*?$/gm,'').replace(/~/g,"\n"));
     }
+
+   // check_table_width(ewzG.webform_id);
 }
 
 
@@ -83,11 +85,13 @@ function do_changed( jitem, webform_id ) {
     'use strict';
     jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
     var jrow = jitem.closest('tr');
-    var jbody = jrow.closest('tbody');
+    var jtable = jrow.closest('table');
+    var jhead = jtable.find('thead');
+    var jbody = jtable.find('tbody');
     // header row
-    if( jbody.find('th[class="btn"]').length === 0  ){
-        jbody.children().has('th').append('<th class="btn"></th>');
-        jbody.children().has('td').append( '<td class="btn"></td>' );
+    if( jhead.find('th[class="btn"]').length === 0  ){
+        jhead.children().has('th').append('<th class="btn"></th>');
+        jbody.children().has('td').append('<td class="btn"></td>' );
     }
 
     // changed row
@@ -389,12 +393,23 @@ function show_modify(button, webform_id) {
     jQuery("#ewz_fsubmit_" + webform_id).prop({
         disabled: true
     });
-    var tablew = jQuery('#scrollablediv_' + webform_id).find('table[class="ewz_padded ewz_upload_table"]').outerWidth();
-    var scrollw = jQuery('#scrollablediv_' + webform_id).innerWidth();
-    if ( scrollw <= tablew ){
-        jQuery('#ewz_modify_' + webform_id).prepend("<i>The available space is too narrow to display all of this form. You should see <b>a scrollbar just above the submit button.</i></b>");
-    }
+    check_table_width(webform_id);
     
+}
+
+function check_table_width(webform_id){
+    var tablew = jQuery('#scrollablediv_' + webform_id).find('table[class="ewz_upload_table ewz_padded"]').outerWidth();
+    var scrollw = jQuery('#scrollablediv_' + webform_id).innerWidth();
+    var jmod = jQuery('#ewz_modify_' + webform_id);
+    if ( parseInt( scrollw ) <= parseInt( tablew ) ){
+
+        if( jmod.text().indexOf("too narrow") < 0 ){
+            var did = '<i>The available space is too narrow to display all of this form. You should see <b>a scrollbar just above the submit button.</b></i>' ;
+            jmod.prepend(did);
+        }
+    } else {
+         jQuery('#ewz_warn_' + webform_id).text('');
+    }
 }
 
 
@@ -707,7 +722,7 @@ function startUploading(webform_id) {
         if (event.target.responseText === '1') {
             document.location.reload(true);
         } else {
-            alert("Upload may not have succeeded: " + event.target.responseText);
+            alert("Upload may not have succeeded:\n\n " + event.target.responseText + "\n\nRefresh the page to see the current status.");
             document.location.reload(true);  // needed to make sure blank lines not disabled
         }
         clearInterval(ewzG.timer);

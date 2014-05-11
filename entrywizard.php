@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.1.0
+  Version: 1.2.0
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -37,6 +37,7 @@ define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
  * INCLUDES
  */
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-setup.php' );
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php' );
 
 if ( is_admin() ) {
     require_once( EWZ_PLUGIN_DIR . '/includes/ewz-admin.php' );
@@ -58,12 +59,17 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
 /**
  * ACTIONS
  */
-add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
 // in the admin area we add another function after this, so make sure we know its priority
 add_action( 'init', 'ewz_set_dev_env', 1 );
+
+add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
+
 add_action( 'plugins_loaded', 'ewz_init_globals', 10 );
 
 add_action( 'admin_init', 'ewz_check_for_db_updates' );
+        
+// Needed for cron job to auto-close webform
+add_action( 'init', 'Ewz_Webform::schedule_close' );
 
 
 /*
@@ -107,6 +113,11 @@ function ewz_check_for_db_updates(){
             Ewz_Setup::activate_or_install_ewz();
             Ewz_Webform::set_num_items();
         }
+        // 1.2.0 added append to fields table
+        if ( version_compare( $ewz_data_version, '1.2.0', '<' ) ){
+            error_log("EWZ: updating $ewz_data_version to 1.2.0");
+            Ewz_Setup::activate_or_install_ewz();
+        }
         
         update_option( 'ewz_data_version', $this_version );
     }
@@ -133,8 +144,8 @@ function ewz_add_stylesheet() {
 
 function ewz_set_dev_env(){
     if( is_file( plugin_dir_path( __FILE__ ). "DEVE_ENV" )   // only true in development environment
-        && !( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] ) )
-        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] )
+        && !( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
+        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] ) 
       ){   
         /*
          * ASSERT OPTIONS
@@ -152,10 +163,11 @@ function ewz_set_dev_env(){
         define( 'CLEANUP_ON_DEACTIVATE', true );
         $is_admin = is_admin() ? 'ADMIN' : '';
         error_log("EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
-                   . 'GET:   ' . print_r( $_GET, true )
+                . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
+                . 'GET:   ' . print_r( $_GET, true )
                 . 'POST:  ' . print_r( $_POST, true )
                 . 'FILES: ' . print_r( $_FILES, true )
-                . 'URI:' . $_SERVER['REQUEST_URI']
+
             );
     } else {
         define( 'EWZ_DBG', false );

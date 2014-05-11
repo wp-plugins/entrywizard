@@ -95,6 +95,7 @@ class Ewz_Setup
                                               required tinyint(1) NOT NULL,
                                               pg_column smallint(3) NOT NULL,
                                               ss_column smallint(3) NOT NULL,
+                                              append tinyint(1) NOT NULL DEFAULT 0,
                                               fdata longtext NOT NULL
                              );";
 
@@ -232,6 +233,7 @@ class Ewz_Setup
                              'required' => 1,
                              'pg_column' => 0,
                              'ss_column' => 3,
+                             'append' => 0,
                              'fdata' => array(
                                               'options' => array(
                                                                  array( 'value' => 'P',
@@ -257,6 +259,7 @@ class Ewz_Setup
                             'required' => 0,
                             'pg_column' => 1,
                             'ss_column' => 4,
+                            'append' => 1,
                             'fdata' => array('options' => array(array('value' => 'A',
                                                                       'label' => 'Assigned Topic',
                                                                       'maxnum' => 2,
@@ -276,6 +279,7 @@ class Ewz_Setup
                               'required' => 1,
                               'pg_column' => 2,
                               'ss_column' => 5,
+                              'append' => 0,
                               'fdata' => array(
                                                'fieldwidth' => 20,
                                                'maxstringchars' => 50,
@@ -290,6 +294,7 @@ class Ewz_Setup
                             'required' => 0,
                             'pg_column' => 3,
                             'ss_column' => 0,
+                            'append' => 0,
                             'fdata' => array(
                                              'max_img_w' => 1280,
                                              'ss_col_w'  => 14,
@@ -328,6 +333,7 @@ class Ewz_Setup
                                               'required' => $type_field1['required'],
                                               'pg_column' => $type_field1['pg_column'],
                                               'ss_column' => $type_field1['ss_column'],
+                                              'append' => $type_field1['append'],
                                               'fdata' => serialize( $type_field1['fdata'] )
                                               ) );
         $field_id1 = $wpdb->insert_id;
@@ -341,6 +347,7 @@ class Ewz_Setup
                                                'required' => $cat_field1['required'],
                                                'pg_column' => $cat_field1['pg_column'],
                                                'ss_column' => $cat_field1['ss_column'],
+                                               'append' => $cat_field1['append'],
                                                'fdata' => serialize( $cat_field1['fdata'] )
                                                ) );
         $field_id2 = $wpdb->insert_id;
@@ -354,6 +361,7 @@ class Ewz_Setup
                                               'required' => $title_field1['required'],
                                               'pg_column' => $title_field1['pg_column'],
                                               'ss_column' => $title_field1['ss_column'],
+                                              'append' => $title_field1['append'],
                                               'fdata' => serialize( $title_field1['fdata'] )
                                               ) );
         $field_id3 = $wpdb->insert_id;
@@ -368,6 +376,7 @@ class Ewz_Setup
                                               'required' => $img_field1['required'],
                                               'pg_column' => $img_field1['pg_column'],
                                               'ss_column' => $img_field1['ss_column'],
+                                              'append' => $img_field1['append'],
                                               'fdata' => serialize( $img_field1['fdata'] )
                                               ) );
         $field_id4 = $wpdb->insert_id;
@@ -420,6 +429,7 @@ class Ewz_Setup
                             'required'     => 1,
                             'pg_column'    => 0,
                             'ss_column'    => 5,
+                            'append'       => 0,
                             'fdata'        => array( 'options' => array( array('value' => 'N',
                                                                                'label' => 'Nature',
                                                                                'maxnum' => 2,
@@ -442,6 +452,7 @@ class Ewz_Setup
                             'required'     => 0,
                             'pg_column'    => 1,
                             'ss_column'    => 4,
+                            'append'       => 0,
                             'fdata'        => array( 'chkmax' => 2 ),
                            );
                                                                                
@@ -452,6 +463,7 @@ class Ewz_Setup
                               'required' => 0,
                               'pg_column' => 2,
                               'ss_column' => 3,
+                              'append'     => 0,
                               'fdata' => array(
                                                'fieldwidth' => 20,
                                                'maxstringchars' => 50,
@@ -466,6 +478,7 @@ class Ewz_Setup
                             'required'     => 0,
                             'pg_column'    => 3,
                             'ss_column'    => 2,
+                            'append'       => 0,
                             'fdata'        => array( ),
                            );
         $orig_field2 = array(
@@ -475,6 +488,7 @@ class Ewz_Setup
                              'required' => 0,
                              'pg_column' => 4,
                              'ss_column' => 1,
+                             'append'       => 0,
                              'fdata' => array(
                                               'max_img_w' => 1280,
                                               'ss_col_w'  => -1,
@@ -497,6 +511,7 @@ class Ewz_Setup
                               'required' => 1,
                               'pg_column' => 5,
                               'ss_column' => 0,
+                              'append'       => 0,
                               'fdata' => array(
                                                'max_img_w' => 1280,
                                                'ss_col_w'  => 14,
@@ -532,6 +547,7 @@ class Ewz_Setup
                                                'required' => $div_field2['required'],
                                                'pg_column' => $div_field2['pg_column'],
                                                'ss_column' => $div_field2['ss_column'],
+                                               'append' => $div_field2['append'],
                                                'fdata' => serialize( $div_field2['fdata'] )
                                                ) );
         $field_id0 = $wpdb->insert_id;
@@ -545,6 +561,7 @@ class Ewz_Setup
                                                'required' => $cb_field2['required'],
                                                'pg_column' => $cb_field2['pg_column'],
                                                'ss_column' => $cb_field2['ss_column'],
+                                               'append' => $cb_field2['append'],
                                                'fdata' => serialize( $cb_field2['fdata'] )
                                                ) );
         $field_id1 = $wpdb->insert_id;
@@ -559,6 +576,7 @@ class Ewz_Setup
                                               'required' => $title_field2['required'],
                                               'pg_column' => $title_field2['pg_column'],
                                               'ss_column' => $title_field2['ss_column'],
+                                               'append' => $title_field2['append'],
                                               'fdata' => serialize( $title_field2['fdata'] )
                                               ) );
         $field_id2 = $wpdb->insert_id;
@@ -572,6 +590,7 @@ class Ewz_Setup
                                               'required' => $rad_field2['required'],
                                               'pg_column' => $rad_field2['pg_column'],
                                               'ss_column' => $rad_field2['ss_column'],
+                                               'append' => $rad_field2['append'],
                                               'fdata' => serialize( $rad_field2['fdata'] )
                                               ) );
         $field_id3 = $wpdb->insert_id;
@@ -586,6 +605,7 @@ class Ewz_Setup
                                               'required' => $orig_field2['required'],
                                               'pg_column' => $orig_field2['pg_column'],
                                               'ss_column' => $orig_field2['ss_column'],
+                                               'append' => $orig_field2['append'],
                                               'fdata' => serialize( $orig_field2['fdata'] )
                                               ) );
 
@@ -600,6 +620,7 @@ class Ewz_Setup
                                               'required' => $final_field2['required'],
                                               'pg_column' => $final_field2['pg_column'],
                                               'ss_column' => $final_field2['ss_column'],
+                                               'append' => $final_field2['append'],
                                               'fdata' => serialize( $final_field2['fdata'] )
                                               ) );
 

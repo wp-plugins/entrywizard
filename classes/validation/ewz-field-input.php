@@ -9,17 +9,18 @@ require_once( EWZ_PLUGIN_DIR . "classes/validation/ewz-input.php");
 class Ewz_Field_Input extends Ewz_Input
 {
 
-    function __construct( $form_data ) {
+    function __construct( $form_data ) { 
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $this->rules = array(
-                             'field_id'       => array( 'type' => 'seq',      'req' => false, 'val' => '' ),
-                             'field_header'   => array( 'type' => 'string',   'req' => true,  'val' => '' ),
-                             'field_type'     => array( 'type' => 'limited',  'req' => true,  'val' => array( 'img', 'str', 'opt', 'rad', 'chk' ) ),
-                             'field_ident'    => array( 'type' => 'ident',    'req' => true,  'val' => '' ),
-                             'fdata'          => array( 'type' => 'v_fdata',  'req' => true,  'val' => '' ),
-                             'ss_column'      => array( 'type' => 'int1',     'req' => false, 'val' => '' ),
-                             'required'       => array( 'type' => 'bool',     'req' => false, 'val' => '' ),
+                             'field_id'       => array( 'type' => 'to_seq',      'req' => false, 'val' => '' ),
+                             'field_header'   => array( 'type' => 'to_string',   'req' => true,  'val' => '' ),
+                             'field_type'     => array( 'type' => 'limited',     'req' => true,  'val' => array( 'img', 'str', 'opt', 'rad', 'chk' ) ),
+                             'field_ident'    => array( 'type' => 'ident',       'req' => true,  'val' => '' ),
+                             'fdata'          => array( 'type' => 'v_fdata',     'req' => true,  'val' => '' ),
+                             'ss_column'      => array( 'type' => 'to_int1',     'req' => false, 'val' => '' ),
+                             'required'       => array( 'type' => 'to_bool',     'req' => false, 'val' => '' ),
+                             'append'         => array( 'type' => 'to_bool',     'req' => false, 'val' => '' ),
                              );
         $this->validate();
     }
@@ -29,6 +30,9 @@ class Ewz_Field_Input extends Ewz_Input
 
         if ( !array_key_exists( 'required', $this->input_data ) ) {
             $this->input_data['required'] = false;
+        }
+        if ( !array_key_exists( 'append', $this->input_data ) ) {
+            $this->input_data['append'] = false;
         }
         if( 'img' ==  $this->input_data['field_type'] ){
             if( !array_key_exists( 'canrotate', $this->input_data['fdata'] ) || !$this->input_data['fdata']['canrotate'] ){

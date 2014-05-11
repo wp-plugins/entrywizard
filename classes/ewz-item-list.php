@@ -46,8 +46,8 @@ class Ewz_Item_List extends WP_List_Table
      * For more detailed insight into how columns are handled, take a look at 
      * WP_List_Table::single_row_columns()
      * 
-     * @param array $item A singular item (one full row's worth of data)
-     * @param array $column_name The name/slug of the column to be processed
+     * @param array $row A singular item (one full row's worth of data)
+     * @param array $col_name The name/slug of the column to be processed
      * @return string Text or HTML to be placed inside the column <td>
      **************************************************************************/
     function column_default( $row, $col_name )
