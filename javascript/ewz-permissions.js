@@ -21,7 +21,7 @@ function ewz_show_perms(){
     ewzG = ewzG1.gvar;
     if( ewzG.ewz_perms ){
         for(i = 0; i < ewzG.ewz_perms.length; ++i){
-            if(ewzG.ewz_perms[i].user_id === userid){
+            if(ewzG.ewz_perms[i].user_id == userid){
                 for(j = 0; j < ewzG.ewz_perms[i].meta_value.length; ++j){
                     val = ewzG.ewz_perms[i].meta_value[j];
                     str = '#' + ewzG.ewz_perms[i].meta_key +' option[value=' + val + ']';
@@ -46,15 +46,18 @@ function ewz_show_perms(){
 /* validation and removal of "none" options */
 function ewz_check_perm_input(the_form){
     'use strict';
+    jQuery('#submit').prop("disabled", true);
     try{
         var user = jQuery("#ewz_user_perm option:selected").val();
         if( !user || '0' === user ){
+            jQuery('#submit').prop("disabled", false);
             alert("Please select a user for whom the permissions are to apply");
             return false;
         }
         jQuery('select[name$="[]"] option[value="0"]').remove();
         return true;
     } catch(except) {
+        jQuery('#submit').prop("disabled", false);
         alert("Sorry, there was an unexpected error: " + except.message);
         return false;
     }

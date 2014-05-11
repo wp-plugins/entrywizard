@@ -13,12 +13,12 @@ class Ewz_Show_List_Input extends Ewz_Input
         $this->rules 
             = array(
 
-                    '_wp_http_referer' => array( 'type' => 'string',     'req' => false, 'val' => '' ),
-                    '_wpnonce'         => array( 'type' => 'string',     'req' => false, 'val' => '' ),  // for WP_List_Table
+                    '_wp_http_referer' => array( 'type' => 'to_string',  'req' => false, 'val' => '' ),
+                    '_wpnonce'         => array( 'type' => 'to_string',  'req' => false, 'val' => '' ),  // for WP_List_Table
                     'ewzmode'          => array( 'type' => 'fixed',      'req' => true,  'val' => 'list' ),
                     'ewznonce'         => array( 'type' => 'anonce',     'req' => true,  'val' => '' ),
                     'page'             => array( 'type' => 'fixed',      'req' => true,  'val' => 'entrywizlist' ), 
-                    'webform_id'       => array( 'type' => 'seq',        'req' => true,  'val' => '' ),
+                    'webform_id'       => array( 'type' => 'to_seq',     'req' => true,  'val' => '' ),
                     'fopt'             => array( 'type' => 'v_fopts',    'req' => false, 'val' => ''  ),
                     );
 
