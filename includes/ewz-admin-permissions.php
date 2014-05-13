@@ -1,6 +1,7 @@
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-permission.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-permission-input.php' );
 

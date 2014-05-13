@@ -15,7 +15,7 @@ class Ewz_Upload_Input extends Ewz_Input
 
         $this->layout = $in_layout;
 
-        // Set the rdata value for the image upload fields
+        // Set the rdata value for the image upload fields ( should have been done by js anyway )
         // Needs to be done before validation
         if ( $in_files ) {
             foreach ( $in_files['rdata']['name'] as $row => $uploaded_fileinfo ) {
@@ -27,39 +27,55 @@ class Ewz_Upload_Input extends Ewz_Input
             }
         }
         $this->rules = array(
-                             'layout_id'        => array( 'type' => 'seq',    'req' =>  true,  'val' => '' ),
-                             'webform_id'       => array( 'type' => 'seq',    'req' =>  true,  'val' => '' ),
-                             'ewzuploadnonce'   => array( 'type' => 'unonce', 'req' =>  true,  'val' => '' ),
-                             '_wp_http_referer' => array( 'type' => 'string', 'req' =>  false, 'val' => '' ),
-                             'rdata'            => array( 'type' => 'v_rdata', 'req' => true,  'val' => '' ),
-                             'item_id'          => array( 'type' => 'v_items', 'req' => false, 'val' => '' ),
-                             'identifier'       => array( 'type' => 'ident',   'req' => true,  'val' => '' ),
+                             'layout_id'        => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
+                             'webform_id'       => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
+                             'ewzuploadnonce'   => array( 'type' => 'unonce',    'req' =>  true,  'val' => '' ),
+                             '_wp_http_referer' => array( 'type' => 'to_string', 'req' =>  false, 'val' => '' ),
+                             'rdata'            => array( 'type' => 'v_rdata',   'req' => true,  'val' => '' ),
+                             'item_id'          => array( 'type' => 'v_items',   'req' => false, 'val' => '' ),
+                             'identifier'       => array( 'type' => 'ident',     'req' => true,  'val' => '' ),
                              );
         $this->validate();
     }
 
 
-    public static function is_valid_ident( $identifier ){
+    public function is_valid_ident( $identifier ){
         assert( is_string(  $identifier ) );
-        return $this->ident( $identifier );
+        return self::ident( $identifier );
     }
 
   //****** All v_.... functions must return a boolean **************/
 
+/**
+ * Validate "item_id" input 
+ * 
+ * @param   $value  input value, may be changed by function
+ * @param   $arg    '' -- unused here, needed for generic code in ewz-input.php
+ * @return  boolean  
+ */
   protected function v_items( &$value, $arg ){
       assert( is_array( $value ) );
       assert( $arg == '' );
       foreach ( array_keys( $value ) as $id ){
-          return $this->seq( $value[$id], $arg  );      // seq potentially changes first arg
+          return self::to_seq( $value[$id], $arg  );      // seq potentially changes first arg
       }
   }
 
+/**
+ * Validate "rdata" input 
+ * 
+ * @param   $value  input value, may be changed by function
+ * @param   $arg    '' -- unused here, needed for generic code in ewz-input.php
+ * @return  true  ( exception raised if not valid )
+ */
   protected function v_rdata( &$value, $arg ){
         assert( is_array( $value ) );
         assert( $arg == '' );
         $fields = $this->layout->fields;
         $optcounts = array();
+        $chkcount = array();
         foreach ( $value as $rownum => $input_row ) {
+            $rownum1 = $rownum + 1;
             foreach ( $this->layout->restrictions as $restr ) {
                 $row_matches_restr[$restr['msg']] = true;   // may set to false during check below
             }
@@ -68,7 +84,7 @@ class Ewz_Upload_Input extends Ewz_Input
                     throw new EWZ_Exception( "Row $rownum: invalid data"  );
                 }
                 if ( !$val && $fields[$field_id]->required ) {
-                    throw new EWZ_Exception( "Row $rownum: " . $fields[$field_id]->field_header . ' is required.' );
+                    throw new EWZ_Exception(  $fields[$field_id]->field_header . " is required ( row $rownum1 )." );
                 }
 
                 switch ( $fields[$field_id]->field_type ) {
@@ -86,6 +102,27 @@ class Ewz_Upload_Input extends Ewz_Input
                 case 'img':
                         self::validate_img_data( $val );
                         break;
+                case 'rad':
+                    if( !isset( $chkcount[$field_id] ) ){
+                        $chkcount[$field_id] = 0;
+                    }
+                    $value[$rownum][$field_id] = self::validate_rad_data( $val, $chkcount[$field_id] );  
+                    if( $value[$rownum][$field_id] ){
+                        ++$chkcount[$field_id];
+                    }
+                    break;
+                case 'chk':
+                    if( !isset( $chkcount[$field_id] ) ){
+                        $chkcount[$field_id] = 0;
+                    }
+                    $value[$rownum][$field_id] = self::validate_chk_data( $fields[$field_id], 
+                                                                          $val,                     
+                                                                          $chkcount[$field_id]
+                                                                          );
+                    if( $value[$rownum][$field_id] ){
+                        ++$chkcount[$field_id];
+                    }
+                    break;
                 default:
                     throw new EWZ_Exception( "Invalid field type " . $fields[$field_id]->field_type );
                 }
@@ -113,7 +150,7 @@ class Ewz_Upload_Input extends Ewz_Input
      *
      * @param   $field_id
      * @param   $restr     the restriction
-     * @param     $fval    the field value uploaded
+     * @param   $fval    the field value uploaded
      * @return  Boolean
      */
     private static function field_matches_restr( $field_id, $restr, $fval )
@@ -121,7 +158,6 @@ class Ewz_Upload_Input extends Ewz_Input
         assert( Ewz_Base::is_pos_int( $field_id ) );
         assert( is_array( $restr ) );
         assert( is_string( $fval ) );
-
         $ismatch = true;
         if ( array_key_exists( $field_id, $restr ) ) {
             $rval = $restr[$field_id];
@@ -173,7 +209,7 @@ class Ewz_Upload_Input extends Ewz_Input
     {
         assert( is_string( $val ) );
         assert( is_array( $fdata ) );
-        if( !self::string( $val, '' ) ){               // also encodes the string
+        if( !self::to_string( $val, '' ) ){               // also encodes the string
             throw new EWZ_Exception( "Invalid format for text input" );
         }
         $val = str_replace('\\', '', $val );  // messes up stripslashes and serialize. Its hard
@@ -226,4 +262,51 @@ class Ewz_Upload_Input extends Ewz_Input
         throw new EWZ_Exception( "Invalid $field->field_header value $val");
     }
 
+    /**
+     * Validate checkbox input
+     * Check input is boolean and check the counts
+     *
+     * @param   array   $field  input field data
+     * @param   string  $val    input string convertible to boolean
+     * @param   string  $count  input integer current count of checks for this checkbox
+     * @return  boolean
+     */
+    private static function validate_chk_data( $field, $val, $count )
+    {
+        assert( is_object( $field ) );
+        assert( is_string( $val ) );
+        assert( Ewz_Base::is_nn_int( $count ) );
+        if( !self::to_bool( $val, '' ) ){                  // changes $val to boolean
+            throw new EWZ_Exception( "Invalid value <$val> for checkbox input" );
+        }   
+        if ( isset( $field->fdata['chkmax'] ) && $field->fdata['chkmax'] && $val ) {
+            if ( intval($field->fdata['chkmax'] ) < $count ) {
+                throw new EWZ_Exception( "Too many items checked for $field->field_header"  );
+            }
+        }     
+        return $val;
+    }
+
+
+    /**
+     * Validate radiobutton input
+     *
+     * @param   string  $val    input string convertible to boolean
+     * @param   int     $count  current count of items with this button checked
+     * @return  boolean
+     */
+    private static function validate_rad_data(  $val, $count )
+    {
+        assert( is_string( $val ) );
+        assert( Ewz_Base::is_nn_int( $count ) );
+ 
+        if( !self::to_bool( $val, '' ) ){
+            throw new EWZ_Exception( "Invalid value <$val> for radiobutton input" );
+        }
+        if( 1 < $count ){
+            throw new EWZ_Exception( "More than one radiobutton checked" );
+        } 
+        return $val;
+    }
+ 
 }

@@ -15,20 +15,20 @@ class Ewz_Webform_Data_Input extends Ewz_Input
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $this->rules = array(
-                             'ewzmode'          => array( 'type' => 'limited', 'req' => true,  'val' => array( 'list', 'spread', 'download', 'images' ) ),
-                             'ewznonce'         => array( 'type' => 'anonce',  'req' => true,  'val' => '' ),
-                             '_wp_http_referer' => array( 'type' => 'string',  'req' => true,  'val' => '' ),
-                             'page'             => array( 'type' => 'fixed',   'req' => true,  'val' => 'entrywizlist' ),
-                             'webform_id'       => array( 'type' => 'seq',     'req' => true,  'val' => '' ),
-                             'webform_num'      => array( 'type' => 'seq',     'req' => false, 'val' => '0' ),
-                             'fopt'             => array( 'type' => 'v_fopts', 'req' => false, 'val' => '' ),
-                             'uploaddays'       => array( 'type' => 'seq',     'req' => false, 'val' => '0' ),
+                             'ewzmode'          => array( 'type' => 'limited',   'req' => true,  'val' => array( 'list', 'spread', 'download', 'images' ) ),
+                             'ewznonce'         => array( 'type' => 'anonce',    'req' => true,  'val' => '' ),
+                             '_wp_http_referer' => array( 'type' => 'to_string', 'req' => true,  'val' => '' ),
+                             'page'             => array( 'type' => 'fixed',     'req' => true,  'val' => 'entrywizlist' ),
+                             'webform_id'       => array( 'type' => 'to_seq',    'req' => true,  'val' => '' ),
+                             'webform_num'      => array( 'type' => 'to_seq',    'req' => false, 'val' => '0' ),
+                             'fopt'             => array( 'type' => 'v_fopts',   'req' => false, 'val' => '' ),
+                             'uploaddays'       => array( 'type' => 'to_seq',    'req' => false, 'val' => '0' ),
                              );
         $this->validate();
     }
 
 
-     function v_fopts( $value, $arg ){
+     static function v_fopts( $value, $arg ){
          assert( is_array( $value ) || empty( $value ) );
          assert( isset( $arg ) );
          if( !is_array( $value ) ){
@@ -39,11 +39,11 @@ class Ewz_Webform_Data_Input extends Ewz_Input
          }
          foreach( $value as $key => $val ){
              if( !preg_match( self::REGEX_SEQ, $key )  ){
-                 throw new EWZ_Exception( "Invalid key '$key' for field option" );
+                 throw new EWZ_Exception( "Invalid key for field option: '$key' " );
              }  
              if ( !( is_string( $val ) &&
                      preg_match( '/^[_a-zA-Z0-9\-\~\+\*\-]*$/', $val ) ) ){
-                 throw new EWZ_Exception( "Invalid value '$val' for field option");
+                 throw new EWZ_Exception( "Invalid value for field option: '$val' ");
              }
          }  
          return true;
