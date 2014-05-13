@@ -1,4 +1,3 @@
-
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 

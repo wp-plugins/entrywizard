@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 3.9.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,6 +112,8 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 
 == Changelog ==
+= 1.2.1 =
+* Removed a stray newline that broke the update process on some servers
 
 = 1.2.0 =
 * Allow for compressing several columns into one in the webform view 
