@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.1
+  Version: 1.2.2
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -31,7 +31,7 @@ defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_REQUIRED_WP_VERSION', '3.5' );
-define( 'EWZ_REQUIRED_PHP_VERSION', '5.2.1' );
+define( 'EWZ_REQUIRED_PHP_VERSION', '5.3.0' );
 
 /*
  * INCLUDES
@@ -71,11 +71,13 @@ add_action( 'admin_init', 'ewz_check_for_db_updates' );
 // Needed for cron job to auto-close webform
 add_action( 'init', 'Ewz_Webform::schedule_close' );
 
+// delete items when a user is deleted
+add_action( 'deleted_user', 'Ewz_Item::delete_user_items' );
 
 /*
  * SHORTCODE
  */
-if ( !is_admin() ) { 
+if ( ! is_admin() ) { 
     // adding this for all admin pages triggers warnings for some themes and plugins
     // just add it specifically for the ajax calls when they are run in ewz-admin.php
     add_shortcode( 'ewz_show_webform', 'ewz_show_webform' );
@@ -84,38 +86,39 @@ if ( !is_admin() ) {
 
 
 function ewz_check_for_db_updates(){
-    $data = get_plugin_data(__FILE__, false, false );
-    $this_version = $data['Version'];
-    $ewz_data_version = get_option('ewz_data_version', '0.9.1' );
-    if( version_compare( $ewz_data_version, $this_version,  '<' ) ){
+    $data             = get_plugin_data( __FILE__, false, false );
+    $this_version     = $data['Version'];
+    $ewz_data_version = get_option( 'ewz_data_version', '0.9.1' );
+
+    if ( version_compare( $ewz_data_version, $this_version,  '<' ) ){
         // 0.9.6 added new apply_prefix column to webforms table 
         // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
         if ( version_compare( $ewz_data_version, '0.9.6', '<' ) ){
-            error_log("EWZ: updating $ewz_data_version to 0.9.6");
+            error_log( "EWZ: updating $ewz_data_version to 0.9.6" );
             Ewz_Setup::activate_or_install_ewz();
-            delete_option('ewz_db_version');
+            delete_option( 'ewz_db_version' );
             Ewz_Field::change_min_area_to_dim();    
         }
         // 0.9.8 added attach_prefs to webform table
         if ( version_compare( $ewz_data_version, '0.9.8', '<' ) ){
-            error_log("EWZ: updating $ewz_data_version to 0.9.8");
+            error_log( "EWZ: updating $ewz_data_version to 0.9.8" );
             Ewz_Setup::activate_or_install_ewz();
         }
         // 1.0.0 added upload_date to item table
         if ( version_compare( $ewz_data_version, '1.0.0', '<' ) ){
-            error_log("EWZ: updating $ewz_data_version to 1.0.0");
+            error_log( "EWZ: updating $ewz_data_version to 1.0.0" );
             Ewz_Setup::activate_or_install_ewz();
             Ewz_Item::set_upload_date();
         }
         // 1.1.0 added num_items to webform table and override to layout table
         if ( version_compare( $ewz_data_version, '1.1.0', '<' ) ){
-            error_log("EWZ: updating $ewz_data_version to 1.1.0");
+            error_log( "EWZ: updating $ewz_data_version to 1.1.0" );
             Ewz_Setup::activate_or_install_ewz();
             Ewz_Webform::set_num_items();
         }
         // 1.2.0 added append to fields table
         if ( version_compare( $ewz_data_version, '1.2.0', '<' ) ){
-            error_log("EWZ: updating $ewz_data_version to 1.2.0");
+            error_log( "EWZ: updating $ewz_data_version to 1.2.0" );
             Ewz_Setup::activate_or_install_ewz();
         }
         
@@ -125,26 +128,28 @@ function ewz_check_for_db_updates(){
 
 
 function ewz_add_stylesheet() {
-    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__) );
+    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ) );
     wp_enqueue_style( 'ewz-style' );
 
-    wp_enqueue_script( 'ewz-upload',
-                        plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
-                       array('jquery', 'jquery-form'),
+    wp_enqueue_script(
+                       'ewz-upload',
+                       plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
+                       array( 'jquery', 'jquery-form' ),
                        false,
                        true      // in footer, so $ewzG has been defined
-                       );
-    wp_enqueue_script( 'ewz-followup',
-                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
-                       array('jquery', 'jquery-form'),
+                      );
+    wp_enqueue_script(
+                       'ewz-followup',
+                       plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
+                       array( 'jquery', 'jquery-form' ),
                        false,
                        true      // in footer, so $ewzG has been defined
-                       );
+                      );
  }
 
 function ewz_set_dev_env(){
-    if( is_file( plugin_dir_path( __FILE__ ). "DEVE_ENV" )   // only true in development environment
-        && !( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
+    if ( is_file( plugin_dir_path( __FILE__ ). 'DEVE_ENV' )   // only true in development environment
+        && ! ( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
         && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] ) 
       ){   
         /*
@@ -153,22 +158,21 @@ function ewz_set_dev_env(){
         assert_options( ASSERT_ACTIVE, true );
         assert_options( ASSERT_BAIL, false );
         assert_options( ASSERT_WARNING, false );
-        function ewz_assert_handler($file, $line, $code)
+        function ewz_assert_handler( $file, $line, $code )
         {
             // no assert
-            error_log("EWZ: Assertion Failed at $file: $line: $code");
+            error_log( "EWZ: Assertion Failed at $file: $line: $code" );
         }
-        assert_options(ASSERT_CALLBACK, 'ewz_assert_handler');
+        assert_options( ASSERT_CALLBACK, 'ewz_assert_handler' );
         define( 'EWZ_DBG', true );
         define( 'CLEANUP_ON_DEACTIVATE', true );
         $is_admin = is_admin() ? 'ADMIN' : '';
-        error_log("EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
-                . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
-                . 'GET:   ' . print_r( $_GET, true )
-                . 'POST:  ' . print_r( $_POST, true )
-                . 'FILES: ' . print_r( $_FILES, true )
-
-            );
+        error_log( "EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
+                   . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
+                   . 'GET:   ' . print_r( $_GET, true )
+                   . 'POST:  ' . print_r( $_POST, true )
+                   . 'FILES: ' . print_r( $_FILES, true )
+                  );
     } else {
         define( 'EWZ_DBG', false );
         assert_options( ASSERT_ACTIVE, false );
@@ -181,8 +185,8 @@ function ewz_init_globals(){
     global $wpdb;
 
     load_plugin_textdomain(
-                           'entrywiz', false,
-                           basename( dirname( __FILE__ ) ) . '/languages'
+                            'entrywiz', false,
+                            basename( dirname( __FILE__ ) ) . '/languages'
                            );
 
     define( 'EWZ_PREFIX', $wpdb->prefix );
@@ -208,15 +212,15 @@ function ewz_init_globals(){
 
 
     $maxnumitems = ini_get( 'max_file_uploads' );
-    if( !$maxnumitems ){
+    if ( ! $maxnumitems ){
         $maxnumitems = 50;
     }
     $maxfilesize = ini_get( 'upload_max_filesize' );
-    if( !$maxfilesize ){
+    if ( ! $maxfilesize ){
         $maxfilesize = '5M';
     }
     $postmaxsize = ini_get( 'post_max_size' );
-    if( !$postmaxsize ){
+    if ( ! $postmaxsize ){
         $postmaxsize = '100M';
     }
 
@@ -229,72 +233,72 @@ function ewz_init_globals(){
 }
 
 
-    /**
-     * Transform a string like 100G or 50K to megabytes
-     *
-     * Works for an integer followed by 'm', 'mb', 'g','gb', 'k', 'kb'
-     * or the same in upper case
-     *
-     * @param   $sizestring
-     * @return  integer
-     */
-    function ewz_to_mb( $sizestring )
-    {
-        assert( is_string( $sizestring ) );
-        assert( preg_match( '/^(\d+)[mMgGkK][bB]?\s*$/', $sizestring ) );
+/**
+ * Transform a string like 100G or 50K to megabytes
+ *
+ * Works for an integer followed by 'm', 'mb', 'g','gb', 'k', 'kb'
+ * or the same in upper case
+ *
+ * @param   $sizestring
+ * @return  integer
+ */
+function ewz_to_mb( $sizestring )
+{
+    assert( is_string( $sizestring ) );
+    assert( preg_match( '/^(\d+)[mMgGkK][bB]?\s*$/', $sizestring ) );
 
-        $val = strtolower( trim( $sizestring ) );
-        $mat = array();
-        preg_match( '/^(\d+)(\D+)/', $val, $mat );
-        assert( 3 == count( $mat ) );
-        $num = $mat[1];
-        $code = $mat[2];
+    $val = strtolower( trim( $sizestring ) );
+    $mat = array();
+    preg_match( '/^(\d+)(\D+)/', $val, $mat );
+    assert( 3 == count( $mat ) );
+    $num  = $mat[1];
+    $code = $mat[2];
 
-        if ( preg_match( '/mb?/', $code ) ) {
-            return ( int )$num;
-        }
-        if ( preg_match( '/gb?/', $code ) ) {
-            return ( int )($num * 1024);
-        }
-        if ( preg_match( '/kb?/', $code ) ) {
-            return ( int )($num / 1024);
-        }
-        return 0;
+    if ( preg_match( '/mb?/', $code ) ) {
+        return ( int )$num;
     }
-
-
-    /**
-     * Transform a string like 100G or 50K to bytes
-     *
-     * Works for an integer followed by 'm', 'mb', 'g','gb', 'k', 'kb'
-     * or the same in upper case
-     *
-     * @param   $sizestring
-     * @return  integer
-     */
-    function ewz_to_bytes( $sizestring )
-    {
-        assert( is_string( $sizestring ) );
-        assert( preg_match( '/^(\d+)[mMgGkK][bB]?\s*$/', $sizestring ) );
-
-        $val = strtolower( trim( $sizestring ) );
-        $mat = array();
-        preg_match( '/^(\d+)(\D+)/', $val, $mat );
-        assert( 3 == count( $mat ) );
-        $num = $mat[1];
-        $code = $mat[2];
-
-        if ( preg_match( '/mb?/', $code ) ) {
-            return $num * 1024;
-        }
-        if ( preg_match( '/gb?/', $code ) ) {
-            return $num * 1048576;
-        }
-        if ( preg_match( '/kb?/', $code ) ) {
-            return $num;
-        }
-        return 0;
+    if ( preg_match( '/gb?/', $code ) ) {
+        return ( int )($num * 1024);
     }
+    if ( preg_match( '/kb?/', $code ) ) {
+        return ( int )($num / 1024);
+    }
+    return 0;
+}
+
+
+/**
+ * Transform a string like 100G or 50K to bytes
+ *
+ * Works for an integer followed by 'm', 'mb', 'g','gb', 'k', 'kb'
+ * or the same in upper case
+ *
+ * @param   $sizestring
+ * @return  integer
+ */
+function ewz_to_bytes( $sizestring )
+{
+    assert( is_string( $sizestring ) );
+    assert( preg_match( '/^(\d+)[mMgGkK][bB]?\s*$/', $sizestring ) );
+
+    $val = strtolower( trim( $sizestring ) );
+    $mat = array();
+    preg_match( '/^(\d+)(\D+)/', $val, $mat );
+    assert( 3 == count( $mat ) );
+    $num  = $mat[1];
+    $code = $mat[2];
+
+    if ( preg_match( '/mb?/', $code ) ) {
+        return $num * 1024;
+    }
+    if ( preg_match( '/gb?/', $code ) ) {
+        return $num * 1048576;
+    }
+    if ( preg_match( '/kb?/', $code ) ) {
+        return $num;
+    }
+    return 0;
+}
 
 
 

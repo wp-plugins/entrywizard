@@ -3,6 +3,12 @@
 
 var ewzG;
 
+function ewz_set_user(){
+    userid = jQuery("#ewz_have_perm").val(),
+    jQuery("#ewz_user_perm").val(userid);
+    ewz_show_perms();
+}
+
 function ewz_show_perms(){
     'use strict';
     jQuery("#ewz_can_edit_layout").val([]);
@@ -16,7 +22,7 @@ function ewz_show_perms(){
     var i, j, val, str, opt,
         permcount = 0,
         userid = jQuery("#ewz_user_perm").val(),
-        pp = '<table class="ewz_centered">';
+        pp = '<table>';
 
     ewzG = ewzG1.gvar;
     if( ewzG.ewz_perms ){

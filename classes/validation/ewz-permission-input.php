@@ -17,6 +17,7 @@ class Ewz_Permission_Input extends Ewz_Input
                              'ewzmode'               => array( 'type' => 'fixed',  'req' => true,  'val' => 'permission' ),
                              '_wp_http_referer'      => array( 'type' => 'to_string', 'req' => false, 'val' => '' ),
                              'ewz_user_perm'         => array( 'type' => 'to_seq',   'req' => false, 'val' => '' ), 
+                             'ewz_have_perm'         => array( 'type' => 'to_seq',   'req' => false, 'val' => '' ), 
                              'ewz_can_edit_layout'   => array( 'type' => 'int1_arr',   'req' => false, 'val' =>  array(1, 500 )), 
                              'ewz_can_assign_layout' => array( 'type' => 'int1_arr',   'req' => false, 'val' =>  array(1, 500 )),  
                              'ewz_can_edit_webform'  => array( 'type' => 'int1_arr',   'req' => false, 'val' => array(1, 500 ) ), 

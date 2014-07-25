@@ -36,15 +36,15 @@ function ewz_process_uploaded_admin_data( $webform_id )
    //}
 
    if( $csvfile_data['error'] ){
-     throw new EWZ_Exception( 'Failed to upload .csv file of admin data' );
+     throw new EWZ_Exception( 'Failed to upload .csv file of item data' );
    }
 
    $file_tmp_name = $csvfile_data['tmp_name'];
    if ( !is_readable($file_tmp_name) ) {
-       throw new EWZ_Exception( 'Failed to read uploaded .csv file of admin data' );
+       throw new EWZ_Exception( 'Failed to read uploaded .csv file of item data' );
    }
    if ( false === ($fh = fopen($file_tmp_name, 'r')) ) {
-       throw new EWZ_Exception( 'Failed to open uploaded .csv file of admin data' );
+       throw new EWZ_Exception( 'Failed to open uploaded .csv file of item data' );
    }
 
    $f_h = fopen($file_tmp_name, "r");
@@ -73,11 +73,11 @@ function ewz_process_uploaded_admin_data( $webform_id )
        }
    }
    fclose( $f_h );
-   return $errs . "Admin data for $n items successfully saved";
+   return $errs . "Item data for $n items successfully saved";
 }
 
 /**
- * Store the per-item info in an uploaded csv file for a webform
+ * Store the per-image info in an uploaded csv file for a webform
  *
  * Checks to make sure item is attached to webform - otherwise, webform param is not
  * used, but seems a good idea to force a separate upload for each form.
@@ -102,15 +102,15 @@ function ewz_process_uploaded_csv( $webform_id )
    //}
 
    if( $csvfile_data['error'] ){
-     throw new EWZ_Exception( 'Failed to upload .csv file' );
+     throw new EWZ_Exception( 'Failed to upload .csv file of image data' );
    }
 
    $file_tmp_name = $csvfile_data['tmp_name'];
    if ( !is_readable($file_tmp_name) ) {
-       throw new EWZ_Exception( 'Failed to read uploaded .csv file' );
+       throw new EWZ_Exception( 'Failed to read uploaded .csv file of image data' );
    }
    if ( false === ($fh = fopen($file_tmp_name, 'r')) ) {
-       throw new EWZ_Exception( 'Failed to open uploaded .csv file' );
+       throw new EWZ_Exception( 'Failed to open uploaded .csv file of image data' );
    }
 
    $f_h = fopen($file_tmp_name, "r");
@@ -138,7 +138,7 @@ function ewz_process_uploaded_csv( $webform_id )
        }
    }
    fclose( $f_h );
-   return $errs . "Data for $n items successfully saved";
+   return $errs . "Image Data for $n items successfully saved";
 }
 
 /**************************** Main Webforms Function ********************************
@@ -371,11 +371,15 @@ function ewz_webforms_menu()
         <!-- HELP POPUP autoclose -->
         <div id="autoclose_help" class="wp-dialog" >
            <p>The webform may be set to close itself automatically after a specified date/time 
-             ( in the timezone specified by your site settings ).
+              ( in the timezone specified by your site settings ).
               After that time, users will only see the "Sorry, not open for upload" message. 
            </p>
-           <p>If error logging is turned on (in wp-config.php), the close action will be logged.  
-              The time shown in the log will be first time the site was accessed after the set closing time.
+           <p><b>Note: </b>This feature relies on wp-cron. If you have customized the frequency with which wp-cron is run,
+              please note that the webform will be closed <i>the first time wp-cron is run after your set closing time</i>. 
+           </p>
+           <p>If error logging is turned on (in wp-config.php), the close action will be logged.  The time shown in the log will be 
+              the first time wp-cron was run after the set closing time, which by default will be the first time the site was accessed 
+              after the set closing time.
            </p>
         </div>
 
@@ -435,10 +439,11 @@ function ewz_webforms_menu()
         <!-- HELP POPUP csv upload -->
         <div id="csv_help" class="wp-dialog" >
              <p>You may optionally upload a .csv file containing three extra items
-                 of data to be stored for each <b>image field</b>. For images you attach to a page,
+                 of data to be stored for each <b>image</b>.</p>
+             <p>For images you subsequently attach to a page,
                  these three items are used for the Title, Excerpt and Content of
-                 the image.  Otherwise, they may be used for any purpose, including display
-                 in a "followup" page. 
+                 the image in a standard Wordpress gallery.  Otherwise, they may be used for any purpose, 
+                 including display in a "followup" page.</p>
              <ul>
             <li>The file must be in plain text, "comma-delimited" format.<br>
                 The easiest way to generate the .csv file is to save a spreadsheet
@@ -453,16 +458,23 @@ function ewz_webforms_menu()
             <?php print allowed_tags(); print "&lt;br&gt;"; ?></li>
            </ul>
 
-           <p>For example, if your layout allows for two images per item, and you have assigned 
-           identifiers 'ident1' and 'ident5' to image columns 1 and 5,<br> the line:
-           <br><br><i>700,"ident1","&lt;b&gtTitle for image 1&lt;/b&gt","Excerpt for image 1","Image 1 Content","ident5","title
+           <p><b>Example 1</b>:  if your layout allows for one image per item, in column 3, and you have assigned 
+           the identifier "natureimg"  to column 5,<br> the line:
+           <br><br><i>700,"natureimg","&lt;b&gtAntelope&lt;/b&gt","John Doe: Antelope","Intermediate Runner Up"</i><br><br>
+               would assign a Title of "Antelope", an Excerpt of "John Doe: Antelope" and a Content value of "Intermediate Runner Up"
+               for the image of item 700. ( Note that "natureimg" would be the same for every item using that layout ).</p>
+
+           <p><b>Example 2</b>:  if your layout allows for two images per item, in columns 1 and 5, and you have assigned 
+           identifiers 'original' and 'final' to columns 1 and 5,<br> the line:
+           <br><br><i>700,"original","&lt;b&gtTitle for image 1&lt;/b&gt","Excerpt for image 1","Image 1 Content","final","title
                for column 5", "Excerpt #5","Content for image in column 5"</i><br><br>
                would create Title, Excerpt and Content values for the images in columns 1 and 5
                of item 700</p>
         </div>
         <div id="itmcsv_help" class="wp-dialog" >
-             <p>You may also optionally upload a .csv file containing a single piece
-                of text to be stored for each <b>item</b>. 
+             <p>You may also optionally upload a .csv file containing a single extra piece
+                of text to be stored for each <b>item</b>. This text may then appear in a subsequently downloaded spreadsheet, or in 
+                a followup page.
              <ul>
             <li>The file must be in plain text, "comma-delimited" format.<br>
                 The easiest way to generate the .csv file is to save a spreadsheet

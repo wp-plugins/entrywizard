@@ -55,6 +55,12 @@ class Ewz_Item extends Ewz_Base {
         $wpdb->query("UPDATE " . EWZ_ITEM_TABLE . " SET upload_date = last_change WHERE upload_date IS NULL" );
     }
 
+    public static function delete_user_items( $user_id ){
+        global $wpdb;
+        assert( Ewz_Base::is_pos_int( $user_id ) );
+        $wpdb->query( $wpdb->prepare( "DELETE from " . EWZ_ITEM_TABLE . " WHERE user_id = %d", $user_id ) );
+    }
+
     /**
      * Return an array of items attached to the input webform_id
      *

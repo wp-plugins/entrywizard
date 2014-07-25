@@ -53,8 +53,10 @@ function ewz_show_webform( $atts )
 
             $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
 
-            $errmsg .= ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
-                                $webformdata['webform']->webform_id );
+            $errmsg .= ewz_process_upload(
+                                           $input->get_input_data(), $webformdata['user_id'],
+                                           $webformdata['webform']->webform_id 
+                                          );
 
         } catch( Exception $e ) {
             $errmsg .= $e->getMessage();
@@ -89,10 +91,12 @@ function ewz_show_webform( $atts )
 
     // Display of stored data for confirmation.  Only displayed if there is some stored data.
     $output = '<h2>' . esc_html( $webformdata['webform']->webform_title ) . '</h2>';
-    $output .= ewz_current_status( $stored_items,
+    $output .= ewz_current_status(
+                                   $stored_items,
                                    $webformdata['layout']->fields,
                                    $current_user->display_name,
-                                   $webform_id );
+                                   $webform_id
+                                  );
 
     // Display of upload form, hidden if there is stored data
     $output .= ewz_upload_form( $stored_items,

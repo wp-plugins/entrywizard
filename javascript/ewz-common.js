@@ -123,7 +123,7 @@ function ewz_help(help_id) {
       'title': 'EntryWizard Help',
       'dialogClass': 'wp-dialog',
       'autoOpen': false,
-      'width': 500,
+      'width': 650,
       'closeOnEscape': true,
        'modal'         : true
           }).dialog('open');

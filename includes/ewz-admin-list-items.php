@@ -335,15 +335,16 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                     }
                 }
                 // append the uploaded info from the .csv file if it exists
+                // NB: <b> tag does not work here, it is overridden by the jquery dialog css
                 $info = '';
                 if ( isset( $item->item_data[$field_id]['ptitle'] ) ) {
-                    $info .= "<p><b>Title:</b> " . $item->item_data[$field_id]['ptitle'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Title:</span> ' . $item->item_data[$field_id]['ptitle'] . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pexcerpt'] ) ) {
-                    $info .= "<p><b>Excerpt:</b> " .  $item->item_data[$field_id]['pexcerpt'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Excerpt:</span> ' .  $item->item_data[$field_id]['pexcerpt'] . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pcontent'] ) ) {
-                    $info .= "<p><b>Content:</b> " .  $item->item_data[$field_id]['pcontent'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Content:</span> ' .  $item->item_data[$field_id]['pcontent'] . "</p>";
                 }
                 if ( $info ) {
                     // this gets passed through echo, so needs extra escaping for single quotes (?)
@@ -434,7 +435,7 @@ function ewz_get_img_size_options( $selected ) {
  */
 function ewz_item_list_sort( $sort_col, $sort_order ){
     assert( Ewz_Base::is_nn_int( $sort_col ) );
-    assert( ( $sort_order == 'asc' ) || ( $sort_col == 'desc' ) );
+    assert( ( $sort_order == 'asc' ) || ( $sort_order == 'desc' ) );
             
     return function($a, $b) use ( $sort_col, $sort_order ) {
         if( $sort_order == 'asc' ){
@@ -571,7 +572,7 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
                         Allow comments on attached images: </td>
             <td><input type="checkbox" id="img_comment" value="1" name="img_comment" $commentChecked ></td></tr>
         <tr><td><img alt="" class="ewz_ihelp" src="$help_icon" onClick="ewz_help('imgsize');">&nbsp;
-                        Attach resized image: </td>
+                        Size of attached image: </td>
             <td><select id="img_size" name="img_size" >$size_args</select></td></tr>
 EOF;
      if ( count( $image_columns ) > 1 ) {
@@ -627,7 +628,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     $headers = ewz_get_headers( $fields, $extra_cols );
     $rows = ewz_get_item_rows( $items, $fields, $extra_cols, $webform );
     if( isset( $requestdata['orderby'] ) && isset( $requestdata['order'] ) ){
-        uasort( $rows, ewz_item_list_sort( $requestdata['orderby'], $requestdata['order'] ) );
+          uasort( $rows, ewz_item_list_sort( $requestdata['orderby'], $requestdata['order'] ) );
     }
     $item_ids = array_map( create_function( '$v', 'return $v->item_id;' ),  $items );
 
@@ -691,7 +692,10 @@ function  ewz_display_list_page( $message, $requestdata ){
             <p>Images that have been "attached" to a page may be displayed on the page in a regular
                 wordpress gallery.
                To do this, include the shortcode <b>"[gallery]"</b> on your page where you wish the
-               gallery to appear.</p>
+               gallery to appear.  If your theme has not overridden the default behaviour, this will display
+               in the page thumbnails of all the attached images, which link to larger versions. If you have
+               uploaded a .csv file of image data, it's contents will determine the headers and captions of the
+               images.</p>
             <p> <i><b>NB:</b> The Wordpress gallery functionality is in the process of changing.
                Currently there are two formats for the shortcode:
            <ul><li>[gallery]  ( with optional parameters like the number of columns ). In this form,
@@ -727,7 +731,7 @@ function  ewz_display_list_page( $message, $requestdata ){
               allows the attached copy to be deleted or modified using the normal wordpress interface,
               without affecting the entrywizard file.<p>
           <p>You may, if you like, choose to make this copy a smaller version of the uploaded image
-              instead of the full-size one.</p>
+              instead of the full-size one.  Select "full" to copy the original uploaded image. </p>
           <p>The copy is created in your normal uploads directory, so it will not be deleted if you
               should uninstall entrywizard.  Editing or deleting the copy should have no effect on
               the image stored in EntryWizard.<p>

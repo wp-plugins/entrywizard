@@ -38,6 +38,9 @@
 .ewz_buttonrow {
     padding: 15px;
 }
+.ewz_padded10 {
+    padding: 10px;
+}
 
 .ewz_buttonrow td {
     padding-right: 10px;
@@ -52,13 +55,14 @@
     vertical-align:middle;
 }
 
-table.ewz_csv_upload{
-    border: 0px;
+table.ewz_csv_upload {
+    border-spacing: 10px;
 }
 
 table.ewz_csv_upload td{
-    padding-right: 20px;
-    padding-top: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px 5px 5px 5px;
+    padding: 10px;
 }
 
 table.ewz_border{ border-collapse: collapse;
@@ -66,7 +70,8 @@ table.ewz_border{ border-collapse: collapse;
                   font-size: .9em;
                   margin: 20px;
                 }
-
+input[id^="itmcsv_data"]{ background: #f9f9f9; }
+input[id^="csv_data"]{ background: #f9f9f9; }
 .ewz_centered
 {
     padding: 10px;
@@ -176,6 +181,7 @@ div[id^="ewz_postbox-layout"]{
 
 
 .ewz_leftpad{ padding-left:30px !important;}
+.ewz_bottompad{ padding-bottom:15px !important;}
 
 .postbox h3[id^="tpg_header_"]{
    /* background-image: url('../images/gray-grad.png'); */

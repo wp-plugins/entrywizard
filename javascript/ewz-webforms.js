@@ -281,9 +281,9 @@ function xtra_data_upload_str(  evnum, eObj ){
     str +=   '    <input type="hidden" name="ewzmode" value="csv">';
     str +=   '    <div class="ewz_numc"></div>';
 
-    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'csv\')">&nbsp; Upload extra per-image data for the webform: ';
+    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'csv\')">&nbsp; Upload extra per-<u>image</u> data for the webform: &nbsp; ';
     str +=   '    <input  id="' + inputid + '" name="csv_data" type="file" >';
-    str +=   '    <button type="submit" id="csv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload Image Data</button>';
+    str +=   '    <button type="submit" id="csv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload <b>Image</b> Data</button>';
     str +=   ' </div>';
     str +=   '</form></td>';
     return str;
@@ -299,9 +299,9 @@ function itmcsv_data_upload_str(  evnum, eObj ){
     str +=   '    <input type="hidden" name="ewzmode" value="itmcsvdata">';
     str +=   '    <div class="ewz_numc"></div>';
 
-    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'itmcsv\')">&nbsp; Upload extra per-item &nbsp; data for the webform: &nbsp;';
-    str +=   '    <input  id="' + inputid + '" name="itmcsv_data" type="file" >';
-    str +=   '    <button type="submit" id="itmcsv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload Item Data</button>';
+    str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'itmcsv\')">&nbsp; Upload extra per-<u>item</u> &nbsp; data for the webform: &nbsp;';
+    str +=   '    <input  id="' + inputid + '" name="itmcsv_data" type="file"  >';
+    str +=   '    <button type="submit" id="itmcsv_btn_' + evnum + '" name="csv_btn" class="button-secondary">Upload <b>Item</b> Data</button>';
     str +=   ' </div>';
     str +=   '</form></td>';
     return str;

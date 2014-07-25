@@ -66,11 +66,10 @@ function do_setup(ewzG) {
     var row, ff;
     // ewzG is null if not logged in
     // make any change in any input enable the "submit" button
-    jQuery("#ewz_form_" + ewzG.webform_id).on("change", ":input:not(:button)",
+    jQuery("#ewz_form_" + ewzG.webform_id).on("change keydown paste input", ":input:not(:button)",
                                               function() {
                                                   do_changed( jQuery(this), ewzG.webform_id);
                                               });
-
     // show the user any message coming from the server
     if (ewzG.errmsg) {
         alert(ewzG.errmsg.replace(/;;.*?$/gm,'').replace(/~/g,"\n"));
