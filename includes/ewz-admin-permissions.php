@@ -1,6 +1,7 @@
 <?php
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-permission.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-permission-input.php' );
 
@@ -67,8 +68,17 @@ function ewz_permissions_menu()
     $webforms_sz = min( 15, sizeof( $webforms ) + 2 );
 
 
-    // the options string for "select user"
-    $users_options = ewz_option_list( ewz_html_esc( Ewz_User::get_user_opt_array() ) );
+    // the options strings for "select user"
+    $all_users = Ewz_User::get_user_opt_array();
+    $users_options = ewz_option_list( ewz_html_esc( $all_users ) );
+    $ewz_users = array();
+    foreach( $all_users as $usr ){
+        if( array_search( $usr['value'], array_map( function($p) { return $p->user_id; }, $perms ) ) ){
+            array_push( $ewz_users, $usr );
+        }
+    }
+    $ewz_users_options = ewz_option_list( ewz_html_esc( $ewz_users ) );
+
 
 
     /***********************
@@ -96,13 +106,21 @@ function ewz_permissions_menu()
 	    <?php
                wp_nonce_field( 'ewzadmin', 'ewznonce' );
 	    ?>
-    	<h3>User</h3>
-    	    <select name="ewz_user_perm" id="ewz_user_perm" onChange="ewz_show_perms();" >
-    		<option value="0" selected="selected"> --- Select User --- </option>
-		    <?php print $users_options; ?>
-    	    </select>
-    	    <div id="uperms"> </div>
-    	<br />
+    	<h3>Select A User</h3>
+        <div class="ewz_leftpad ewz_bottompad">
+            <b>From All Users</b><br />
+               <select name="ewz_user_perm" id="ewz_user_perm" onChange="ewz_show_perms();" >
+                   <option value="0" selected="selected"> --- Select User --- </option>
+                       <?php print $users_options; ?>
+               </select>
+            <div class="ewz_padded10"><b>OR</b></div>
+            <b>From Users With Current EntryWizard Access</b><br />
+               <select name="ewz_have_perm" id="ewz_have_perm" onChange="ewz_set_user();" >
+                   <option value="0" selected="selected"> --- Select User --- </option>
+                       <?php print $ewz_users_options; ?>
+               </select>
+               <div id="uperms"> </div>
+         </div>
     	<h3>Layout Permissions</h3>
     	<div class="ewz_boxed">
     	    <p><i>"Edit"</i> a layout means change any of its data.  "Edit Any Layout" is required to create or delete layouts.</p>

@@ -56,7 +56,7 @@ function numinput_str(idstring, namestring, nosel, start, end, vval)
         code = code + '<option value="0">' + nosel + '</option>';
     }
    for ( i = start; i <= end; ++i) {
-      sel = (i === vval) ? 'selected="selected"' : '';
+      sel = (i == vval) ? 'selected="selected"' : '';
       code = code + '<option value="' + i + '" ' + sel + ">" + i + "</option>";
    }
    code = code + "</select>";
@@ -72,28 +72,34 @@ function textinput_str(idstring, namestring, mw, vval, func) {
    qqnmstring = '"' + namestring + '"';
    qqmw = '"' + mw + '"';
    retstr = '<input type="text" ';
-   if ( typeof ( func ) !== 'undefined' ){
+   if ( typeof  func  !== 'undefined' ){
       retstr += ' ' + func + ' ';
    }
+    if( typeof  vval  === 'undefined' ){
+        vval = '';
+    }
    retstr += ' id=' + qqidstring + ' name=' + qqnmstring + ' maxlength=' + qqmw + ' value="' + vval + '">';
    return retstr;
 }
 
-
 // returns html for a checkbox input element with optional onChange function
 function checkboxinput_str(idstring, namestring, checked, func) {
    'use strict';
-   var qqidstring, qqnmstring, chkd, retstr;
+   var qqidstring, qqnmstring, chkd, retstr, disabled;
 
    qqidstring = '"' + idstring + '"';
    qqnmstring = '"' + namestring + '"';
 
+   disabled = '';
+   if( checked == 'disabled' ){
+       disabled = ' disabled="disabled" ';
+   }
    chkd = ((true == checked) ? ' checked="checked"' : '');
    retstr = '<input type="checkbox" ';
    if ( typeof func !== 'undefined') {
       retstr += ' ' + func + ' ';
    }
-   retstr += ' value="1" id=' + qqidstring + ' name=' + qqnmstring + chkd + '>';
+   retstr += ' value="1" id=' + qqidstring + ' name=' + qqnmstring + chkd + disabled + '>';
    return retstr;
 }
 
@@ -101,9 +107,6 @@ function isblank(string)
 {
    'use strict';
    if (typeof string === 'undefined') {
-      return true;
-   }
-   if ('undefined' === string) {
       return true;
    }
    if (null == string) {
@@ -120,13 +123,15 @@ function ewz_help(help_id) {
       'title': 'EntryWizard Help',
       'dialogClass': 'wp-dialog',
       'autoOpen': false,
-      'width': 500,
-      'closeOnEscape': true
-   }).dialog('open');
+      'width': 650,
+      'closeOnEscape': true,
+       'modal'         : true
+          }).dialog('open');
 }
 
 function ewz_info(infostring) {
    'use strict';
+
    jQuery("#info-text").html(infostring);
    jQuery("#info-text").dialog({
       'title': 'Extra Data Uploaded by Administrator',
@@ -136,6 +141,7 @@ function ewz_info(infostring) {
       'closeOnEscape': true
    }).dialog('open');
 }
+
 function field_values(fieldtype, isreq, select_name, select_id, options) {
    'use strict';
    var txt = '';
@@ -161,6 +167,20 @@ function field_values(fieldtype, isreq, select_name, select_id, options) {
          }
          txt += options;
          txt += '          </select>';
+         break;
+       case 'rad':
+            txt += '      <select name="' + select_name + '" id="' + select_id + '">';
+            txt += '         <option value="~*~">Any </option>';
+            txt += '         <option value="~+~">Checked </option>';
+            txt += '         <option value="~-~">Not Checked </option>';
+            txt += '      </select>';
+         break;
+       case 'chk':
+            txt += '      <select name="' + select_name + '" id="' + select_id + '">';
+            txt += '         <option value="~*~">Any </option>';
+            txt += '         <option value="~+~">Checked </option>';
+            txt += '         <option value="~-~">Not Checked </option>';
+            txt += '      </select>';
          break;
       case undefined:
          break;
@@ -203,7 +223,7 @@ function imgformat_input_str(id, name, values) {
    'use strict';
    var str = '<select multiple="multiple" id="' + id + '" name="' + name + '">';
    str += '   <option value="image/jpeg" ' + (values.lastIndexOf('image/jpeg') >= 0 ? " selected" : '') + '>jpeg/jpg</option>';
-   str += '   <option value="image/pjpeg" ' + (values.lastIndexOf('image/pjpeg') >= 0 ? " selected" : '') + '>jpeg/jpg (older IE)</option>';
+   str += '   <option value="image/pjpeg" ' + (values.lastIndexOf('image/pjpeg') >= 0 ? " selected" : '') + '>pjpeg (older IE)</option>';
    str += '   <option value="image/gif" ' + (values.lastIndexOf('image/gif') >= 0 ? " selected" : '') + '>gif</option>';
    str += '   <option value="image/png" ' + (values.lastIndexOf('image/png') >= 0 ? " selected" : '') + '>png</option>';
    str += '</select> ';
@@ -226,7 +246,7 @@ function js_find_by_key(the_array, the_key, the_value) {
       return -1;
    }
    for (k = 0; k < len; k++) {
-      if (the_array[k] !== 'undefined' && the_array[k][the_key] == the_value) {
+      if (typeof the_array[k] !== 'undefined' && the_array[k][the_key] == the_value) {
          return k;
       }
    }
@@ -237,16 +257,16 @@ function js_find_by_key(the_array, the_key, the_value) {
 /* To stop IE from generating errors if a console.log call was left in */
 function fixConsole()
 {
-   if (typeof console === "undefined")
+   if (typeof console === 'undefined')
    {
       console = {}; // define it if it doesn't exist already
    }
-   if (typeof console.log === "undefined")
+   if (typeof console.log === 'undefined')
    {
       console.log = function() {
       };
    }
-   if (typeof console.dir === "undefined")
+   if (typeof console.dir === 'undefined')
    {
       console.dir = function() {
       };
@@ -271,7 +291,7 @@ if (!Array.prototype.indexOf) {
       k;
       kstart = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
       for ( k = kstart ; len > k; k++ ) {
-         if ( t[k] !== 'undefined' && t[k] === find) {
+         if ( typeof t[k] !== 'undefined' && t[k] === find) {
             return k;
          }
       }
@@ -285,7 +305,7 @@ if (!Array.prototype.forEach) {
       var i, n;
 
       for ( i = 0, n = this.length; i < n; i++){
-         if (this[i] !== 'undefined'){
+         if (typeof this[i] !== 'undefined'){
             action.call(that, this[i], i, this);
          }
       }
