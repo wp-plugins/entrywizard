@@ -32,6 +32,7 @@ class Ewz_Webform extends Ewz_Base {
     public $open_for;
     public $prefix;
     public $apply_prefix;
+    public $gen_fname;
     public $attach_prefs;
 
     // extra
@@ -44,6 +45,8 @@ class Ewz_Webform extends Ewz_Base {
     public $auto_date;
     public $auto_time;
 
+    private $files_done;
+
     // keep list of db data names/types as a convenience for iteration and so we can easily add new ones.
     // Dont include webform_id
     public static $varlist = array(
@@ -55,6 +58,7 @@ class Ewz_Webform extends Ewz_Base {
         'open_for' => 'array',
         'prefix' => 'string',
         'apply_prefix' => 'boolean',
+        'gen_fname' => 'boolean',
         'attach_prefs' => 'string',
     );
 
@@ -177,7 +181,8 @@ class Ewz_Webform extends Ewz_Base {
         // variables required for javascript
         if ( $this->open_for ) {
             $this->open_for_string = 'Currently open for ' .
-                    implode( ', ', array_map( create_function( '$v', 'return get_userdata($v)->user_login;' ), $this->open_for ) ) .
+                implode( ', ', array_map( function($v){ return get_userdata($v)->user_login; }, 
+                                          $this->open_for ) ) .
                     ' only';
         }
         $this->can_download = Ewz_Permission::can_download( $this );
@@ -245,8 +250,9 @@ class Ewz_Webform extends Ewz_Base {
         if ( array_key_exists( 'upload_open', $data ) && $data['upload_open'] ) {
             $data['open_for'] = array( );
         } else {
-            $data['open_for'] = array_map( create_function( '$v', 'return (int)$v;' ),
-                    array_filter( array_key_exists( 'o_user', $data ) ? $data['o_user'] : array( ), create_function( '$v', 'return ($v != "");' ) ) );
+            $data['open_for'] = array_map( function($v){ return (int)$v; },
+                                           array_filter( array_key_exists( 'o_user', $data ) ? 
+                                                         $data['o_user'] : array( ), function($v){ return ($v != ""); } ) );
         }
         if ( !array_key_exists( 'webform_id', $data ) ) {
             $data['webform_id'] = 0;
@@ -333,35 +339,36 @@ class Ewz_Webform extends Ewz_Base {
         $tmpn = 0;
         $zip = new ZipArchive();
         $msg = '';
+        $this->files_done = array();
+                            
+        $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
         if ( $zip->open( $fpath, ZIPARCHIVE::OVERWRITE ) ) {
             foreach ( $items as $item ) {
-                $custom = new Ewz_Custom_Data( $item->user_id );
                 foreach ( $item->item_files as $item_file ) {
                     if ( !isset( $item_file['fname'] ) ) {
                         continue;   // ignore items with no image file
                     }
                     ++$tmpn;
-
+                    
                     // a very rough-and-ready way to allow more time if there are a lot of image files
                     // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 25 files.
                     if ( $tmpn > 25 ) {
                         set_time_limit( EWZ_FILE_DOWNLOAD_TIME );
                         $tmpn = 0;
                     }
-                    $subst_data = array(
-                        'field_id' => $item_file['field_id'],
-                        'user_id' => $item->user_id,
-                        'item_id' => $item->item_id,
-                    );
-                    foreach ( $custom as $custkey => $custval ) {
-                        $subst_data[$custkey] = $custval;
-                    }
+                    $newfilename = '';
                     if ( is_file( $item_file['fname'] ) ) {
                         if( $this->apply_prefix ){
-                            $zip->addFile( $item_file['fname'],  basename( $item_file['fname'] ) );
+                            // if the prefix/rename was already done, just add the file with it's current name
+                            $newfilename = basename( $item_file['fname'] );
+                            
                         } else {
-                            $zip->addFile( $item_file['fname'], $this->do_substitutions( $subst_data ) . basename( $item_file['fname'] ) );
+                            // if a prefix/rename has been set but not yet done, add it now
+                            $newfilename = $this->get_new_filename( $fields, $item, $item_file );
                         }
+                        $zip->addFile( $item_file['fname'],  $newfilename );
+                        $this->files_done[$newfilename] = true;
+
                     } else {
                         error_log("EWZ: cant find " .  $item_file['fname'] );
                         $msg .= "\n\nUnable to find file " . basename( $item_file['fname'] );
@@ -387,6 +394,78 @@ class Ewz_Webform extends Ewz_Base {
             throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator." );
         }
         return $msg;
+    }
+
+
+    /**
+     * Return a filename generated from the prefix expression
+     * 
+     * @param  $fields   array of Ewz_Fields    the fields of the layout
+     * @param  $item     Ewz_item               the item containing the file
+     * @param  $item_file  array of file data   a single component of the $item->item_files array                                             
+     * @return string  the generated filename (including extension)
+     */
+    public function get_new_filename( $fields, $item, $item_file ){
+        assert( is_array( $fields ) );
+        assert( is_object( $item ) );
+        assert( is_array( $item_file ) );
+
+        if( $this->prefix ){
+            $custom = new Ewz_Custom_Data( $item->user_id );
+            $subst_data = array( 
+                                'file_field_id' => $item_file['field_id'],
+                                'user_id' => $item->user_id,
+                                'item_id' => $item->item_id,
+                                 );
+            foreach ( $custom as $custkey => $custval ) {
+                $subst_data[$custkey] = $custval;
+            }
+            foreach ( $fields as $fid=>$field ){
+                $subst_data[$fid] = $item->item_data[$fid];
+            }
+            if( $this->gen_fname ){
+                $ext = pathinfo( $item_file['fname'], PATHINFO_EXTENSION );
+                $prefix1 = $this->generated_prefix( $subst_data );
+                if ( strpos( $prefix1, '[~1]' ) !== false ) {
+                    // make sure the filename is unique -- replace '[~1]' by 1,2,3,... until it is
+                    $uniq = $this->get_fname_num( $prefix1, $ext );
+                    $prefix1 = str_replace( '[~1]', $uniq, $prefix1 );
+                }     
+                return $prefix1 . '.' . $ext;
+            } else {
+                return $this->generated_prefix( $subst_data ) . basename( $item_file['fname'] );
+            }
+        } else {
+            return  basename( $item_file['fname'] );
+        }
+    }
+
+    /**
+     * Return a number to replace '[~1]' to make the filename unique in it's download batch.
+     * Substitutes 1,2,3,.... in turn for '[~1]' in $in_fname until
+     *              $this->files_done["$in_fname.$ext"] is not defined.
+     * @param  $in_fname  an input filename that should contain the string  '[~1]'
+     * @param  $ext       a filename extension
+     * @return 
+     */
+    public function get_fname_num( $in_fname, $ext ){
+        assert( is_string( $in_fname ) );
+        assert( is_string( $ext ) );
+        if( strlen( $in_fname ) < 5 ){
+            return '';
+        }        
+        if( strpos( $in_fname, '[~1]' ) === false ){
+            return '';
+        }
+        $num = 1;
+        while( $num < 999 ){
+            $testfname = str_replace( '[~1]', "$num", $in_fname );
+            if( !isset( $this->files_done["{$testfname}.{$ext}"] ) ){
+                return "$num";
+            }
+            ++$num;
+        }
+        return "$num";   
     }
 
     /**
@@ -512,6 +591,8 @@ class Ewz_Webform extends Ewz_Base {
         $rows[0] = $this->get_headers_for_ss( $fields, $extra_cols );
         $maxcol = max( array_keys( $rows[0] ) );
         $n = 1;
+                            
+        $this->files_done = array();                  
         foreach ( $items as $item ) {
 
             $itemdata = $this->get_item_data_for_ss( $fields, $item, $maxcol );
@@ -584,33 +665,24 @@ class Ewz_Webform extends Ewz_Base {
         assert( is_array( $fields ) );
         assert( is_object( $item ) );
         assert( is_int( $maxcol ) );
-
         $filerow = array_fill( 0, $maxcol + 1, '' );
-        $custom1 = new Ewz_Custom_Data( $item->user_id );
         if ( $item->item_files ) {
             foreach ( $item->item_files as $field_id => $item_file ) {
-                // do the prefix substitutions
-                $subst_data = array(
-                    'field_id' => $item_file['field_id'],
-                    'user_id' => $item->user_id,
-                    'item_id' => $item->item_id,
-                );
-                foreach ( $custom1 as $custkey => $custval ) {
-                    $subst_data[$custkey] = $custval;
-                }
                 $field = $fields[$field_id];
                 if ( $field->ss_column >= 0 ) {
                     assert( empty($filerow[$field->ss_column] ) );
                     if ( isset( $item_file['fname'] ) ) {
+                        // if the prefix was already applied, no change
                         if( $this->apply_prefix ){
                             $filerow[$field->ss_column] = basename( $item_file['fname'] );
                         } else {
-                            $filerow[$field->ss_column] =
-                                $this->do_substitutions( $subst_data ) . basename( $item_file['fname'] );
+                            // applying prefix/rename now
+                            $filerow[$field->ss_column] = $this->get_new_filename( $fields, $item, $item_file );
                         }
                     } else {
                         $filerow[$field->ss_column] = '';
                     }
+                    $this->files_done[ $filerow[$field->ss_column] ] = true;
                 }
                 if ( 'img' == $field->field_type ) {
                     if ( isset( $item_file['width'] ) && $field->fdata['ss_col_w'] >= 0 ) {
@@ -645,6 +717,7 @@ class Ewz_Webform extends Ewz_Base {
                     $itemrow[$field->ss_column] = $field_value_arr['value'];
                 }
                 if ( 'str' == $field->field_type ) {
+                    // initcaps any "formatted text" column
                     if ( $field->fdata['ss_col_fmt'] >= 0 ) {
                         assert( empty( $itemrow[$field->fdata['ss_col_fmt']] ) );
                         // if the field is already mixed case, don't touch it
@@ -798,19 +871,34 @@ class Ewz_Webform extends Ewz_Base {
      * @param   array   $data:    data required to generate the substitute values
      * @return  changed $prefix
      */
-    public function do_substitutions( $data ) {
+    public function generated_prefix( $data ) {
         assert( is_array( $data ) );
-        $placeholders = array( '[~UID]',         '[~WFM]',                    '[~FLD]' );
-        $replacements = array( $data['user_id'], $this->webform_ident,  $data['field_id'] );
-        for ( $n = 1; $n <= 9; ++$n ) {
-            if ( isset( $data["custom$n"] ) ) {
-                array_push( $placeholders, '[~CD' . $n . ']' );
-                array_push( $replacements, $data['custom' . $n] );
+        if( $this->prefix ){
+            $placeholders = array( '[~UID]',         '[~WFM]',                    '[~FLD]' );
+            $replacements = array( $data['user_id'], $this->webform_ident,  $data['file_field_id'] );
+            for ( $n = 1; $n <= 9; ++$n ) {
+                if ( isset( $data["custom$n"] ) ) {
+                    array_push( $placeholders, '[~CD' . $n . ']' );
+                    array_push( $replacements, $data['custom' . $n] );
+                }
             }
+            foreach(  Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' ) as $field ){
+                if( in_array( $field->field_type, array( 'opt', 'rad', 'chk' ) ) && $field->field_ident != 'followupQ' ){
+                    $val = '';
+                    if( isset ( $data[$field->field_id]['value'] ) ){
+                        $val = $data[$field->field_id]['value'];
+                        array_push( $replacements, $val );
+                    } else {
+                        array_push( $replacements, '' );
+                    }
+                    array_push( $placeholders, '[~' . $field->field_ident . ']' );
+                }
+            }
+            $out_prefix = str_replace( $placeholders, $replacements, $this->prefix );           
+            return $out_prefix;
+        } else {
+            return $this->prefix;
         }
-        $out_prefix = str_replace( $placeholders, $replacements, $this->prefix );
-
-        return $out_prefix;
     }
 
     /*     * ******************  Validation  ****************************** */
@@ -917,6 +1005,7 @@ class Ewz_Webform extends Ewz_Base {
             'open_for' => serialize( $this->open_for ),
             'prefix' => $this->prefix,
             'apply_prefix' => $this->apply_prefix ? 1 : 0,
+            'gen_fname' => $this->gen_fname ? 1 : 0,
                 ) );
         $datatypes = array( '%d','%d', '%s', '%s', '%d', '%s', '%s' );
 
@@ -950,10 +1039,18 @@ class Ewz_Webform extends Ewz_Base {
             }
 
             $this->get_items();
+            $errmsg = '';
             if ( $delete_items == self::DELETE_ITEMS ) {
                 foreach ( $this->items as $item ) {
-                    $item->delete();
+                    try { 
+                        $item->delete();
+                    } catch( EWZ_Exception $e ) {
+                        $errmsg .= $e->getMessage();
+                    }
                 }
+                if( $errmsg ){
+                   throw new EWZ_Exception( $errmsg );
+                } 
             } else {
                 $n = count( $this->items );
                 if ( $n > 0 ) {

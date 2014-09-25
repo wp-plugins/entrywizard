@@ -1,3 +1,5 @@
+html, body {position: relative}
+
 #overlay {
    position: fixed; 
     top: 0;

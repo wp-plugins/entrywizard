@@ -52,40 +52,40 @@ abstract class Ewz_Input {
             }
         }
         foreach ( $this->input_data as $field => $value ) {
-            if ( empty( $value ) || ( $value == '0' ) ){
-                if ( $this->rules[$field]['type'] == 'noval' ) {
-                    return true;
-                } elseif (  $this->rules[$field]['req'] ) {
-                    throw new EWZ_Exception( get_class( $this ) . ": $field is required." );
+            if( isset( $this->rules[$field] ) ){
+                if ( empty( $value ) || ( $value == '0' ) ){
+                    if ( $this->rules[$field]['type'] == 'noval' ) {
+                        return true;
+                    } elseif ( $this->rules[$field]['req'] ) {
+                        throw new EWZ_Exception( get_class( $this ) . ": $field is required." );
+                    } else {
+                        $this->input_data[$field] = $this->rules[$field]['val'];
+                    }
                 } else {
-                    $this->input_data[$field] = $this->rules[$field]['val'];
+                    /**
+                     * For each rule specified for an element,
+                     * call a function with the same name, e.g. 'limited()' when
+                     * checking whether a field has one of a given set of values
+                     *
+                     */
+                    if ( $value == 'on' ){
+                        $this->input_data[$field] = '1';
+                    }
+                    if ( $value == 'off' ){
+                        $this->input_data[$field] = '0';
+                    }
+                    if ( ! call_user_func_array(
+                                                array( $this, $this->rules[$field]['type'] ),   // function to call
+                                                array( &$this->input_data[$field], $this->rules[$field]['val'] )    // args to pass
+                                                ) ){
+                        $class = str_replace( '_Input', '', str_replace( 'Ewz_', '', get_class( $this ) ) );
+                        throw new EWZ_Exception( $class . " found invalid value for $field: " . $value );
+                    }
                 }
             } else {
-                /**
-                 * For each rule specified for an element,
-                 * call a function with the same name, e.g. 'limited()' when
-                 * checking whether a field has one of a given set of values
-                 *
-                 */
-                if ( ! isset( $this->rules[$field] ) ){
-                    throw new EWZ_Exception( get_class( $this ) . " found unexpected data $field: " . $value );
-                }
-                if ( $value == 'on' ){
-                    $this->input_data[$field] = '1';
-                }
-                if ( $value == 'off' ){
-                    $this->input_data[$field] = '0';
-                }
-                if ( ! call_user_func_array(
-                                          array( $this, $this->rules[$field]['type'] ),   // function to call
-                                          array( &$this->input_data[$field], $this->rules[$field]['val'] )    // args to pass
-                                          ) ){
-                    $class = str_replace( '_Input', '', str_replace( 'Ewz_', '', get_class( $this ) ) );
-                    throw new EWZ_Exception( $class . " found invalid value for $field: " . $value );
-                }
+                error_log('EWZ: Warning ' . get_class( $this ) . ": unexpected input $field " . $value );
             }
         }
-
         return true;
     }
 

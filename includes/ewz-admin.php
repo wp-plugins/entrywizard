@@ -49,44 +49,8 @@ function ewz_enqueue_item_list_scripts() {
 }
 
 
-/**
- *
- * Deactivate plugin if required versions of WP and PHP not available
- *
- */
-function ewz_requires_version(){
-   // noglobals
-
-   global $wp_version;
-
-   $plugin = plugin_basename( EWZ_PLUGIN_DIR . '/entrywizard.php' );
-
-   $reqvers = '';
-   if ( version_compare( EWZ_REQUIRED_WP_VERSION, $wp_version, ">" ) ) {
-      $reqvers = 'WordPress version ' . EWZ_REQUIRED_WP_VERSION;
-   }
-   if ( version_compare( EWZ_REQUIRED_PHP_VERSION, PHP_VERSION, ">" ) ) {
-      if( $reqvers ){
-            $reqvers .= " and ";
-      }
-      $reqvers = 'PHP version ' . EWZ_REQUIRED_PHP_VERSION;
-   }
-   if ( $reqvers ) {
-       if( is_plugin_active($plugin) ) {
-            deactivate_plugins( $plugin );
-       }
-       wp_die( "<strong>EntryWizard</strong> requires at least <strong> $reqvers </strong>, and has been deactivated.
-                <br /><br />Back to the WordPress <a href='" .
-              get_admin_url( null, 'plugins.php' ) .
-              "'>Plugins page</a>."
-      );
-   }
-}
-
 /********************************************************************************/
-
 function ewz_admin_init() {
-    ewz_requires_version();
 
     wp_register_style( 'jquery-ui-dialog', includes_url() . "/css/jquery-ui-dialog.css" );
     wp_register_style( 'ewz-admin-style', plugins_url( 'styles/ewz-admin.css', dirname(__FILE__) ) );

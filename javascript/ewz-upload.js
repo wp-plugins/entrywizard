@@ -360,13 +360,15 @@ function clear_row(button, webform_id) {
     });
 
     jrow.find("img").remove();
-    jrow.find(":input:not(:radio)").val('');
-    jrow.find(":radio").prop("checked", false );
-    jrow.find(":checkbox").prop("checked", false );
-
-    jrow.find(":input[class='ewzdirty']").removeClass("ewzdirty");
+    // reset both properties and attributes for non-image items
+    jrow.find("input:text").val('').attr("value", '');
+    jrow.find("input:radio").prop("checked", false ).attr("checked", false );
+    jrow.find("input:checkbox").prop("checked", false ).attr("checked", false );
+    jrow.find("option").prop("selected", false ).attr("selected", false ).attr("disabled", false);
+    jrow.find("select").val(0);
+    jrow.find("input[class='ewzdirty']").removeClass("ewzdirty");
     jrow.find('input[type="hidden"]').remove();
-    jrow.find(":button").remove();
+    jrow.find("button").remove();
 
     jform = jrow.closest('form');
     if (jform.find('tr td:last-child').has('button').size() === 0) {
@@ -412,8 +414,8 @@ function check_table_width(webform_id){
 }
 
 
-////////////////// Image File Info ////////////////
 
+////////////////// Image File Info ////////////////
 // an image file has been selected, display it's thumbnail and info
 function fileSelected(field_id, input_id, webform_id) {
     'use strict';

@@ -108,6 +108,7 @@ class Ewz_Setup
                                                 webform_ident char(15) NOT NULL UNIQUE,
                                                 prefix char(25) NULL,
                                                 apply_prefix tinyint(1) NULL,
+                                                gen_fname tinyint(1) NULL,
                                                 upload_open tinyint(1) NOT NULL,
                                                 open_for varchar(1000) NOT NULL,
                                                 attach_prefs varchar(1000) NULL
@@ -673,6 +674,7 @@ class Ewz_Setup
                                               'webform_ident' => $webform_ident,
                                               'upload_open' => 1,
                                               'apply_prefix' => 1,
+                                              'gen_fname' => 0,
                                               'open_for' => "a:0:{}",
                                               )
                                         );

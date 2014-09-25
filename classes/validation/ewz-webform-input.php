@@ -24,6 +24,7 @@ class Ewz_Webform_Input extends Ewz_Input
                   'page'           =>  array( 'type' => 'fixed',      'req' => true,  'val' => 'entrywizard' ),
                   'prefix'         =>  array( 'type' => 'v_prefix',   'req' => false, 'val' => '' ),
                   'apply_prefix'   =>  array( 'type' => 'to_bool',    'req' => false, 'val' => '' ),
+                  'gen_fname'      =>  array( 'type' => 'to_bool',    'req' => false, 'val' => '' ),
                   'upload_open'    =>  array( 'type' => 'to_bool',    'req' => false, 'val' => '' ),
                   'o_user'         =>  array( 'type' => 'v_users',    'req' => false, 'val' => '' ),
                   'webform_id'     =>  array( 'type' => 'to_seq',     'req' => false, 'val' => '' ),
@@ -46,6 +47,9 @@ class Ewz_Webform_Input extends Ewz_Input
         }
         if ( !array_key_exists( 'apply_prefix', $this->input_data ) ) {
             $this->input_data['apply_prefix'] = false;
+        }
+        if ( !array_key_exists( 'gen_fname', $this->input_data ) ) {
+            $this->input_data['gen_fname'] = false;
         }
         if ( !array_key_exists( 'auto_close', $this->input_data ) ) {
             $this->input_data['auto_close'] = false;

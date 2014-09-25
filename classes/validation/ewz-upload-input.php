@@ -87,17 +87,20 @@ class Ewz_Upload_Input extends Ewz_Input
                     throw new EWZ_Exception(  $fields[$field_id]->field_header . " is required ( row $rownum1 )." );
                 }
 
+                // for counts, treat them all the same way
+                // initialize to 0, then validate ( which may change things ), then increment
+                // so validation must assume the input count is the count before the new item is added
                 switch ( $fields[$field_id]->field_type ) {
                 case 'str':
                         self::validate_str_data( $fields[$field_id]->fdata, $value[$rownum][$field_id] );  // may change 2nd arg
                         break;
+                        
                 case 'opt':
                         if( !isset( $optcounts[$field_id][$val] ) ){
-                            $optcounts[$field_id][$val] = 1;
-                        } else {
-                            ++$optcounts[$field_id][$val];
-                        }
+                            $optcounts[$field_id][$val] = 0;
+                        }                        
                         self::validate_opt_data( $fields[$field_id], $val, $optcounts[$field_id][$val] );
+                        ++$optcounts[$field_id][$val];     
                         break;
                 case 'img':
                         self::validate_img_data( $val );
@@ -231,14 +234,15 @@ class Ewz_Upload_Input extends Ewz_Input
      * Check $val is one of the options in $fdata, and there are not too many items with that value
      * already selected.
      *
-     * @param   string  $val  input from a select list
+     * @param   string  $val         input from a select list
+     * @param   int     $optcount    number of previously processed items with this value 
      * @return  $val
      */
     private static function validate_opt_data( $field, $val, $optcount )
     {
         assert( is_string( $val ) );
         assert( is_object( $field ) );
-        assert( Ewz_Base::is_pos_int( $optcount ) );
+        assert( Ewz_Base::is_nn_int( $optcount ) );
         assert( Ewz_Base::is_pos_int( $field->field_id ) );
 
         // if the item was required, it would be caught earlier, so allow blank here
@@ -250,7 +254,7 @@ class Ewz_Upload_Input extends Ewz_Input
         }
 
         if ( array_key_exists( $val, $field->Xmaxnums ) && $field->Xmaxnums[$val] ) {
-            if ( intval($field->Xmaxnums[$val]) < $optcount ) {
+            if ( intval($field->Xmaxnums[$val]) <= $optcount ) {
                 throw new EWZ_Exception( "Too many '$val' values for $field->field_header"  );
             }
         }
@@ -266,9 +270,9 @@ class Ewz_Upload_Input extends Ewz_Input
      * Validate checkbox input
      * Check input is boolean and check the counts
      *
-     * @param   array   $field  input field data
-     * @param   string  $val    input string convertible to boolean
-     * @param   string  $count  input integer current count of checks for this checkbox
+     * @param   array   $field  input            field data
+     * @param   string  $val    input string     convertible to boolean
+     * @param   string  $count  input integer    count of checks for this checkbox before this item is counted
      * @return  boolean
      */
     private static function validate_chk_data( $field, $val, $count )
@@ -280,7 +284,7 @@ class Ewz_Upload_Input extends Ewz_Input
             throw new EWZ_Exception( "Invalid value <$val> for checkbox input" );
         }   
         if ( isset( $field->fdata['chkmax'] ) && $field->fdata['chkmax'] && $val ) {
-            if ( intval($field->fdata['chkmax'] ) < $count ) {
+            if ( intval($field->fdata['chkmax'] ) <= $count ) {
                 throw new EWZ_Exception( "Too many items checked for $field->field_header"  );
             }
         }     
@@ -292,7 +296,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * Validate radiobutton input
      *
      * @param   string  $val    input string convertible to boolean
-     * @param   int     $count  current count of items with this button checked
+     * @param   int     $count  count of items with this button checked  before this item is counted
      * @return  boolean
      */
     private static function validate_rad_data(  $val, $count )
@@ -303,8 +307,8 @@ class Ewz_Upload_Input extends Ewz_Input
         if( !self::to_bool( $val, '' ) ){
             throw new EWZ_Exception( "Invalid value <$val> for radiobutton input" );
         }
-        if( 1 < $count ){
-            throw new EWZ_Exception( "More than one radiobutton checked" );
+        if( $val && ( 1 <= $count ) ){  // this was checked and so was a previous item
+            throw new EWZ_Exception( "More than one radiobutton checked:  $val" );
         } 
         return $val;
     }

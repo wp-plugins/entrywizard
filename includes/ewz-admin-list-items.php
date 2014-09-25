@@ -212,17 +212,22 @@ function ewz_batch_delete_items(  )
         $items_for_deletion = $requestdata['ewz_check'];
     }
     $n = 0;
+    $msgs = '';
     foreach ( $items_for_deletion as $item_id ) {
         $item = new Ewz_Item( $item_id );
         // item should belong to input webform
         if( $item->webform_id == $data['webform_id'] ){
-            $item->delete();
+            try{
+                $item->delete();
+            } catch( Exception $e ){
+                $msgs .= "\n$item_id " . $e->getMessage();
+            }
             ++$n;
         } else {
             throw new EWZ_Exception( 'Attempt to delete item on different webform' );
         }
     }
-    return "$n items deleted";
+    return "$n items deleted". $msgs;
 }
 
 
@@ -630,7 +635,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     if( isset( $requestdata['orderby'] ) && isset( $requestdata['order'] ) ){
           uasort( $rows, ewz_item_list_sort( $requestdata['orderby'], $requestdata['order'] ) );
     }
-    $item_ids = array_map( create_function( '$v', 'return $v->item_id;' ),  $items );
+    $item_ids = array_map( function($v){ return $v->item_id; },  $items );
 
     $ewzG = array(
                   'message'    => $message,

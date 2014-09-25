@@ -142,12 +142,12 @@ class Ewz_Layout extends Ewz_Base
                 }
             }
         } else {
-            if( strpos(  $keyholder, '>' ) ){
+            if( strpos(  $keyholder, '>' ) !== false ){
                 $xx = explode( '>', $keyholder );
                 if( isset( $dobj->{$xx[0]}[$xx[1]] ) ){
                     $value = $dobj->{$xx[0]}[$xx[1]];
                 }  
-            } elseif(  strpos(  $keyholder, '|' ) ){
+            } elseif(  strpos(  $keyholder, '|' ) !== false ){
                 $xx = explode( '|', $keyholder );
                 if( is_array( $dobj->{$xx[0]} ) ){
                     $value = '';

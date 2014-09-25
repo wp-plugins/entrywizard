@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.2
+  Version: 1.2.3
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -59,6 +59,9 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
 /**
  * ACTIONS
  */
+
+add_action('plugins_loaded', 'ewz_requires_version');   // first useable hook
+
 // in the admin area we add another function after this, so make sure we know its priority
 add_action( 'init', 'ewz_set_dev_env', 1 );
 
@@ -121,7 +124,11 @@ function ewz_check_for_db_updates(){
             error_log( "EWZ: updating $ewz_data_version to 1.2.0" );
             Ewz_Setup::activate_or_install_ewz();
         }
-        
+        // 1.2.3 added gen_fname to webforms table
+        if ( version_compare( $ewz_data_version, '1.2.3', '<' ) ){
+            error_log( "EWZ: updating $ewz_data_version to 1.2.3" );
+            Ewz_Setup::activate_or_install_ewz();
+        }
         update_option( 'ewz_data_version', $this_version );
     }
 }
@@ -300,6 +307,42 @@ function ewz_to_bytes( $sizestring )
     return 0;
 }
 
+/**
+ *
+ * Warn if required versions of WP and PHP not available
+ *
+ */
+function ewz_requires_version(){
+   $plugin = plugin_basename( EWZ_PLUGIN_DIR . '/entrywizard.php' );
+   $reqvers = ewz_required_versions_warning();
+   if ( $reqvers ) {
+       add_action( 'admin_notices', 'ewz_admin_notice' );
+   }     
+}
+   
+function ewz_required_versions_warning(){
+   global $wp_version;
+   $reqvers = '';
+
+   // version_compare returns -1 if left is lower than right, 0 if they are equal, 1 if right is lower than left
+   if ( version_compare( EWZ_REQUIRED_WP_VERSION, $wp_version ) == 1 ) {
+      $reqvers = 'WordPress version ' . EWZ_REQUIRED_WP_VERSION;
+      error_log("EWZ: wordpress version not supported");
+   }
+   if ( version_compare( EWZ_REQUIRED_PHP_VERSION, PHP_VERSION ) == 1 ) {
+       error_log("EWZ: php version not supported");
+      if( $reqvers ){
+            $reqvers .= " and ";
+      }
+      $reqvers .= 'PHP version ' . EWZ_REQUIRED_PHP_VERSION;
+   }
+   return $reqvers;
+}
+
+function ewz_admin_notice() {
+    $msg = ewz_required_versions_warning();
+    print "<div class='error'><h2>EntryWizard Warning</h2> EntryWizard requires at least <strong>$msg </strong></h2></div>";
+}
 
 
 /* * **************************************

@@ -246,6 +246,8 @@ function ewz_webforms_menu()
 
             // generate the options lists for each field of the selected layout
             foreach ( $layout->fields as $field ) {
+                $webform->field_idents[$field->field_id] = $field->field_ident;
+                $webform->field_types[$field->field_id] = $field->field_type;
                 $webform->field_names[$field->field_id] = ewz_html_esc( $field->field_header );
                 $webform->field_options[$field->field_id] = ewz_option_list( ewz_html_esc( $field->get_field_list_array() ) );
             }
@@ -298,7 +300,9 @@ function ewz_webforms_menu()
             'formIdent' => 'Each webform must have an identifier that starts with a lower case letter
                 and consists only of lower case letters, digits, dashes and underscores.',
             'formPrefix' => 'The prefix may contain only letters, digits, dashes, underscores
-                and the special expressions listed in the help window.',
+                and the special expressions listed in the help window. Make sure there are no spaces.',
+            'numPrefix' => 'The [~1] expression in the prefix is only valid if you are generating entire 
+                filenames for uploaded images. Either remove it or check "Generate a filename using the prefix"',
         );
         $ewzG['jsvalid'] = Ewz_Base::validate_using_javascript();
                            // normally true, set false to test server validation
@@ -338,7 +342,7 @@ function ewz_webforms_menu()
 
          <b><i>Special Field Identifiers</i></b>
          <ul>
-           <li> If the identifier has the special value 'followQ', the field is treated as a  
+           <li> If the identifier has the special value 'followupQ', the field is treated as a  
            "followup" field, which is not displayed by the 'ewz_show_webform' shortcode.
            It is the <u>only input</u> field shown by the 'ewz_followup' shortcode.
            Data entered in it will be stored and may be downloaded as usual. 
@@ -510,57 +514,119 @@ function ewz_webforms_menu()
                 With the image thumbnails visible, you may then inspect data, remove individual items,
                  or attach images to a page or post.</li>
              </ul>
+             <p>Note that downloading a large number of images by this method may take more time than some 
+                webhosting companies allow. In that case, the alternative is to download the images via
+                ftp. The images are in a folder whose name is the webform identifier, inside:<br>
+                <?php print EWZ_IMG_UPLOAD_DIR ?></p>
             <?php } ?>
         </div>
 
-        <!-- HELP POPUP prefix -->
-        <div id="prefix_help" class="wp-dialog" >
-            <p><u>If you wish</u>, you may choose to add a prefix to each of the
-                image file names.<br>  
-                The prefix may be applied to each file as soon as it is uploaded to the server,<br>
-                or it may only be applied to files which are downloaded using the Download Images buttons below.<br>
-            </p>
-             <p> Applying the prefix immediately on upload is safer if you download a lot of image files at once.
-                 If using the buttons below takes too long and times out, you may then use ftp to download the 
-                 files from the ewz_img_uploads subfolder in your wordpress uploads folder.
-             </p>
-             <p>
-                The prefix may contain the  following expressions, which will
-                be replaced as indicated:
-            <table class="ewz_border">
-                <thead><tr><th class="b">Expression</th><th class="b">Replacement</th></tr></thead>
-                <tbody>
-                    <tr><td class="b">[~WFM] </td>
-                        <td class="b"> Identifier for this webform</td></tr>
-                    <tr><td class="b">[~UID] </td>
-                        <td class="b"> Submitter's Wordpress ID Number</td></tr>
-                    <tr><td class="b">[~FLD] </td>
-                        <td class="b"> Wordpress ID of the field the image was uploaded under<br>
-                            (only useful if an item may contain more than one image)  </td></tr>
-            <?php
-                 foreach( Ewz_Custom_Data::$data as $key => $value ) {
-                    $code = str_replace( 'custom', '~CD', esc_html( $key ) );
-            ?>
-                                <tr><td class="b">[<?php print $code; ?>] </td>
-                                    <td class="b"> <?php print esc_html( $value ); ?> ( Custom data )</td>
-                                </tr>
-            <?php
+       <?php foreach ( $webforms as $webform  ) { ?>
+       ?>
+           <!-- HELP POPUP prefix -->
+           <div id="prefix<?php print $webform->webform_id; ?>_help" class="wp-dialog" >
+               <h2>Optional Filename Change</h2>
+               <p>Normally, an uploaded image file is stored on the server with a name as close as possible 
+                  ( with just spaces and special characters changed ) to the one given it by the person uploading. 
+                   And the file is normally downloaded by the administrator with the same name as it has on the server.
+                   If you are happy with that, you do not need to read any further.</p>
+
+               <h2>Adding a Prefix to the Filename</h2>
+               <p>If you wish, <u>you may choose to add a prefix</u> to each of the image file names.<br>  
+                  The prefix may be applied to each file as soon as it is uploaded to the server ( in which case the new filename
+                  will be displayed to the person uploading ),
+                  or it may only be applied to files which are downloaded using the Download Images buttons below.</p>
+                <p> Applying the prefix ( or generating the filename ) immediately on upload is usually the safer choice.
+                    If using the Download buttons on this page takes too long and times out ( which may happen if your webhost limits the time 
+                    a process may take ), you may then use ftp to download the renamed files from the <?php print EWZ_IMG_UPLOAD_DIR ?> folder.
+                    On the other hand, doing this does mean that you cannot change your mind later about what prefix to use, and the user  
+                    cannot edit any item used as part of the prefix.<br> 
+                </p>
+
+                <p>
+                   The prefix may contain the  following expressions, which will be replaced as indicated here:
+               <table class="ewz_border">
+                   <thead><tr><th class="b">Expression</th><th class="b">Replacement</th></tr></thead>
+                   <tbody>
+                       <tr><td class="b">[~WFM] </td>
+                           <td class="b"> Identifier for this webform</td></tr>
+                       <tr><td class="b">[~UID] </td>
+                           <td class="b"> Submitter's Wordpress ID Number</td></tr>
+                       <tr><td class="b">[~FLD] </td>
+                           <td class="b"> Wordpress ID of the field the image was uploaded under<br>
+                               (only useful if an item may contain more than one image)  </td></tr>
+                       <tr><td class="b">[~1] </td>
+                           <td class="b"> <i>For generated filenames only</i>, a generated sequence number 1,2,3,...</td></tr>
+               <?php
+                    foreach( Ewz_Custom_Data::$data as $key => $value ) {
+                       $code = str_replace( 'custom', '~CD', esc_html( $key ) );
+               ?>
+                                   <tr><td class="b">[<?php print $code; ?>] </td>
+                                       <td class="b"> <?php print esc_html( $value ); ?> ( Custom data )</td>
+                                   </tr>
+               <?php
+                    }
+                    foreach( $webform->field_types as $field_id => $field_type ) {
+                       if( ( $field_type == 'opt' ) &&  ( $webform->field_idents[ $field_id ] != 'followupQ' ) ){
+                           $code =  '~'.$webform->field_idents[ $field_id ] ;
+               ?>
+                                   <tr><td class="b">[<?php print $code; ?>] </td>
+                                       <td class="b"> <?php print esc_html( $webform->field_names[ $field_id ] ); ?> 
+                                                   ( *User-uploaded data, different for each layout )</td>
+                                   </tr>
+               <?php
+                      }
                    }
-            ?>
-                </tbody></table>
+               ?>
+                   </tbody></table>
+               <i>*Only user-uploaded data from an option list may be used. 
+                What is put into the prefix is the "Value for Spreadsheet", not the "Label for Web Page". <br />               
+                <b>Warning:</b>If you use user-editable data from an option list as part of the prefix, and apply the prefix 
+                    immediately on upload, that data <u>can no longer be changed by the user</u> after the upload.
+                </i>
 
-            For instance, suppose <ol><li> You set the identifier for this webform
-                    as "group1" and enter &nbsp; <b>"2012Jan-[~WFM]-[~UID]"</b>
-                    in the Optional Prefix box above</li>
-                <li> A member with wordpress id number <b>257</b> uploads images</li>
-                <li> One of these images is uploaded with the filename <b>myimage.jpg</b></li>
-            </ol>
-            Then the image will be downloaded with the filename
-            &nbsp; <b>"2012Jan-group1-257-my_image.jpg".</b>  This may be useful
-            if you wish the images to sort or group in a particular way.
-            </p>
-        </div>
-
+               </p>
+               <p>For instance, suppose <ol><li> You set the identifier for this webform
+                       as "group1" and enter &nbsp; <b>"2012Jan-[~WFM]-[~UID]-[~Cat]"</b>
+                       in the Optional Prefix box above</li>
+                   <li> A member with wordpress id number <b>257</b> uploads images</li>
+                   <li> One of these images is uploaded with the filename <b>myimage.jpg</b> and with value "P" selected from a drop-down menu with identifier "Cat"</li>
+               </ol>
+               Then the image will be downloaded with the filename
+               &nbsp; <b>"2012Jan-group1-257-P-my_image.jpg".</b>  This may be useful
+               if you wish the images to sort or group in a particular way.
+               </p>
+               <h2>Generating an Entire New Filename</h2>
+               <p><u>You may also generate an entire image filename</u>. 
+                  This will be simply the "prefix" alone, with its special expressions replaced as above.<br />
+                  This facility should be used cautiously, because if anything goes wrong it may be more difficult to associate 
+                  the renamed image with the original. But it may be necessary if a particular filename format is needed.<br /><br />
+                  If more than one image in the webform has the same value for the prefix, numbers 1,2,3... will be appended to the <u>second and
+                  subsequent filenames</u> as required ( this is a Wordpress function, not part of EntryWizard ), but not to the first.
+                  You may choose instead to insert '[~1]' into the prefix, and EntryWizard will replace this with 1, 2, ... in <u>every</u> file.<br />
+              
+                <p>For instance, suppose 
+                   <ol><li>You have an option list with identifier "Cat" which may return "value for spreadsheet" of "PD", "ND", "NP" </li>
+                       <li>and a custom field "Custom1" containing a membership number</li>
+                       <li>You set the options to apply prefix on upload, and generate a filename</li>
+                       <li>You set the prefix to "Img[~CD1][~Cat][~1]"</li>
+                       <li>A user with membership number 52 uploads two image files both with a "Cat" value of "ND"
+                   </ol>
+                   Then the images will be saved on the server as "Img52ND1.jpg" and "Img52ND2.jpg".  
+                   After uploading, the user will no longer be able to change the "Cat" option, although they may still change any other fields.</p>
+                              
+                <p><b>Warning:</b> Wordpress does strange things with files whose name consists entirely of digits.  <br />
+                  Wordpress also appends a number to the end of duplicate filenames in the upload folder, to distinguish them. 
+                  Normally, EntryWizard tries to make that more visible by adding an underscore to the end of filenames that end in a digit, 
+                  but it does  not do this when you elect to generate the entire filename. So it is then your responsibility to make 
+                  sure that no completely numeric filenames are generated, and that if you generate duplicate filenames, you understand 
+                  how they are handled.</p>
+                 <p><b>Warning:</b> When downloading files with generated names that were not applied on upload, spreadsheet and images 
+                 should be downloaded together using the  "Download Images and Spreadsheet" button to make sure the generated filenames match.</p> 
+           </div>
+        <?php
+           }
+        ?>
         </div>
     </div> <!-- wrap -->
 

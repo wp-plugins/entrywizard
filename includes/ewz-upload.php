@@ -213,7 +213,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     $output .= '<table class="ewz_upload_table ewz_padded">';
     $output .= "\n";
 
-    $append = array_map ( create_function( '$v', 'return $v->append == 1;' ),  $fields_arr );
+    $append = array_map ( function($v){ return $v->append == 1; },  $fields_arr );
     $append[ count($fields_arr) ] = false;
 
     //  header line
@@ -258,7 +258,12 @@ function ewz_upload_form( $stored_items, $layout, $webform )
                 $output .= "<label for='rdata_{$row}__{$field->field_id}__$webform_id'>" .  $reqflag . esc_html( $field->field_header ) . ':</label>';
             }
             
-            $output .= ewz_display_webform_field( $row, $webform_id, $savedval, $field );
+            // dont allow editing of data that has already been included in the filename
+            if( $webform->apply_prefix && ( strpos( $webform->prefix, '[~'.$field->field_ident.']' ) !== false ) ){
+                $output .=   ewz_display_webform_field( $row, $webform_id, $savedval, $field, true );       
+            } else {
+                $output .= ewz_display_webform_field( $row, $webform_id, $savedval, $field, false );
+            }
             if( !$append[$n+1] ){
                 $output .= '</td>';
             }
@@ -285,7 +290,7 @@ function ewz_upload_form( $stored_items, $layout, $webform )
             if( $append[$n] || $append[$n+1] ){
                 $output .= "<label for='rdata_{$row}__{$field->field_id}__$webform_id'>" .  $reqflag . esc_html( $field->field_header ) . ':</label>';
             }
-            $output .=  ewz_display_webform_field( $row, $webform_id, '', $field );
+            $output .=  ewz_display_webform_field( $row, $webform_id, '', $field, false );
             if( !$append[$n+1] ){
                 $output .= '</td>';
             }
@@ -344,12 +349,13 @@ function ewz_upload_form( $stored_items, $layout, $webform )
  * @param   array   $field     field info
  * @return  string  $display   -- the html
  */
-function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
+function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field, $fixed )
 {
     assert( Ewz_Base::is_nn_int( $rownum ) || $rownum == '' );
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( in_array( $field->field_type, array( 'str', 'opt', 'img', 'rad', 'chk' ) ) );
     assert( is_string( $savedval ) || is_bool( $savedval ) || $savedval === null || $savedval === 1 || $savedval === 0 );
+    assert( is_bool($fixed));
 
     $name    = "rdata[$rownum][" . $field->field_id . "]";
 
@@ -358,7 +364,7 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field )
     switch ( $field->field_type ) {
     case 'str': $display = ewz_display_str_form_field( $name, $webform_id, $savedval, $field );
             break;
-    case 'opt': $display = ewz_display_opt_form_field( $name, $webform_id, $savedval, $field );
+    case 'opt': $display = ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed );
             break;
     case 'img': $display = ewz_display_img_form_field( $name, $webform_id, $savedval, $field );
             break;
@@ -471,22 +477,24 @@ function ewz_display_img_form_field( $name, $webform_id, $savedval, $field )
  * @param   array  $field       field info
  * @return  string   -- the html
  */
-function ewz_display_opt_form_field( $name, $webform_id, $savedval, $field )
+function ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed )
 {
     assert( Ewz_Base::is_pos_int( $webform_id ) );
     assert( is_string( $name ) );
     assert( is_string( $savedval ) );
     assert( Ewz_Base::is_pos_int( $field->field_id ) );
+    assert( is_bool( $fixed ) );
 
     $ename = esc_attr( $name );
     $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
     $txt = '<select name="' . $ename . '" id="' . $iname . '_' . esc_attr( $webform_id ) .'">';
-    $txt .= '  <option value=""> </option>';
-    foreach ( $field->fdata['options'] as $n=>$dataval ) {
-        assert($n < count($field->fdata['options']) );
+    $txt .= '  <option value="" ' .  ( $fixed ? ' disabled="disabled"' : '' ) . '></option>' ;
+    foreach ( $field->fdata['options'] as $n => $dataval ) {
         $txt .= '<option value="' . esc_attr( $dataval['value'] ) . '"';
         if ( $dataval['value'] === $savedval ) {
             $txt .=         ' selected="selected" ';
+        } elseif( $fixed ){
+            $txt .=         ' disabled="disabled"';
         }
         $txt .= '>' . esc_attr( $dataval['label'] ) . '</option>';
     }
@@ -610,7 +618,7 @@ function ewz_current_status( $stored_items, $fields, $name, $webform_id ) {
 
         $output .= '<table id="datatable_' . esc_attr( $webform_id ) . '"  class="ewz_upload_table ewz_padded"><thead>';
 
-        $append = array_map ( create_function( '$v', 'return $v->append == 1;' ),  $fields_arr );
+        $append = array_map ( function($v){ return $v->append == 1; },  $fields_arr );
         $append[ count($fields_arr) ] = false;
 
 
@@ -791,13 +799,35 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
             foreach ( $fileset as $field_id => $filename ) {
                 if( isset( $filename ) && $filename ){
                     $prefix = '';
+                    $newfilename = $filename;
+                    $add_underscore = !$webform->gen_fname;   // if filename ends in a digit, we normally add an underscore to the end
+                                                              // but not if the final digit came from a prescribed prefix                    
                     if( $webform->apply_prefix ){
-                        $subst_data['field_id'] = $field_id;
-                        $prefix = $webform->do_substitutions( $subst_data );
+                        // do the substitutions in the prefix
+                        foreach( $upload[$row]['data'] as $fid => $val ){                            
+                            $subst_data[$fid] = $val;
+                        }
+                        $subst_data['file_field_id'] = $field_id;
+                        $prefix = $webform->generated_prefix( $subst_data );
+
+                        if( $webform->gen_fname ){
+                            $ext = pathinfo( $filename, PATHINFO_EXTENSION );
+                            if ( strpos( $prefix, '[~1]' ) !== false ) {
+                                // make sure the filename is unique for the directory -- append 1,2,3,... until it is
+                                $uniq = ewz_get_fname_num( $prefix, $ext, EWZ_IMG_UPLOAD_DIR . '/' . $webform->webform_ident );
+                                $newfilename = str_replace( '[~1]', $uniq, $prefix ). '.' . $ext;
+                            } else {
+                                $newfilename =  $prefix . '.' . $ext;
+                            }
+                        } else {
+                            // let WP take care of making the name unique. 
+                            $newfilename = $prefix . $filename;
+                        }                            
                     }
                     try{
                         // sanitize $prefix.$filename and if ok save the uploaded image
-                        $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $prefix.$filename, $row, $fields[$field_id] );
+                        $upload[$row]['files'][$field_id] = ewz_handle_img_upload( $newfilename, $row, $fields[$field_id],
+                                                                                   $add_underscore );
                     } catch( Exception $e ){
                         $upload[$row]['files'][$field_id]['fname'] = '___' . $e->getMessage();
                     }
@@ -859,15 +889,17 @@ function ewz_upload_closed( $form_name )
  * @param   string     $filename  location of temp uploaded file
  * @param   int        $row       row of upload form
  * @param   Ewz_Field  $field     layout field under which the image was uploaded
+ * @param   boolean    $appendU   do we add an underscore to the end of a filename ending in a digit
  * @return  array  of  field_id,thumb_url,filename, type, width, height, orientation
  */
-function ewz_handle_img_upload( $filename,  $row,  $field ){
+function ewz_handle_img_upload( $filename,  $row,  $field, $appendU ){
     assert( is_string( $filename ) || is_null( $filename ) );
     assert( is_int( $row ) );
     assert( is_object( $field ) );
+    assert( is_bool( $appendU ) );
 
     if ( $filename ) {
-        $filename = ewz_to_valid_fname( $filename );
+        $filename = ewz_to_valid_fname( $filename,  $appendU );
         $field_id = $field->field_id;
         $file = array(
                       'name'     => $filename,
@@ -888,7 +920,6 @@ function ewz_handle_img_upload( $filename,  $row,  $field ){
             // NB: t done with the upload directory set to 'ewz_upload_dir'
             $uploaded_file = wp_handle_upload( $file, array( 'test_form' => false ) );
             // $uploaded_file now contains array('file'=>path, 'url'=>url, 'type'=>mime)
-
             if ( isset( $uploaded_file['file'] ) ) {
                 $size = getimagesize( $uploaded_file['file'] );
 
@@ -1079,7 +1110,6 @@ function ewz_display_item( $field, $value ) {
     assert( is_string( $value ) || is_bool( $value ) || in_array( $value, array( null, 1, 0 ), true ) );
     if(  'opt' == $field->field_type ){
         foreach( $field->fdata['options'] as $n => $opt ){
-            assert( $n < count($field->fdata['options']));
             if( $opt['value'] == $value ){
                 return $opt['label'];
             }
@@ -1094,3 +1124,32 @@ function ewz_display_item( $field, $value ) {
        return $value;
     }
 }
+
+function ewz_get_fname_num( $in_fname, $ext, $dir ){
+    assert( is_string( $in_fname ) );
+    assert( is_string( $ext ) );
+    assert( is_string( $dir ) );
+
+    // some belt-and-braces checks before a potentially long loop
+    if( strlen( $in_fname ) < 5 ){
+        return '';
+    }        
+    if( strpos( $in_fname, '[~1]' ) === false ){
+        return '';
+    }
+    if( !is_dir( $dir ) ){
+        throw new EWZ_Exception( 'Directory for upload does not exist');
+    }
+       
+    $num = 1;
+    while( $num < 999 ){
+        $testfname = str_replace( '[~1]', "$num", $in_fname );
+        if( !file_exists( "{$dir}/{$testfname}.{$ext}" ) ){
+            return "$num";
+        }
+        ++$num;
+    }
+    return "$num";
+}
+
+

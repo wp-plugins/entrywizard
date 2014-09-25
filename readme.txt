@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.0
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,7 +32,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 * Each webform separately may be set as "open for upload" or "closed".  If it is open, the shortcode is replaced by the upload form.  If it is closed, the shortcode is replaced by a message saying that the upload is closed.  A closed webform may also be opened temporarily to specified members only, and an open webform may be set to close automatically at a specified time.
 
-* When items have been uploaded, the administrator may either view the items online, or download them.  A spreadsheet (in comma-separated .csv format) showing the uploaded data together with some optional information about the users, may also be downloaded.
+* When items have been uploaded, the administrator may either view the items online, or download them. The downloaded image files may be renamed in various ways.  A spreadsheet (in comma-separated .csv format) showing the uploaded data together with some optional information about the users, may also be downloaded.
 
 * The uploaded images may be attached to pre-existing pages for display in a gallery.
 
@@ -102,6 +102,7 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 * EntryWizard saves the images in a special subfolder of the wordpress "uploads" folder.  The image filenames are derived from the user's original filenames in the following way:
     1. All characters except letters, digits, underscores, dashes,  and all periods except the last,  are replaced by '_'. This ensures the filename is acceptable on most systems.
     2. If the base filename then ends with a digit, another '_' is appended.  This makes extra digits added by Wordpress in the case of duplicate filenames more legible. It also ensures that no filename is totally numeric - Wordpress handles files with completely numeric names differently in some cases.
+Administrators may, if required, add a prefix to this filename, or even generate it entirely from information stored on the server.
   
 == Screenshots ==
 
@@ -112,6 +113,11 @@ EntryWizard was developed to cater to the needs of camera club competitions.  In
 
 
 == Changelog ==
+= 1.2.3 =
+* Fixed a problem with checkboxes when a user deleted an item in the upload form and then re-entered data.
+* Added the ability to completely generate an image filename from data stored on the server.
+* Removed some unnecessary messages that were interfering with another plugin
+
 = 1.2.2 =
 * Require PHP version 5.3 -- needed for sortable columns in list view
 * Delete associated entrywizard items when a user is deleted
@@ -221,6 +227,8 @@ CHANGE: Require a minimum longest dimension for uploaded images instead of a min
 Enhancements planned eventually (in no particular order):
 
 * Make the shortcode easier to edit within the TinyMCE editor
+
+* Make layouts and webforms sortable
 
 * Copy restrictions when copying a layout
 

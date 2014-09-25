@@ -160,7 +160,7 @@ function ewz_layout_menu()
             'colhead' => 'Each field in a layout must have a column header.' ,
             'ident' => 'Each field must have an identifier that starts with a letter and " .
                 "consists only of letters, digits, dashes and underscores.' ,
-            'followimg' => 'A followup field (i.e. one with the identifier "followQ") may not have type "Image File"',
+            'followimg' => 'A followup field (i.e. one with the identifier "followupQ") may not have type "Image File"',
             'maximgw' => 'The max image width should consist of digits only.' ,
             'maximgh' => 'The max image height should consist of digits only.' ,
             'minlongestdim' => 'The minimum longest dimension should consist of digits only.' ,
@@ -418,7 +418,7 @@ function ewz_layout_menu()
                     <br /><br />
                    There are certain special values for the identifier that will cause a change in EntryWizard's behaviour.
                    <ul>
-                     <li> If the identifier has the special value 'followQ', the field is treated as a  
+                     <li> If the identifier has the special value 'followupQ', the field is treated as a  
                      "followup" field, which is not displayed by the 'ewz_show_webform' shortcode.
                      It is the <u>only input</u> field shown by the 'ewz_followup' shortcode.</li>
                      <li> If the field contains 'XFQ' as part of it's identifier, the field will <b>not</b> be displayed by 
@@ -481,7 +481,10 @@ function ewz_layout_menu()
                         <li><b>Value for Spreadsheet:</b> what you see in the corresponding
                             spreadsheet column when the user selects this item.<br>
                             May contain only letters, digits, dashes, underscores<br>
-                            (Behind the scenes, this is also the value stored in the database) </li>
+                            (Behind the scenes, this is also the value stored in the database)<br>
+                     <i>Hint:</i> When you set the Label, if the Value has not already been set it defaults to that of the Label.
+                     If you want different values for Label and Value, try setting the Value first.
+                            </li>
                         <li><b>Maximum Number Allowed:</b> If you enter a number N here,
                             no more than N items uploaded by this user may have the matching value.<br>
                             This allows for such rules as "6 images may be submitted, no more than

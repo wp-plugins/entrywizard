@@ -202,10 +202,13 @@ function webform_data_str(evnum, eObj) {
     str +=   '        </tr>';
     }  
 
-    str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix\')">&nbsp;Optional prefix:</td> ';
+    str +=   '        <tr><td><img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'prefix' + eObj.webform_id + '\')">&nbsp;Optional prefix:</td> ';
     str +=   '            <td><input type="text" name="prefix" id="prefix_' + evnum + '" value="' + eObj.prefix + '"  maxlength="25"></td>';
-    str +=   '            <td>Apply this prefix to the file stored on the server &nbsp; ';
+    str +=   '            <td>Apply prefix on upload &nbsp; ';
     str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
+    str +=   '            </td>';
+    str +=   '            <td>Generate a filename using the prefix &nbsp; ';
+    str +=                  checkboxinput_str("gen_fname_" + evnum, "gen_fname", eObj.gen_fname );
     str +=   '            </td>';
     str +=   '        </tr>';
 
@@ -218,7 +221,7 @@ function webform_data_str(evnum, eObj) {
     str +=   '             <td>' + checkboxinput_str("auto_close_" + evnum, "auto_close", eObj.auto_close );         
     str +=   '            &nbsp;  &nbsp;  Date: ' + textinput_str("auto_date_" + evnum, "auto_date", 15, eObj.auto_date);
     str +=   '           </td><td>Time: <select name="auto_time" id="auto_time_' + evnum + '">' + eObj.close_time_opts + '</select>';
-    str +=   '                ( ' + ewzG.tz + ' )  &nbsp; <i>Current date-time is ' + ewzG.now + '</i></td>';
+    str +=   '                 </td><td>( Timezone ' + ewzG.tz + ' )  &nbsp; <br><i>Current date-time is ' + ewzG.now + '</i></td>';
     str +=   '        </tr>';
 
 
@@ -312,21 +315,27 @@ function field_options_str( evnum, eObj ){
     'use strict';
     var field_id1,
         field_id2,
+        fid,
+        num  = 0,
         str  = '';
-
-        str +=   '    <TABLE class="ewz_field_opts">';
-        str +=   '       <TR>';
+    for( fid in eObj.field_options ){
+        if(eObj.field_options.hasOwnProperty(fid) && eObj.field_options[fid]){
+            ++num;
+        }
+    }
+    if( num > 0 ){   
+        str +=   '    <TABLE class="ewz_field_opts"><TBODY><TR>';
         for( field_id1 in eObj.field_options ){
            if(eObj.field_options.hasOwnProperty(field_id1)){
-               str +=   '      <TH>';
+               str +=   '<TH>';
                if( eObj.field_options[field_id1] ){
                    str +=   eObj.field_names[field_id1];
                }
-               str +=   '      </TH>';
+               str +=   '</TH>';
            }
         }
-        str +=   '       </TR>';
-        str +=   '       <TR>';
+        str +=   '</TR>';
+        str +=   '<TR>';
         for( field_id2 in eObj.field_options ){
            if(eObj.field_options.hasOwnProperty(field_id2)){
                str +=   '      <TD>';
@@ -335,11 +344,11 @@ function field_options_str( evnum, eObj ){
                    str +=              eObj.field_options[field_id2];
                    str +=   '      </select>';
                }
-               str +=   '  </TD>';
+               str +=   '</TD>';
            }
         }
-        str +=   '       </TR>';
-        str +=   '    </TABLE>';
+        str +=   '</TR></TBODY></TABLE>';
+    }
     return str;
 }
 
@@ -349,7 +358,7 @@ function upload_date_str( evnum ){
     var day,
         str  = '';
 
-        str +=   '<BR><TABLE class="ewz_field_opts">';
+        str +=   '<TABLE class="ewz_field_opts">';
         str +=   '       <TR>';
         str +=   '          <TD>Initial upload occurred during the last &nbsp;';
         str +=   '             <SELECT id="uploaddays' + evnum  + '" name="uploaddays">';
@@ -384,7 +393,7 @@ function select_layout_str( evnum, eObj ){
     str += '                      </select>';
     str +=   '                 </td>';
     if(eObj.itemcount > 0){
-        str +=   '             <td><div class="ewz_warn">Warning: This form has uploaded data. <br>Changing the layout now could cause problems.</div></td>';
+        str +=   '             <td colspan="2"><div class="ewz_warn">Warning: This form has uploaded data. <br>Changing the layout now could cause problems.</div></td>';
     }
     return str;
 }
@@ -469,7 +478,7 @@ function add_new_webform(){
     newform.webform_ident = '';
     newform.prefix = '';
     newform.apply_prefix = true;
-    
+    newform.gen_fname = false;
     jQnew = jQuery(ewz_management(num, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");
@@ -525,12 +534,17 @@ function ewz_check_csv_input(ftype, evnum, file_input_id){
 function ewz_check_webform_input(form, evnum, do_js_check){
     'use strict';
     var jform,
-        pref;
+    pref;
     jform = jQuery(form);
     if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
         !jform.find('input[id^="prefix_"]').val().trim( ).length ){
         jform.find('input[id^="apply_prefix"]').prop('checked', false );
     }
+    if( jform.find('input[id^="gen_fname"]').is(':checked') &&
+        !jform.find('input[id^="prefix_"]').val().trim( ).length ){
+        jform.find('input[id^="gen_fname"]').prop('checked', false );
+    }
+
     if( do_js_check) {
         jQuery('#cfg_form_wf' +  evnum + '_').prop("disabled", true);
         try{
@@ -551,6 +565,10 @@ function ewz_check_webform_input(form, evnum, do_js_check){
                 err_alert(evnum, ewzG.errmsg.formPrefix);
                 return false;
             }
+            if( pref.match(/\[~1\]/) && !(jform.find('input[id^="gen_fname"]').is(':checked'))){
+                err_alert(evnum, ewzG.errmsg.numPrefix);
+                return false;
+            } 
             return true;
         } catch(except) {
             jQuery('#cfg_form_wf' +  evnum + '_').prop("disabled", false);
