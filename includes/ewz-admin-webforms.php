@@ -273,8 +273,8 @@ function ewz_webforms_menu()
                 $openwebform_id = $formid;
             }
         }
-        $ewzG['now'] = current_time('mysql');
-        $ewzG['tz'] = get_option('timezone_string') ;
+        $ewzG['now'] = current_time('mysql');        
+        $ewzG['tz'] = get_option('timezone_string');
         $ewzG['dateFormat'] = Ewz_Base::toDatePickerFormat( get_option( 'date_format' ) );
 
         $ewzG['openform_id'] = $openwebform_id;

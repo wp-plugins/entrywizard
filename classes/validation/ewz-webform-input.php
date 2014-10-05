@@ -14,6 +14,10 @@ class Ewz_Webform_Input extends Ewz_Input
          parent::__construct( $form_data );
          assert( is_array( $form_data ) );
        
+         $tz_opt = get_option('timezone_string');
+         if( $tz_opt ){
+             date_default_timezone_set( $tz_opt );
+         }
          $this->rules = array(
 
                   '_wp_http_referer' => array( 'type' => 'to_string', 'req' => false, 'val' => '' ),
@@ -55,8 +59,12 @@ class Ewz_Webform_Input extends Ewz_Input
             $this->input_data['auto_close'] = false;
         }
         if( $this->input_data['auto_close']){
-            $dt = strtotime( $this->input_data['auto_date'] . ' ' . $this->input_data['auto_time'] );
-            $now = time();
+            $tz_opt = get_option('timezone_string');
+            if( $tz_opt ){
+                date_default_timezone_set($tz_opt );
+            }
+            $dt = strtotime( $this->input_data['auto_date'] . ' ' . $this->input_data['auto_time'] .' '.$tz_opt ); 
+            $now = current_time( 'timestamp', 1 );  
             if( $dt < $now + 30 ){
                 throw new EWZ_Exception( 'Input date too early' );
             }

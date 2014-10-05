@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.3
+  Version: 1.2.4
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -92,7 +92,6 @@ function ewz_check_for_db_updates(){
     $data             = get_plugin_data( __FILE__, false, false );
     $this_version     = $data['Version'];
     $ewz_data_version = get_option( 'ewz_data_version', '0.9.1' );
-
     if ( version_compare( $ewz_data_version, $this_version,  '<' ) ){
         // 0.9.6 added new apply_prefix column to webforms table 
         // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
@@ -129,6 +128,11 @@ function ewz_check_for_db_updates(){
             error_log( "EWZ: updating $ewz_data_version to 1.2.3" );
             Ewz_Setup::activate_or_install_ewz();
         }
+        // 1.2.4 htaccess and index file in EWZ_IMG_UPLOAD_DIR
+        if ( version_compare( $ewz_data_version, '1.2.4', '<' ) ){
+            error_log( "EWZ: updating $ewz_data_version to 1.2.4" );
+            Ewz_Setup::protect_uploads();
+        }       
         update_option( 'ewz_data_version', $this_version );
     }
 }

@@ -626,11 +626,13 @@ function disable_max_vals(jLayout) {
                 mni_min = optval;
             }
             jselect.find('option').prop("disabled", false);
-            jselect.find('option:gt(' + opt_max_limit + ')').prop("disabled", true);
+            jselect.find('option').filter(function(){
+                return  parseInt(jQuery(this).val()) > opt_max_limit } ).prop("disabled", true);
         }
     });
     jMaxNum.find('option').prop("disabled", false);
-    jMaxNum.find('option:lt(' + mni_min + ')').prop("disabled", true);
+    jMaxNum.find('option').filter(function(){
+        return  parseInt(jQuery(this).val()) < mni_min } ).prop("disabled", true);
 }
 
 /* Restrictions are initially created blank. This fills in the details */

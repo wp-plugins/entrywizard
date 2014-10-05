@@ -281,18 +281,22 @@ class Ewz_Webform extends Ewz_Base {
         if ( count( $items ) < 1 ) {
             throw new EWZ_Exception( "No matching items found." );
         }
-        $date = current_time( 'Ymd' );
+        $date = current_time( 'YmdHis' );
         $up = $this->ewz_upload_dir( wp_upload_dir() );  // uploads/ewz_img_uploads/$this->webform_ident
         if ( !is_dir( $up['path'] ) ) {
             mkdir( $up['path'] );
+            $outp = fopen( $up['path'] . "/index.php", 'w' );
+            fwrite( $outp, "<?php\n   //No listing\n?>" );
+            fclose( $outp );
         }
 
-        $archive_fname = "ewz_" . $this->webform_ident . "_$date.zip";
+        $rand = $this->randstring(15);
+        $archive_fname = "ewz_{$date}_{$rand}.zip";
         $archive_path = $up['path'] . "/$archive_fname";
         $archive_url = $up['url'] . "/$archive_fname";
 
         // remove any other zip files from this webform
-        $zipfiles =  glob( $up['path'] . "/ewz_" . $this->webform_ident . "*.zip" );
+        $zipfiles =  glob( $up['path'] . "/ewz_*.zip" );
         if( $zipfiles ){
             array_map( "unlink", $zipfiles );
         }
@@ -302,6 +306,10 @@ class Ewz_Webform extends Ewz_Base {
         if( $errmsg ){
             throw new EWZ_Exception("EWZ: make_zip_archive returned: $errmsg");
         } else {
+            ob_end_flush();
+            ignore_user_abort(false);
+            ini_set('output_buffering', 0);
+            ini_set('zlib.output_compression', 0);
             // display it, making sure the redirect location is not cached
             // Date in the past
             header( "Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
@@ -375,7 +383,8 @@ class Ewz_Webform extends Ewz_Base {
                     }
                 }
             }
-            if ( $inclusion == self::BOTH ) {
+            $csv_fname = '';
+            if ( self::BOTH == $inclusion  ) {
                 $csv_fname = $this->download_spreadsheet( $items, true );
                 if ( is_file( $csv_fname ) ) {
                     $zip->addFile( $csv_fname, basename( $csv_fname ) );
@@ -390,6 +399,10 @@ class Ewz_Webform extends Ewz_Base {
             if( !$zip->close() ){
                 throw new EWZ_Exception( "Failed to close zip file" );
             }
+            if ( ( self::BOTH == $inclusion ) && is_file( $csv_fname ) ) {
+                unlink( $csv_fname );
+            }
+            
         } else {
             throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator." );
         }
@@ -501,12 +514,24 @@ class Ewz_Webform extends Ewz_Base {
             ksort( $rows[$k]);
         }
 
-
+        $outpath = '';
         if ( $include == self::BOTH ) {
-            $out = fopen( sys_get_temp_dir() . "/ewz_" . $this->webform_ident . ".csv", 'w' );
+            $up = $this->ewz_upload_dir( wp_upload_dir() );  // uploads/ewz_img_uploads/$this->webform_ident
+            if ( !is_dir( $up['path'] ) ) {
+                mkdir( $up['path'] );
+                $outp = fopen( $up['path'] . "/index.php", 'w' );
+                fwrite( $outp, "<?php\n   //No listing\n?>" );
+                fclose( $outp );
+            }
+            $date = current_time( 'YmdHis' );
+            $outpath = $up['path'] . "/ewz_{$date}_" . $this->randstring(15) . ".csv";
+            $out = fopen( $outpath, 'w' );
         } else {
             $filename = 'webdata_' . current_time( 'Ymd' ) . '.csv';
-
+            ob_end_flush();
+            ignore_user_abort(false);
+            ini_set('output_buffering', 0);
+            ini_set('zlib.output_compression', 0);
             header( "Content-Disposition: attachment; filename=\"$filename\"" );
             header( "Content-Type: text/csv" );
             header( "Cache-Control: no-cache" );
@@ -518,7 +543,7 @@ class Ewz_Webform extends Ewz_Base {
         }
         fclose( $out );
         if ( $include == self::BOTH ) {
-            return sys_get_temp_dir() . "/ewz_" . $this->webform_ident . ".csv";
+            return $outpath;
         } else {
             // this forces the download dialog
             exit();
@@ -634,6 +659,7 @@ class Ewz_Webform extends Ewz_Base {
                 // could be done more succinctly using $$display[$xcol]['dobject']
                 // but harder to understand, and fools the ide into generating a warning
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
+
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
                 // dont crash on undefined custom data
@@ -751,6 +777,10 @@ class Ewz_Webform extends Ewz_Base {
         assert( is_string( $close_time ) );
         // Remove existing cron event for this webform if one exists
         wp_clear_scheduled_hook( 'ewz_do_close_webform', array( $this->webform_id) );
+        $tz_opt = get_option('timezone_string');
+        if( $tz_opt ){
+            date_default_timezone_set( $tz_opt );
+        }
         $ctime = strtotime ( $close_time );
         wp_schedule_single_event(  $ctime, 'ewz_do_close_webform', array( $this->webform_id ) );
     }
@@ -776,10 +806,16 @@ class Ewz_Webform extends Ewz_Base {
         $nexttime = wp_next_scheduled('ewz_do_close_webform', array( $this->webform_id ) );
         if( $nexttime ){
             $dateformat = get_option('date_format');
+            $tz_opt = get_option('timezone_string');
+            if( $tz_opt ){
+                date_default_timezone_set( $tz_opt );
+            }
             $this->auto_close = true;
             // format
-            $this->auto_date = strftime ( self::toStrftimeFormat( $dateformat ), $nexttime );
-            $this->auto_time = strftime ( '%H:%M:%S', $nexttime );
+             //$this->auto_date = strftime ( self::toStrftimeFormat( $dateformat ), $nexttime );
+            $this->auto_date = date( $dateformat, $nexttime );
+             //$this->auto_time = strftime ( '%H:%M:%S', $nexttime );
+            $this->auto_time = date( 'H:i:s', $nexttime );
             $this->close_at =  $nexttime;
         } else {
             $this->auto_close = false;
@@ -796,6 +832,9 @@ class Ewz_Webform extends Ewz_Base {
 	global $wpdb;
 	$options = array();
         $tformat = get_option( 'time_format' );
+        if( !$tformat ){
+            $tformat = 'H:i';
+        }
 	for( $h=0; $h < 24; ++$h ) {
 
             for( $m =0; $m < 60; $m+=15 ){
@@ -803,7 +842,7 @@ class Ewz_Webform extends Ewz_Base {
                 $val = sprintf( "%02s:%02s:00", $h, $m );
 
                 $date =  new DateTime( $val );
-                $display = $date->format( get_option( 'time_format' ) );
+                $display = $date->format( $tformat );
 
 		if ( $this->auto_time == $val ) {
                     $is_sel = true;
@@ -1065,6 +1104,25 @@ class Ewz_Webform extends Ewz_Base {
                 throw new EWZ_Exception( "Problem deleting webform '$this->webform_title '" );
             }
         }
+    }
+
+       
+    private function randstring( $len ){
+        assert( Ewz_Base::is_pos_int($len ) );
+
+        return implode('', array_map( function () { 
+                    $type = rand(0, 2);
+                    switch ( $type ){
+                    case 0:  return chr( mt_rand(48, 57) );
+                        break;
+                    case 1: return chr(mt_rand(97, 122) );
+                        break;
+                    case 2: return chr( mt_rand(65, 90) );
+                        break;
+                    default: return chr(mt_rand(97, 122) );
+                    }
+                },
+                range(0, $len - 1) ));                 
     }
 
 }

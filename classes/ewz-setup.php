@@ -735,7 +735,7 @@ class Ewz_Setup
         }
         copy( dirname( __FILE__ ) . '/../images/sample2-thumb.jpg', "{$dir}/sample2-thumb.jpg" );
         copy( dirname( __FILE__ ). '/../images/sample2.jpg', "{$dir}/sample2.jpg" );
-    }
+   }
 
     public static function create_sample_data2(  $dir, $webform_id, $webform_ident, $ids ){
         global $wpdb;
@@ -810,6 +810,31 @@ class Ewz_Setup
 
     }
 
+    public static function protect_uploads()
+    {
+        if( !file_exists( EWZ_IMG_UPLOAD_DIR ) ){
+            mkdir( EWZ_IMG_UPLOAD_DIR );
+        }
+        $f2 =  EWZ_IMG_UPLOAD_DIR . '/.htaccess' ;
+        if( !file_exists( $f2 ) ){
+            $outp = fopen( $f2, 'w' );
+            fwrite( $outp, "Options All -Indexes" );
+            fclose( $outp );
+        }
+        // belt-and-braces
+        if( $dh = opendir( EWZ_IMG_UPLOAD_DIR ) ){
+            while (($file = readdir($dh)) !== false) {
+                if( is_dir( EWZ_IMG_UPLOAD_DIR . "/$file" ) ){ 
+                    $f1 =  EWZ_IMG_UPLOAD_DIR . "/{$file}/index.php" ;
+                    if( !file_exists( $f1 ) ){
+                        $outp = fopen( $f1, 'w' );
+                        fwrite( $outp, "<?php\n   //No listing\n?>\n" );
+                        fclose( $outp );
+                    }
+                }
+            }
+        }
+    }
 
     private static function set_initial_permissions()
     {
@@ -819,6 +844,8 @@ class Ewz_Setup
         Ewz_Permission::add_perm( $user->ID, 'ewz_can_assign_layout', array( "-1" ) );
         Ewz_Permission::add_perm( $user->ID, 'ewz_can_edit_webform', array( "-1" ) );
         Ewz_Permission::add_perm( $user->ID, 'ewz_can_download_webform', array( "-1" ) );
+
+        self::protect_uploads();
     }
 
     private static function rrmdir( $dir ) {

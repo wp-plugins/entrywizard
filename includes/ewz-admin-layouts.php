@@ -150,27 +150,27 @@ function ewz_layout_menu()
         // a start on internationalization, not completed
         $ewzG['errmsg'] = array(
             'onlylayout' => 'You cannot delete the only layout.' ,
-            'deletehasitems' => 'There are items uploaded to webforms using this layout. " .
-                "Please delete them first.' ,
+            'deletehasitems' => 'There are items uploaded to webforms using this layout. ' .
+                'Please delete them first.' ,
             'deletehaswebforms' => 'This action will also delete all the webforms using this layout.' ,
             'deleteconfirm' => 'Really delete the entire layout ' ,
             'layoutname' => 'Please enter a name for the layout.' ,
             'maxnumitems' => 'Please enter the maximum number of items for the layout.' ,
             'nofields' => 'A layout must have at least one field.' ,
             'colhead' => 'Each field in a layout must have a column header.' ,
-            'ident' => 'Each field must have an identifier that starts with a letter and " .
-                "consists only of letters, digits, dashes and underscores.' ,
+            'ident' => 'Each field must have an identifier that starts with a letter and ' .
+                'consists only of letters, digits, dashes and underscores.' ,
             'followimg' => 'A followup field (i.e. one with the identifier "followupQ") may not have type "Image File"',
             'maximgw' => 'The max image width should consist of digits only.' ,
             'maximgh' => 'The max image height should consist of digits only.' ,
             'minlongestdim' => 'The minimum longest dimension should consist of digits only.' ,
             'nomaximgsz' => 'Each image field must have a max image size.' ,
-            'maximgsz' => 'The max image size should consist of digits only, " .
-                "representing the number of Megabytes allowed.' ,
+            'maximgsz' => 'The max image size should consist of digits only, ' .
+                'representing the number of Megabytes allowed.' ,
             'sysmaxsz' => 'The system limits the size of uploaded files to ' . $ewzG['maxUploadMb'] . 'M or less' ,
             'sysmaxup' => 'There is a maximum total upload of ' . $ewzG['maxTotalMb'] .
-                'M allowed by your system.  If a user submits all allowed images at " .
-                "maximum allowed size, their upload may fail without any message. Continue anyway?' ,
+                'M allowed by your system.  If a user submits all allowed images at ' .
+                'maximum allowed size, their upload may fail without any message. Continue anyway?' ,
             'optlabel' => 'Each option in an option list must have a label for the web page.' ,
             'optvalue' => 'Each option in an option list must have a value.' ,
             'option' => 'Options may consist only of letters, digits, dashes and underscores.' ,
@@ -178,11 +178,11 @@ function ewz_layout_menu()
             'restrmsg' => 'A restriction must have a message to show the user.' ,
             'maxnumchar' => 'Each text entry must have a maximum number of characters.' ,
             'imgtypes' => 'Each image file must have a set of allowed image types.' ,
-            'all_any' => 'Warning: if all the items in a restriction allow `Any` value, " .
-                "the restriction has no effect. It will, however, slow down processing. Go ahead anyway?' ,
-            'one_any' => 'Warning: if only one item in a restriction is different from `Any`, " .
-                "the restriction has the same effect as removing the forbidden item from the selection list, " .
-                "but is much slower. Go ahead anyway?' ,
+            'all_any' => 'Warning: if all the items in a restriction allow `Any` value, ' .
+                'the restriction has no effect. It will, however, slow down processing. Go ahead anyway?' ,
+            'one_any' => 'Warning: if only one item in a restriction is different from `Any`, ' .
+                'the restriction has the same effect as removing the forbidden item from the selection list, ' .
+                'but is much slower. Go ahead anyway?' ,
         );
 
         // use of $ewzG1.var = ewzG  is a hack to get around the fact that wp_localize_script

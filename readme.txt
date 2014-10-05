@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.0
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,11 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.4 =
+fixed issue with max number of items allowed in Layouts page
+protect upload folder from listing, use random filenames for downloads
+make sure local time is used for automatic webform closing
+
 = 1.2.3 =
 * Fixed a problem with checkboxes when a user deleted an item in the upload form and then re-entered data.
 * Added the ability to completely generate an image filename from data stored on the server.

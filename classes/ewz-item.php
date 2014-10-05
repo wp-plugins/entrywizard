@@ -153,10 +153,13 @@ class Ewz_Item extends Ewz_Base {
         $seconds = 3600 * 24 * $days;
         foreach ( $items as $item ) {
             // upload_date added in 0.9.9 -- use last_change if no value
-            $uploaded = date_parse( empty( $item->upload_date ) ?  $item->last_change : $item->upload_date );
-            $uploadedtime = mktime( 0, 0, 0, $uploaded['month'], $uploaded['day'], $uploaded['year'] );
-            
-            if ( ( time() - $uploadedtime ) < $seconds ) {
+             $tz_opt = get_option('timezone_string');
+             if( $tz_opt ){
+                   date_default_timezone_set( $tz_opt );
+             }
+            $uploadedtime = strtotime( ( empty( $item->upload_date ) ?  $item->last_change : $item->upload_date )  );
+            $now = current_time( 'timestamp', 1 );  
+            if ( ( $now - $uploadedtime ) < $seconds ) {
                 array_push( $filtered, $item );
             }
         }
