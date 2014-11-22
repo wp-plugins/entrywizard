@@ -2,6 +2,7 @@
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
 require_once( EWZ_PLUGIN_DIR . '/classes/ewz-base.php' );
+require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 
     /* used only in asserts */
     function ewz_is_valid_ewz_path( $val ) {
@@ -29,22 +30,24 @@ require_once( EWZ_PLUGIN_DIR . '/classes/ewz-base.php' );
  * @param   string  $string
  * @return  string
  */
-function ewz_to_valid_fname( $string )
+function ewz_to_valid_fname( $string, $appendU )
 {
     assert( is_string( $string ) );
-
-    // replace all special chars with _
+    assert( is_bool( $appendU ) );
+    // replace all non-alphanum chars except '_', '-', '.' with '_'
     $string1 = preg_replace( '/[^a-zA-Z0-9_\-\.]/', '_', $string );
 
     // replace all but last dot -- otherwise, a file with more than one dot fails
     $numdots = substr_count( $string, '.' );
     $string2 = preg_replace( '/\./', '_', $string1, $numdots - 1 );
 
-    // append '_' if name ends in digit, so wp's added numbers can be seen,
-    // and so no filename is completely numeric (wp does odd things if filename is just a number)
-    $string = preg_replace( '/(\d)\./', '${1}_.', $string2 );
+    if( $appendU ){ 
+        // append '_' if name ends in digit, so wp's added numbers can be seen,
+        // and so no filename is completely numeric (wp does odd things if filename is just a number)
+        $string2 = preg_replace( '/(\d)\./', '${1}_.', $string2 );
+    }
 
-    return $string;
+    return $string2;
 }
 
 
@@ -102,7 +105,7 @@ function ewz_option_list( $opts ){
  *
  * Replace .ext with  something like "-200x150.ext", following
  *              the convention used by Wordpress
- * @param   $fname  input filename
+ * @param   $fpath  input filename ( full path )
  * @return  $fname with .ext replaced by -thumb.ext
  */
 function ewz_thumbfile_path( $fpath ){
