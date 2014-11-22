@@ -50,17 +50,17 @@ class Ewz_Webform extends Ewz_Base {
     // keep list of db data names/types as a convenience for iteration and so we can easily add new ones.
     // Dont include webform_id
     public static $varlist = array(
-        'layout_id' => 'integer',
-        'num_items'  => 'integer',
-        'webform_title' => 'string',
-        'webform_ident' => 'string',
-        'upload_open' => 'boolean',
-        'open_for' => 'array',
-        'prefix' => 'string',
-        'apply_prefix' => 'boolean',
-        'gen_fname' => 'boolean',
-        'attach_prefs' => 'string',
-    );
+                                   'layout_id' => 'integer',
+                                   'num_items'  => 'integer',
+                                   'webform_title' => 'string',
+                                   'webform_ident' => 'string',
+                                   'upload_open' => 'boolean',
+                                   'open_for' => 'array',
+                                   'prefix' => 'string',
+                                   'apply_prefix' => 'boolean',
+                                   'gen_fname' => 'boolean',
+                                   'attach_prefs' => 'string',
+                                   );
 
     /**
      * Return an array of all webforms using the input layout
@@ -73,7 +73,7 @@ class Ewz_Webform extends Ewz_Base {
         assert( Ewz_Base::is_pos_int( $layout_id ) );
 
         $list = $wpdb->get_col( $wpdb->prepare( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE .
-                        " WHERE layout_id = %d  ORDER by webform_id", $layout_id ) );
+                                                " WHERE layout_id = %d  ORDER by webform_id", $layout_id ) );
         $webforms = array( );
         foreach ( $list as $webform_id ) {
             $webform = new Ewz_Webform( $webform_id );
@@ -183,7 +183,7 @@ class Ewz_Webform extends Ewz_Base {
             $this->open_for_string = 'Currently open for ' .
                 implode( ', ', array_map( function($v){ return get_userdata($v)->user_login; }, 
                                           $this->open_for ) ) .
-                    ' only';
+                ' only';
         }
         $this->can_download = Ewz_Permission::can_download( $this );
         $this->can_edit_webform = Ewz_Permission::can_edit_webform( $this );
@@ -201,9 +201,9 @@ class Ewz_Webform extends Ewz_Base {
         assert( Ewz_Base::is_pos_int( $id ) );
 
         $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " .
-                        implode( ',', array_keys( self::$varlist ) ) .
-                        " FROM " .
-                        EWZ_WEBFORM_TABLE . " WHERE webform_id=%d", $id ), ARRAY_A );
+                                                     implode( ',', array_keys( self::$varlist ) ) .
+                                                     " FROM " .
+                                                     EWZ_WEBFORM_TABLE . " WHERE webform_id=%d", $id ), ARRAY_A );
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform', $id );
         }
@@ -218,16 +218,16 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Create a new webform object from the webform ident by getting the data from the database
      *
-     * @param  string  $ident: the webform ident
+     * @param  string   $ident      the webform ident
      * @return none
      */
     protected function create_from_ident( $ident ) {
         global $wpdb;
         assert( is_string( $ident ) );
         $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " .
-                        implode( ',', array_keys( self::$varlist ) ) .
-                        " FROM " .
-                        EWZ_WEBFORM_TABLE . " WHERE webform_ident=%s", $ident ), ARRAY_A );
+                                                     implode( ',', array_keys( self::$varlist ) ) .
+                                                     " FROM " .
+                                                     EWZ_WEBFORM_TABLE . " WHERE webform_ident=%s", $ident ), ARRAY_A );
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform', $ident );
         }
@@ -259,8 +259,8 @@ class Ewz_Webform extends Ewz_Base {
         }
         $this->set_data( $data );
         $this->check_errors();
-        if( $data['auto_close'] ){            
-            $this->schedule_closing( $data['auto_date'] . ' '.  $data['auto_time']  );
+        if( $data['auto_close'] ){ 
+            $this->schedule_closing( $data['auto_date'] . ' '.  $data['auto_time'] );
         }
         $this->set_auto_time();
     }
@@ -269,72 +269,200 @@ class Ewz_Webform extends Ewz_Base {
     /*     * ******************  Download Functions ********************* */
 
     /**
-     * Print the zip archive of images to stdout
+     * Generate the zip archive file of images using PHPs ZipArchive
+     * Called if there is no access to a "zip" command on the server
+     *
+     * Use a random filename because the file will be temporarily stored in a web-accessible folder
      *
      * @param   array   $items      
      * @param   int     $inclusion  if self::BOTH, add the spreadsheet to the archive
      * @return  none
      */
-    public function download_images( $items, $inclusion ) {
+    public function generate_zip_archive( $items, $inclusion ) {
         assert( is_array( $items ) );
         assert(  $inclusion == self::IMAGES || $inclusion == self::BOTH  );
         if ( count( $items ) < 1 ) {
             throw new EWZ_Exception( "No matching items found." );
         }
-        $date = current_time( 'YmdHis' );
+        $date = current_time( 'Ymd_Hi' );                // for filename ewz_{$date}_{$rand}.zip of archive file
         $up = $this->ewz_upload_dir( wp_upload_dir() );  // uploads/ewz_img_uploads/$this->webform_ident
         if ( !is_dir( $up['path'] ) ) {
-            mkdir( $up['path'] );
-            $outp = fopen( $up['path'] . "/index.php", 'w' );
-            fwrite( $outp, "<?php\n   //No listing\n?>" );
-            fclose( $outp );
+            throw new EWZ_Exception( "Images not found." );
         }
 
         $rand = $this->randstring(15);
+        $key  = $this->randstring(5);
         $archive_fname = "ewz_{$date}_{$rand}.zip";
         $archive_path = $up['path'] . "/$archive_fname";
         $archive_url = $up['url'] . "/$archive_fname";
 
-        // remove any other zip files from this webform
+        update_option( "ewz_{$this->webform_id}_{$key}",  $archive_url );
+
+        // remove any old zip files from this webform
         $zipfiles =  glob( $up['path'] . "/ewz_*.zip" );
-        if( $zipfiles ){
-            array_map( "unlink", $zipfiles );
+        $now = time();
+        foreach( $zipfiles as $file ){
+            if( $now - filemtime( $file ) > 1200 ){    // 20 minutes
+                unlink( $file );
+            }
         }
 
-        // create a new archive
-        $errmsg = $this->make_zip_archive( $items, $archive_path, $inclusion );
-        if( $errmsg ){
-            throw new EWZ_Exception("EWZ: make_zip_archive returned: $errmsg");
-        } else {
-            ob_end_flush();
-            ignore_user_abort(false);
-            ini_set('output_buffering', 0);
-            ini_set('zlib.output_compression', 0);
-            // display it, making sure the redirect location is not cached
-            // Date in the past
-            header( "Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
-            // always modified
-            header( "Last-Modified: " . gmdate( "D, d M Y H:i:s" ) . " GMT" );
-            // HTTP/1.1
-            header( "Cache-Control: no-store, no-cache, must-revalidate" );
-            header( "Cache-Control: post-check=0, pre-check=0", false );
-            // HTTP/1.0
-            header( "Pragma: no-cache" );
-            header( "Location: $archive_url" );
+        // create a new archive and return the option name that contains the filename
+        $this->zip_items( $items, $archive_path, $inclusion );
+        return "ewz_{$this->webform_id}_{$key}";
+    }
 
-            exit;
+    /*
+     * Use the server "zip" command to generate the zip archive of images, 
+     * ( optionally including the csv file ) and print it to stdout. 
+     *
+     * This avoids the overhead of generating a file, and the need for a
+     * second call to read it. The output is slowed down to avoid large IO spikes
+     * that may trigger blocking by the webhost.
+     * If the csv file was included, delete it when done.
+     *                                                                               
+     * @param   array   $items                                                       
+     * @param   int     $inclusion  if self::BOTH, add the spreadsheet to the archive 
+     * @return  none                                                                  
+     */    
+    public function gen_and_echo_archive( $items, $inclusion ){  
+        assert( is_array( $items ) );
+        assert( is_int( $inclusion ) );   // self::IMAGES or self::BOTH
+
+        if ( !$this->can_download ) {
+            throw new EWZ_Exception( "No Permission" );
         }
+        if ( !$items ) {
+            throw new EWZ_Exception( "No Items Found" );
+        }
+        $bufsize = 8192;  // seems to be the standard default
+
+        $date = current_time( 'Ymd_Hi' );  // for filename ewz_{$date}.zip of downloaded zip attachment
+        $fnames = $this->get_fname_list( $items,  $inclusion );
+        $n = count( $items );
+        
+        self::ewz_disable_gzip();    
+
+        // options for linux "zip" command:
+        // -0 = no compression
+        // -j = strip path, use only filename
+        // -q = no extra output info
+        $fp = popen("zip -0 -j -q - $fnames", 'r');
+        if( !$fp ){
+            error_log("EWZ: Zip command failed");
+            throw new Ewz_Exception("Zip command failed");
+        }
+
+        header( 'Content-Type: application/octet-stream');
+        header( "Content-disposition: attachment; filename=ewz_{$date}.zip; ");
+
+        while( !feof($fp) ) {
+            echo fread($fp, $bufsize);
+            flush();
+            usleep(100);  // to avoid IO spikes
+        }
+        pclose($fp);
+        if ( self::BOTH == $inclusion ){
+            preg_match( '/ ([^ ]+) *$/', $fnames, $matches );
+            if( is_file( $matches[1]  ) ) {
+                unlink( $matches[1] );
+            }
+        }
+        exit;
     }
 
     /**
-     * Create the zip archive of images ( and possibly spreadsheet )
-     *
-     * @param   $items  array of items to be zipped
-     * @param   $fpath  full path name of archive to be created
-     * @param   boolean $inclusion   if self::BOTH, add the spreadsheet to the archive
-     * @return  string  status message
+     * Echo to stdout the file defined by $archive_key, then delete it
+     * 
+     * @param  string    $archive_key
+     * @return none
      */
-    protected function make_zip_archive( $items, $fpath, $inclusion ) {
+    public function echo_stored_archive( $archive_key ){  
+        assert( is_string( $archive_key ) );
+
+        if ( !$this->can_download ) {
+            throw new EWZ_Exception( "No Permission" );
+        }
+        $archive_url =  get_option( $archive_key, admin_url( 'admin.php?page=entrywizard' ) );
+        delete_option( $archive_key );
+        
+        self::ewz_disable_gzip();         
+
+        // display it, making sure the redirect location is not cached
+        header( "Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
+        header( "Last-Modified: " . gmdate( "D, d M Y H:i:s" ) . " GMT" );
+        header( "Cache-Control: no-store, no-cache, must-revalidate" );
+        header( "Cache-Control: post-check=0, pre-check=0", false );
+        header( "Pragma: no-cache" );
+        header( "Location: $archive_url" );
+        exit;
+    }
+    
+
+
+    /**
+     * Return the list of filenames ( complete paths ) defined by $items, including the
+     * csv file if $inclusion == self::BOTH, to be included in the zip archive
+     * No file renaming here - just return whatever is defined in the item
+     * 
+     * @param   array of Ewz_Items  $items       
+     * @param   int                 $inclusion     self::BOTH or self::IMAGES
+     * @return  string    space-separated list of filenames to be included in the zip archive
+     */
+    protected function get_fname_list( $items,  $inclusion )
+    {
+        assert( is_array( $items ) );
+        assert(  $inclusion == self::IMAGES || $inclusion == self::BOTH  );
+
+        if ( !$this->can_download ) {
+            throw new EWZ_Exception( "No Permission" );
+        }
+        $msg = '';
+        $this->files_done = array();
+                            
+        $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
+
+        $fnames = '';
+        foreach ( $items as $item ) {
+            foreach ( $item->item_files as $item_file ) {
+                if ( !isset( $item_file['fname'] ) ) {
+                    continue;   // ignore items with no image file
+                }
+                if ( is_file( $item_file['fname'] ) ) {
+                    $fnames .= $item_file['fname'] . " ";
+                } else {
+                    error_log("EWZ: cant find " .  $item_file['fname'] );
+                    $msg .= "\n\nUnable to find file " . basename( $item_file['fname'] );
+                }
+            }
+        }
+        $csv_fname = '';
+        if ( self::BOTH == $inclusion  ) {
+            $csv_fname = $this->download_spreadsheet( $items, true );
+            if ( is_file( $csv_fname ) ) {
+                $fnames .= $csv_fname;
+            } else {
+                $msg .= "\n\nUnable to find .csv file ";
+            }
+        }
+        if ( $msg ) {
+            error_log("EWZ: error generating file list: $msg");
+        }
+        return $fnames;
+    }
+
+
+    /**
+     * Create the zip archive of images ( and possibly spreadsheet ) using PHPs ZipArchive
+     * If there is a prefix set but not yet applied, apply it to the
+     * filename in the archive
+     *
+     * @param   array of Ewz_Items  $items     items to be zipped
+     * @param   string              $fpath        full path name of archive to be created
+     * @param   int                 $inclusion       if self::BOTH, add the spreadsheet to the archive
+     * @return  string   status message
+     */
+    protected function zip_items( $items, $fpath, $inclusion ) {
         assert( is_array( $items ) );
         assert( strpos( $fpath, EWZ_IMG_UPLOAD_DIR ) === 0 );
         assert(  $inclusion == self::IMAGES || $inclusion == self::BOTH  );
@@ -343,27 +471,28 @@ class Ewz_Webform extends Ewz_Base {
             throw new EWZ_Exception( "No Permission" );
         }
         set_time_limit( EWZ_FILE_DOWNLOAD_TIME );
-
         $tmpn = 0;
+
         $zip = new ZipArchive();
         $msg = '';
         $this->files_done = array();
                             
         $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
-        if ( $zip->open( $fpath, ZIPARCHIVE::OVERWRITE ) ) {
+
+        if ( $zip->open( $fpath, ZIPARCHIVE::OVERWRITE ) === TRUE ) {
             foreach ( $items as $item ) {
                 foreach ( $item->item_files as $item_file ) {
                     if ( !isset( $item_file['fname'] ) ) {
                         continue;   // ignore items with no image file
                     }
-                    ++$tmpn;
                     
-                    // a very rough-and-ready way to allow more time if there are a lot of image files
-                    // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 25 files.
-                    if ( $tmpn > 25 ) {
-                        set_time_limit( EWZ_FILE_DOWNLOAD_TIME );
-                        $tmpn = 0;
-                    }
+                     ++$tmpn;
+                     // a very rough-and-ready way to allow more time if there are a lot of image files
+                     // adds EWZ_FILE_DOWNLOAD_TIME seconds to the time limit for every 25 files.
+                     if ( $tmpn > 25 ) {
+                         set_time_limit( EWZ_FILE_DOWNLOAD_TIME );
+                         $tmpn = 0;
+                     }
                     $newfilename = '';
                     if ( is_file( $item_file['fname'] ) ) {
                         if( $this->apply_prefix ){
@@ -383,6 +512,7 @@ class Ewz_Webform extends Ewz_Base {
                     }
                 }
             }
+
             $csv_fname = '';
             if ( self::BOTH == $inclusion  ) {
                 $csv_fname = $this->download_spreadsheet( $items, true );
@@ -394,29 +524,27 @@ class Ewz_Webform extends Ewz_Base {
             }
             if ( $msg ) {
                 error_log("EWZ: zip error: $msg");
-                $zip->addFromString( 'ERRORS.txt', "\nThe following errors were encountered while generating the zip archive: $msg" );
+                $zip->addFromString( 'ERRORS.txt', 
+                                     "\nThe following errors were encountered while generating the zip archive: $msg" );
             }
-            if( !$zip->close() ){
-                throw new EWZ_Exception( "Failed to close zip file" );
+            if( $zip->close() === FALSE ){
+                throw new EWZ_Exception( "Failed to close zip file. " . $msg );
             }
             if ( ( self::BOTH == $inclusion ) && is_file( $csv_fname ) ) {
                 unlink( $csv_fname );
             }
-            
         } else {
             throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator." );
         }
-        return $msg;
     }
-
 
     /**
      * Return a filename generated from the prefix expression
      * 
-     * @param  $fields   array of Ewz_Fields    the fields of the layout
-     * @param  $item     Ewz_item               the item containing the file
-     * @param  $item_file  array of file data   a single component of the $item->item_files array                                             
-     * @return string  the generated filename (including extension)
+     * @param  array of Ewz_Fields  $fields         the fields of the layout
+     * @param  Ewz_item             $item           the item containing the file
+     * @param  array of file data   $item_file      a single component of the $item->item_files array   
+     * @return string      the generated filename (including extension)
      */
     public function get_new_filename( $fields, $item, $item_file ){
         assert( is_array( $fields ) );
@@ -434,7 +562,11 @@ class Ewz_Webform extends Ewz_Base {
                 $subst_data[$custkey] = $custval;
             }
             foreach ( $fields as $fid=>$field ){
-                $subst_data[$fid] = $item->item_data[$fid];
+                if( isset( $item->item_data[$fid] ) ){
+                    $subst_data[$fid] = $item->item_data[$fid];
+                } else {
+                    $subst_data[$fid] = '';
+                }
             }
             if( $this->gen_fname ){
                 $ext = pathinfo( $item_file['fname'], PATHINFO_EXTENSION );
@@ -457,9 +589,9 @@ class Ewz_Webform extends Ewz_Base {
      * Return a number to replace '[~1]' to make the filename unique in it's download batch.
      * Substitutes 1,2,3,.... in turn for '[~1]' in $in_fname until
      *              $this->files_done["$in_fname.$ext"] is not defined.
-     * @param  $in_fname  an input filename that should contain the string  '[~1]'
-     * @param  $ext       a filename extension
-     * @return 
+     * @param  string  $in_fname  an input filename that should contain the string  '[~1]'
+     * @param  string  $ext       a filename extension
+     * @return string   an integer between 1 and 999 as a string
      */
     public function get_fname_num( $in_fname, $ext ){
         assert( is_string( $in_fname ) );
@@ -482,14 +614,16 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     /**
-     * Prints the requested spreadsheet to stdout
+     * Generate the requested spreadsheet and print to stdout or save as a file
      *
      * Generates a .csv-formatted summary of the uploaded items for the webform
+     * Prints to stdout if $include == self::SPREADSHEET, otherwise saves to a file
+     *    with a randomized filename for later downloading
      *
-     * @param  array    $items    -- items for downloading
-     * @param  boolean  $include  -- self::SPREADSHEET if just downloading spreadsheet, 
-     *                               self::BOTH if downloading images and spreadsheet
-     * @return none
+     * @param  array of Ewz_Items  $items    array  -- items for downloading
+     * @param  int                 $include  self::SPREADSHEET if just downloading spreadsheet, 
+     *                                       self::BOTH if downloading images and spreadsheet
+     * @return string   filename of saved file, no return if data sent to stdout
      */
     public function download_spreadsheet( $items, $include ) {
         assert( is_array( $items ) );
@@ -498,45 +632,47 @@ class Ewz_Webform extends Ewz_Base {
         if ( !$this->can_download ) {
             throw new EWZ_Exception( "No Permission" );
         }
-
         if ( count( $items ) < 1 ) {
             throw new EWZ_Exception( "No matching items found." );
         }
 
         $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
-
         $extra_cols = Ewz_Layout::get_extra_cols( $this->layout_id );
-
         $rows = $this->get_rows_for_ss( $fields, $extra_cols, $items );
 
         // sort each row by it's key, which is the ss column
         foreach ( array_keys($rows) as $k ) {
             ksort( $rows[$k]);
         }
-
+        $out = '';
         $outpath = '';
         if ( $include == self::BOTH ) {
             $up = $this->ewz_upload_dir( wp_upload_dir() );  // uploads/ewz_img_uploads/$this->webform_ident
+            // create the upload dir if it doesnt exist
             if ( !is_dir( $up['path'] ) ) {
                 mkdir( $up['path'] );
                 $outp = fopen( $up['path'] . "/index.php", 'w' );
                 fwrite( $outp, "<?php\n   //No listing\n?>" );
                 fclose( $outp );
             }
-            $date = current_time( 'YmdHis' );
-            $outpath = $up['path'] . "/ewz_{$date}_" . $this->randstring(15) . ".csv";
+            $date = current_time( 'Ymd_Hi' );      // for filename ewz_{$date}_{$rand}.csv of spreadsheet within archive
+            $rand =  $this->randstring(5);
+            $outpath = $up['path'] . "/ewz_{$date}_{$rand}.csv";
             $out = fopen( $outpath, 'w' );
+            if( !$out ){
+                throw new EWZ_Exception( "Failed to open csv file for writing");
+            }
         } else {
-            $filename = 'webdata_' . current_time( 'Ymd' ) . '.csv';
-            ob_end_flush();
-            ignore_user_abort(false);
-            ini_set('output_buffering', 0);
-            ini_set('zlib.output_compression', 0);
+            $now = current_time( 'Ymd_Hi' );   // for filename ewzdata_{$now}.csv of downloaded .csv attachment
+            $filename = "ewzdata_{$now}.csv";  
             header( "Content-Disposition: attachment; filename=\"$filename\"" );
             header( "Content-Type: text/csv" );
             header( "Cache-Control: no-cache" );
 
             $out = fopen( "php://output", 'w' );  // write directly to php output, not to a file
+            if( !$out ){
+                throw new EWZ_Exception( "Failed to open php output for writing");
+            }
         }
         foreach ( $rows as $r ) {
             fputcsv( $out, $r, "," );
@@ -553,8 +689,8 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Return the header row for the spreadsheet
      *
-     * @param   $fields       fields array from layout - data input via the webform
-     * @param   $extra_cols   extra columns array from layout - other data for display
+     * @param   array of Ewz_Field     $fields     fields array from layout - data input via the webform
+     * @param   array of (string=>int) $extra_cols extra columns array from layout - other data for display
      * @return  array of headers
      */
     protected function get_headers_for_ss( $fields, $extra_cols ) {
@@ -602,9 +738,9 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Return the body of the spreadsheet
      *
-     * @param   $fields       fields array from layout - description of data input via the webform
-     * @param   $extra_cols   extra columns array from layout - other data for display
-     * @param   $items        data uploaded via webform
+     * @param   array of Ewz_Field     $fields     fields array from layout - data input via the webform
+     * @param   array of (string=>int) $extra_cols extra columns array from layout - other data for display
+     * @param   array of Ewz_Item      $items        data uploaded via webform
      * @return  array to be displayed in spreadsheet
      *
      */
@@ -642,6 +778,15 @@ class Ewz_Webform extends Ewz_Base {
         return $rows;
     }
 
+
+   /**
+    * Return the custom data to be displayed in the spreadsheet for an item
+    *
+    * @param   Ewz_Item               $item         item the data is to be attached to
+    * @param   array of (string=>int) $extra_cols   extra columns array from layout
+    * @param   int                    $maxcol       max column to be shown
+    * @return  array of string        the spreadsheet data for the custom fields
+    */
     private function get_custom_data_for_ss( $item, $extra_cols, $maxcol ) {
         assert( is_object( $item ) );
         assert( is_array( $extra_cols ) );
@@ -657,28 +802,27 @@ class Ewz_Webform extends Ewz_Base {
         foreach ( $extra_cols as $xcol => $sscol ) {
             if ( $sscol >= 0 ) {
                 // could be done more succinctly using $$display[$xcol]['dobject']
-                // but harder to understand, and fools the ide into generating a warning
+                // but harder to understand, and fools an ide into generating a warning
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
-
                 assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
                 // dont crash on undefined custom data
                 if( isset( $display[$xcol] ) ){
                     switch ( $display[$xcol]['dobject'] ) {
-                        case 'wform':
-                            $datasource = $wform;
-                            break;
-                        case 'user':
-                            $datasource = $user;
-                            break;
-                        case 'item':
-                            $datasource = $item;
-                            break;
-                        case 'custom':
-                            $datasource = $custom;
-                            break;
-                        default:
-                            throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
+                    case 'wform':
+                        $datasource = $wform;
+                        break;
+                    case 'user':
+                        $datasource = $user;
+                        break;
+                    case 'item':
+                        $datasource = $item;
+                        break;
+                    case 'custom':
+                        $datasource = $custom;
+                        break;
+                    default:
+                        throw new EWZ_Exception( 'Invalid data source ' . $display[$xcol]['dobject'] );
                     }
                     $customrow[$sscol] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
                 }
@@ -686,6 +830,17 @@ class Ewz_Webform extends Ewz_Base {
         }
         return $customrow;
     }
+
+
+   /**
+    * Get the image file information for an item for the spreadsheet
+    * 
+    * @param   array of Ewz_Field   $fields     the fields for the layout
+    * @param   Ewz_Item             $item       the item the image file(s) are attached to 
+    * @param   int                  $maxcol     max column to be shown
+    *
+    * @return  array of string      the spreadsheet entries for the image(s)
+    */
 
     private function get_file_data_for_ss( $fields, $item, $maxcol ) {
         assert( is_array( $fields ) );
@@ -728,6 +883,15 @@ class Ewz_Webform extends Ewz_Base {
         }
         return $filerow;
     }
+
+   /* Get the spreadsheet entries for the uploaded data for an item 
+    *
+    * @param   array of Ewz_Field   $fields     the fields for the layout
+    * @param   Ewz_Item             $item       the item the image file(s) are attached to 
+    * @param   int                  $maxcol     max column to be shown
+    *
+    * @return  array of string      the spreadsheet entries for the image(s)
+    */
 
     private function get_item_data_for_ss( $fields, $item, $maxcol ) {
         assert( is_array( $fields ) );
@@ -785,12 +949,22 @@ class Ewz_Webform extends Ewz_Base {
         wp_schedule_single_event(  $ctime, 'ewz_do_close_webform', array( $this->webform_id ) );
     }
 
-    // this function is hooked into init by entrywizard.php
+    /**
+     * Add the action to schedule the close
+     *
+     * This function is hooked into init by entrywizard.php
+     */ 
     public static function schedule_close(){
         // Hook the close_webform function into the action ewz_do_close_webform
         add_action( 'ewz_do_close_webform', 'Ewz_Webform::close_webform', 10, 1 );
     }
 
+   /**
+    * Actually close the webform 
+    * 
+    * @param   int    $webform_id   the webform to be closed
+    * @return  none
+    */
     public static function close_webform( $webform_id ){
         assert( Ewz_Base::is_pos_int( $webform_id ) );
         $w = new Ewz_Webform( $webform_id );
@@ -799,8 +973,13 @@ class Ewz_Webform extends Ewz_Base {
         error_log( "EWZ: webform " . $w->webform_ident . " closed " );
     }
 
-    // Set the value to be displayed to the user by checking wp_next_scheduled
-    // -- this value is not stored in the ewz tables
+
+   /**
+    * Set the value to be displayed to the user by checking wp_next_scheduled
+    * -- this value is not stored in the ewz tables
+    *
+    * @return  none
+    */
     public function set_auto_time(){
         // $nexttime is a unix timestamp in GMT
         $nexttime = wp_next_scheduled('ewz_do_close_webform', array( $this->webform_id ) );
@@ -812,9 +991,9 @@ class Ewz_Webform extends Ewz_Base {
             }
             $this->auto_close = true;
             // format
-             //$this->auto_date = strftime ( self::toStrftimeFormat( $dateformat ), $nexttime );
+            //$this->auto_date = strftime ( self::toStrftimeFormat( $dateformat ), $nexttime );
             $this->auto_date = date( $dateformat, $nexttime );
-             //$this->auto_time = strftime ( '%H:%M:%S', $nexttime );
+            //$this->auto_time = strftime ( '%H:%M:%S', $nexttime );
             $this->auto_time = date( 'H:i:s', $nexttime );
             $this->close_at =  $nexttime;
         } else {
@@ -824,18 +1003,18 @@ class Ewz_Webform extends Ewz_Base {
             $this->close_at = 0;
         }
     }
+
     /**
      * Return a string consisting of the html options for selecting a time of day
      */
     public function get_close_opt_array( )
     {
-	global $wpdb;
-	$options = array();
+        $options = array();
         $tformat = get_option( 'time_format' );
         if( !$tformat ){
             $tformat = 'H:i';
         }
-	for( $h=0; $h < 24; ++$h ) {
+        for( $h=0; $h < 24; ++$h ) {
 
             for( $m =0; $m < 60; $m+=15 ){
 
@@ -844,7 +1023,7 @@ class Ewz_Webform extends Ewz_Base {
                 $date =  new DateTime( $val );
                 $display = $date->format( $tformat );
 
-		if ( $this->auto_time == $val ) {
+                if ( $this->auto_time == $val ) {
                     $is_sel = true;
                 } else {
                     $is_sel = false;
@@ -852,9 +1031,9 @@ class Ewz_Webform extends Ewz_Base {
                 array_push( $options, array( 'value' => $val,
                                              'display' => $display,
                                              'selected' => $is_sel ) );
- 	    }
-	}
-	return $options;
+            }
+        }
+        return $options;
     }
 
     /**
@@ -865,8 +1044,8 @@ class Ewz_Webform extends Ewz_Base {
      *      ... do the upload ...
      *      remove_filter('upload_dir', 'ewz_upload_dir');
      *
-     * @param   array  default upload_dir (output of wp_upload_dir()) with components "dir" "url" "error"
-     * @return  array  $upload
+     * @param   array of string  $upload_data   default upload_dir (output of wp_upload_dir()) with components "dir" "url" "error"
+     * @return  array  of string  altered value of input array 
      */
     public function ewz_upload_dir( $upload_data ) {
         assert( is_array( $upload_data ) );
@@ -884,12 +1063,11 @@ class Ewz_Webform extends Ewz_Base {
     public function open_for_current_user() {
         if ( $this->upload_open ) {
             return true;
-        }
-
-        if ( in_array( get_current_user_id(), $this->open_for ) ) {
+        } elseif ( in_array( get_current_user_id(), $this->open_for ) ) {
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     /**
@@ -933,7 +1111,7 @@ class Ewz_Webform extends Ewz_Base {
                     array_push( $placeholders, '[~' . $field->field_ident . ']' );
                 }
             }
-            $out_prefix = str_replace( $placeholders, $replacements, $this->prefix );           
+            $out_prefix = str_replace( $placeholders, $replacements, $this->prefix ); 
             return $out_prefix;
         } else {
             return $this->prefix;
@@ -963,18 +1141,28 @@ class Ewz_Webform extends Ewz_Base {
             throw new EWZ_Exception( 'A webform must have an identifier' );
         }
         $used1 = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_WEBFORM_TABLE .
-                        " WHERE webform_title = %s AND webform_id != %d", $this->webform_title, $this->webform_id ) );
+                                                 " WHERE webform_title = %s AND webform_id != %d", $this->webform_title, $this->webform_id ) );
         if ( $used1 > 0 ) {
             throw new EWZ_Exception( "Webform title  '$this->webform_title' is already in use" );
         }
         $used2 = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_WEBFORM_TABLE .
-                        " WHERE webform_ident = %s AND webform_id != %d", $this->webform_ident, $this->webform_id ) );
+                                                 " WHERE webform_ident = %s AND webform_id != %d", $this->webform_ident, $this->webform_id ) );
         if ( $used2 > 0 ) {
             throw new EWZ_Exception( 'Webform identifier ' . $this->webform_ident . ' is already in use' );
         }
         return true;
     }
 
+    /**
+     * Get the saved options for attaching images to pages
+     *
+     * Returned array has values for  'ewz_page_sel' -- id of the selected page, 
+     *                                'img_size' -- selected image size option,
+     *                                'img_comment' -- boolean, allow comments on attached image
+     *
+     * @param   none
+     * @return  array of attachment preferences
+     */
     public function get_attach_prefs() {
         global $wpdb;
 
@@ -987,9 +1175,19 @@ class Ewz_Webform extends Ewz_Base {
         return $prefs;
     }
 
-
     /*     * ******************  Database Updates ********************* */
 
+
+    /**
+     * Save the options for attaching images to pages
+     *
+     * Input  array should have values for  'ewz_page_sel' -- id of the selected page, 
+     *                                      'img_size' -- selected image size option,
+     *                                      'img_comment' -- boolean, allow comments on attached image
+     *
+     * @param  array of attachment preferences
+     * @return none
+     */
     public function save_attach_prefs( $prefs ) {
         assert( is_array( $prefs ) );
         global $wpdb;
@@ -1036,16 +1234,16 @@ class Ewz_Webform extends Ewz_Base {
         $this->check_errors();
 
         $data = stripslashes_deep( array(
-            'layout_id' => $this->layout_id,
-            'num_items' => $this->num_items,
-            'webform_title' => $this->webform_title,
-            'webform_ident' => $this->webform_ident,
-            'upload_open' => $this->upload_open ? 1 : 0,
-            'open_for' => serialize( $this->open_for ),
-            'prefix' => $this->prefix,
-            'apply_prefix' => $this->apply_prefix ? 1 : 0,
-            'gen_fname' => $this->gen_fname ? 1 : 0,
-                ) );
+                                         'layout_id' => $this->layout_id,
+                                         'num_items' => $this->num_items,
+                                         'webform_title' => $this->webform_title,
+                                         'webform_ident' => $this->webform_ident,
+                                         'upload_open' => $this->upload_open ? 1 : 0,
+                                         'open_for' => serialize( $this->open_for ),
+                                         'prefix' => $this->prefix,
+                                         'apply_prefix' => $this->apply_prefix ? 1 : 0,
+                                         'gen_fname' => $this->gen_fname ? 1 : 0,
+                                         ) );
         $datatypes = array( '%d','%d', '%s', '%s', '%d', '%s', '%s' );
 
         if ( $this->webform_id ) {
@@ -1088,7 +1286,7 @@ class Ewz_Webform extends Ewz_Base {
                     }
                 }
                 if( $errmsg ){
-                   throw new EWZ_Exception( $errmsg );
+                    throw new EWZ_Exception( $errmsg );
                 } 
             } else {
                 $n = count( $this->items );
@@ -1107,6 +1305,12 @@ class Ewz_Webform extends Ewz_Base {
     }
 
        
+    /**
+     * Return a random string of lower-case alpha, upper-case alpha or integer characters
+     *
+     * @param  int   $len    length of string to return
+     * @return string   
+     */
     private function randstring( $len ){
         assert( Ewz_Base::is_pos_int($len ) );
 
@@ -1125,5 +1329,19 @@ class Ewz_Webform extends Ewz_Base {
                 range(0, $len - 1) ));                 
     }
 
+    /**
+     * Stop output buffering  
+     */
+    private static function ewz_disable_gzip(){
+        if( extension_loaded( 'zlib' ) ){
+            ini_set('zlib.output_compression', 0 );
+        }
+        if( ini_get( 'output_buffering' ) ){
+            ini_set( 'output_buffering', false );
+        }
+        if( function_exists( 'apache_setenv' ) ){
+            apache_setenv( 'no-gzip', 1 );
+        }
+    }
 }
 

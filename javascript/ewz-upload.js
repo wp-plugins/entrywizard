@@ -1,3 +1,4 @@
+'use strict';
 jQuery(document).ready(function() {
     init_ewz_upload(window);
 });
@@ -5,16 +6,16 @@ jQuery(document).ready(function() {
 /* To stop IE from generating errors if a console.log call was left in */
 function fixConsole()
 {
-    if (typeof console === 'undefined')
+    if (console === undefined)
     {
         console = {}; // define it if it doesn't exist already
     }
-    if (typeof console.log === 'undefined')
+    if (console.log === undefined)
     {
         console.log = function() {
         };
     }
-    if (typeof console.dir === 'undefined')
+    if (console.dir === undefined)
     {
         console.dir = function() {
         };
@@ -24,7 +25,6 @@ function fixConsole()
 // the OnLoad function
 // allows for more than one form on a page.  Each has an ewzG object ewzG_{webform_id}
 function init_ewz_upload(ewz_win) {
-    'use strict';
     var name, wkey1, wkey;
     fixConsole();
     if (ewz_win.RuntimeObject) {   // IE 8 or earlier
@@ -54,7 +54,7 @@ function init_ewz_upload(ewz_win) {
 
     // Bind the onchange event of the inputs to flag the inputs as being "ewzdirty".
     jQuery(":input").change(
-        function(objEvent) {
+        function() {
             // Add ewzdirty flag to the input in question (whose value has changed).
             jQuery(this).addClass("ewzdirty");
         }
@@ -62,8 +62,6 @@ function init_ewz_upload(ewz_win) {
 }
 
 function do_setup(ewzG) {
-    'use strict';
-    var row, ff;
     // ewzG is null if not logged in
     // make any change in any input enable the "submit" button
     jQuery("#ewz_form_" + ewzG.webform_id).on("change keydown paste input", ":input:not(:button)",
@@ -81,7 +79,6 @@ function do_setup(ewzG) {
 
 /* After a change, enable Submit and create the Clear button for the row if it doesnt exist */
 function do_changed( jitem, webform_id ) { 
-    'use strict';
     jitem.closest('form').find('button[id^="ewz_fsubmit"]').prop("disabled", false);
     var jrow = jitem.closest('tr');
     var jtable = jrow.closest('table');
@@ -108,7 +105,6 @@ function do_changed( jitem, webform_id ) {
 /* Each item is an array whose first entry is the entered value,               */
 /* and whose second entry contains additional data depending on the input type */
 function get_values(ewzG, webform_id ){
-    'use strict';
     var row, fvalues, i, jelem, sel;
     fvalues = [];
     for (row = 0; row < ewzG.num_items; ++row) {
@@ -156,8 +152,7 @@ function get_values(ewzG, webform_id ){
 }
 
 /* return a list of all required fields that are missing */
-function missing_check( ewzG, webform_id, fvalues, use_row ){
-    'use strict';
+function missing_check( ewzG, fvalues, use_row ){
     var missing, status, row, row1, i;
     missing = '';
     status = true;
@@ -183,9 +178,8 @@ function missing_check( ewzG, webform_id, fvalues, use_row ){
 }
 
 /* Check any max rules on drop-down option selections */
-function options_check(  ewzG, webform_id, fvalues, use_row ){
-    'use strict';
-    var optcount, msg, status, textvals, row, row1, sel_val, key, maxn, field_id, ftype, text;
+function options_check(  ewzG, fvalues, use_row ){
+    var optcount, msg, status, textvals, row, sel_val, key, maxn, field_id, ftype, text;
     msg = '';
     status = true;
     for (field_id in ewzG.layout.fields) {
@@ -196,12 +190,10 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
             textvals = {};
             for (row = 0; row < ewzG.num_items; ++row) {
                 if( !use_row[row] ){ continue; }
-
-                row1 = row + 1;                                // for display to user
                 sel_val = fvalues[row][field_id][0];
                 if ( sel_val  ) {
                     textvals[ sel_val ] = fvalues[row][field_id][1];  // for display to user
-                    if (typeof optcount[ sel_val ] === 'undefined') {
+                    if (optcount[ sel_val ] === undefined) {
                         optcount[ sel_val ] = 1;
                     } else {
                         ++optcount[ sel_val ];
@@ -235,9 +227,8 @@ function options_check(  ewzG, webform_id, fvalues, use_row ){
 
 /* If any restrictions are not satisfied, show an alert and return false */
 /* Otherwise, return true                                                */
-function restrictions_check( ewzG, webform_id, fvalues, use_row ){
-    'use strict';
-    var row, matches_restr, row1, field_id, restr1, ismatch;
+function restrictions_check( ewzG, fvalues, use_row ){
+    var row, matches_restr, row1, field_id, restr1;
     for (row = 0; row < ewzG.num_items; ++row) {
         if ( !use_row[row] ) { continue; }
         row1 = row + 1;   // for user display
@@ -267,8 +258,7 @@ function restrictions_check( ewzG, webform_id, fvalues, use_row ){
 
 /* validation                                           */
 function check_data(ewzG, webform_id) {
-    'use strict';
-    var status, fvalues, use_row, row, field_id, idstr;
+    var status, fvalues, use_row, row, field_id;
     fvalues = get_values(ewzG, webform_id );
     use_row = {};
     for (row = 0; row < ewzG.num_items; ++row) {
@@ -281,9 +271,9 @@ function check_data(ewzG, webform_id) {
     }
     try {
         status = true;
-        status = status && missing_check(  ewzG, webform_id, fvalues, use_row );
-        status = status && options_check(  ewzG, webform_id, fvalues, use_row );
-        status = status && restrictions_check(  ewzG, webform_id, fvalues, use_row );
+        status = status && missing_check(  ewzG, fvalues, use_row );
+        status = status && options_check(  ewzG, fvalues, use_row );
+        status = status && restrictions_check(  ewzG, fvalues, use_row );
 
         if (status) {
             disable_unused_rows( webform_id, ewzG, use_row );
@@ -298,7 +288,6 @@ function check_data(ewzG, webform_id) {
 
 // handling the unused rows on the server gets too complicated
 function disable_unused_rows( webform_id, ewzG, use_row ){
-    'use strict';
     var row, fld_id, idstr;
     for (row = 0; row < ewzG.num_items; ++row) {
         if (!use_row[row]) {
@@ -314,7 +303,6 @@ function disable_unused_rows( webform_id, ewzG, use_row ){
 // Does the ajax call to delete an item on the server
 // On success, calls clear_row
 function delete_item(button, webform_id) {
-    'use strict';
     var ewzG = window['ewzG_' + webform_id],
     jbutton = jQuery(button),
     item_id = jbutton.siblings('[name^="item_id"]').val(),
@@ -347,7 +335,6 @@ function delete_item(button, webform_id) {
 // Remove the 'clear' button
 // Disable submit if no other data
 function clear_row(button, webform_id) {
-    'use strict';
     var jrow = jQuery(button).closest('tr'),
     jform;
     // img input cell will contain either 1: image alone, with id ^rdata  or 2: file input with id ^rdata, alone or with a data div
@@ -384,7 +371,6 @@ function clear_row(button, webform_id) {
 
 // display the data as modifiable instead of just the summary
 function show_modify(button, webform_id) {
-    'use strict';
     button.style.display = "none";
     document.getElementById("ewz_modify_" + webform_id).style.display = "block";
     document.getElementById("ewz_stored_" + webform_id).style.display = "none";
@@ -402,7 +388,7 @@ function check_table_width(webform_id){
     var tablew = jQuery('#scrollablediv_' + webform_id).find('table[class="ewz_upload_table ewz_padded"]').outerWidth();
     var scrollw = jQuery('#scrollablediv_' + webform_id).innerWidth();
     var jmod = jQuery('#ewz_modify_' + webform_id);
-    if ( parseInt( scrollw ) <= parseInt( tablew ) ){
+    if ( parseInt( scrollw, 10 ) <= parseInt( tablew, 10 ) ){
 
         if( jmod.text().indexOf("too narrow") < 0 ){
             var did = '<i>The available space is too narrow to display all of this form. You should see <b>a scrollbar just above the submit button.</b></i>' ;
@@ -418,7 +404,6 @@ function check_table_width(webform_id){
 ////////////////// Image File Info ////////////////
 // an image file has been selected, display it's thumbnail and info
 function fileSelected(field_id, input_id, webform_id) {
-    'use strict';
     var pathre = /([^\\\/:]+)$/,
         ewzG = window['ewzG_' + webform_id],
         freader,
@@ -426,7 +411,7 @@ function fileSelected(field_id, input_id, webform_id) {
 
     jQuery('#upload_response_' + webform_id).hide();
 
-    if (typeof window.FileReader !== 'undefined') {
+    if (window.FileReader !== undefined) {
 
         freader = new FileReader();
         freader.onload = function(fileref) {
@@ -462,7 +447,7 @@ function fileSelected(field_id, input_id, webform_id) {
         };
 
         files = document.getElementById(input_id).files;
-        if ( ( files == null ) || ( typeof files[0] === 'undefined' ) || ( files[0] == null ) ) {
+        if ( ( files == null ) || ( files[0] === undefined ) || ( files[0] == null ) ) {
             jQuery('#dv_' + input_id).hide();
             jQuery('#nm_' + input_id).text('');
             jQuery('#sz_' + input_id).text('');
@@ -505,7 +490,6 @@ function fileSelected(field_id, input_id, webform_id) {
 
 /* Get rid of an invalid selected image file */
 function clear_file_input( input_id ){
-    'use strict';
     jQuery('#' + input_id).val('');
     jQuery('#im_' + input_id).remove();
     jQuery('#dv_' + input_id).hide();
@@ -514,14 +498,13 @@ function clear_file_input( input_id ){
 
 /* return an error message if the image does not fit the dimension limits */
 function invalid_image(field_id, theImage, webform_id) {
-    'use strict';
     var scale, maxw, maxh, maxHeight, maxWidth, msg,
     ewzG = window['ewzG_' + webform_id],
     limits = ewzG.layout.fields[field_id].fdata,
     iwidth = theImage.naturalWidth,
     iheight = theImage.naturalHeight;              // actual height of image
 
-    if ((typeof iwidth === 'undefined' || iwidth == null || iwidth == 0)) {
+    if ((iwidth === undefined || iwidth == null || iwidth == 0)) {
 
         return 'Unable to determine image dimensions.  It may be of a type not accepted by this application.';
 
@@ -585,7 +568,6 @@ function fix_radios( webform_id ){
 /////////////////  Upload and Upload Progress Info  ///////////////////////////
 
 function startUploading(webform_id) {
-    'use strict';
     var ewzG = window['ewzG_' + webform_id],
                status, xmlRequest, jresponse, jdivComplete, jdivProgress, form_data;
     jQuery("#ewz_fsubmit_" + webform_id).prop({
@@ -602,12 +584,12 @@ function startUploading(webform_id) {
     if (status || !ewzG.jsvalid ) {
         fix_radios( ewzG.webform_id );
         jresponse = jQuery('#upload_response_' + webform_id);
-        if (typeof window.FormData === 'undefined') {
+        if (window.FormData === undefined) {
             do_submit_form(jresponse, webform_id);
         } else {
             // create XMLHttpRequest object, adding few event listeners, and POSTing our data
             xmlRequest = new XMLHttpRequest();
-            if (typeof xmlRequest.upload === 'undefined') {
+            if (xmlRequest.upload === undefined) {
                 do_submit_form(jresponse, webform_id);
             } else {
                 ewzG.inProgress = true;
@@ -650,7 +632,7 @@ function startUploading(webform_id) {
     // For browsers not supporting XMLHttpRequest.upload
     function do_submit_form( jResponseDiv, webform_id ) {
 
-        if ((typeof window.console !== 'undefined') && window.console) {
+        if ((window.console !== undefined) && window.console) {
             console.log("no html5 upload available  webform " + webform_id);
         }
         jResponseDiv.show();
@@ -751,7 +733,6 @@ function startUploading(webform_id) {
 ////////////////// Utility Functions ////////////////
 
 function secondsToTime(secs) {
-    'use strict';
     var hr = Math.floor(secs / 3600),
     min = Math.floor((secs - (hr * 3600)) / 60),
     sec = Math.floor(secs - (hr * 3600) - (min * 60));
@@ -771,7 +752,6 @@ function secondsToTime(secs) {
 }
 
 function bytesToSize(bytes) {
-    'use strict';
     var i,
     sizes = ['Bytes', 'KB', 'MB'];
     if (bytes === 0) {
@@ -783,8 +763,7 @@ function bytesToSize(bytes) {
 
 function isblank(string)
 {
-    'use strict';
-    if (typeof string === 'undefined') {
+    if (string === undefined) {
         return true;
     }
     if (string === null) {
@@ -795,8 +774,7 @@ function isblank(string)
 }
 
 function empty_img_info(idstr, namestr, webform_id) {
-    'use strict';
-    if (typeof namestr === 'undefined') {
+    if (namestr === undefined) {
         namestr = idstr.replace(/_\d+$/, '').replace('__', '][').replace('_', '[').replace('_', ']');
     }
     var re = /__([0-9]*)__/,
@@ -804,7 +782,7 @@ function empty_img_info(idstr, namestr, webform_id) {
     qid = "'" + idstr + "'",
     ret = '<input type="file" name="' + namestr + '" id="' + idstr + '" onchange="fileSelected(' + field + ', ' + qid + ', ' + webform_id + ')">';
 
-    if (typeof window.FileReader !== 'undefined') {
+    if (window.FileReader !== undefined) {
         ret += '<div id="dv_' + idstr + '" style="display:none">';
         ret += '<div id="nm_' + idstr + '"></div>';
         ret += '<div id="sz_' + idstr + '"></div>';
@@ -816,7 +794,6 @@ function empty_img_info(idstr, namestr, webform_id) {
 }
 
 function field_matches_restr( restriction_val, entered_val ) {
-    'use strict';
     var ismatch = true;
     switch (restriction_val) {
     case  undefined:

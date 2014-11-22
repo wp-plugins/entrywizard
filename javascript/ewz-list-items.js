@@ -1,7 +1,7 @@
+'use strict';
 /*************** Functions for the List page ************************************/
 
 function processForm(formId) {
-    'use strict';
     var jform = jQuery("#"+formId);
     jQuery('#doaction').prop("disabled", true );
     jQuery('#doaction2').prop("disabled", true );
@@ -23,7 +23,7 @@ function processForm(formId) {
         ( jform.find('select[name="action2"]').val() === 'ewz_attach_imgs') ){
 
         jQuery('#message').html('<img alt="" src="' + ewzG.load_gif + '"/>');
-        var overlay = jQuery('<div></div>').prependTo('body').attr('id', 'overlay');
+        jQuery('<div></div>').prependTo('body').attr('id', 'overlay');
         return true;
     } else {
         jQuery('#doaction').prop("disabled", false );
@@ -34,7 +34,6 @@ function processForm(formId) {
 }
 
 function processIPP(formId) {
-    'use strict';
     var jform = jQuery("#"+formId).serialize();  
     jQuery('#ippmsg').html('<img alt="" src="' + ewzG.load_gif + '"/>');
     // NB: reload only after response is received

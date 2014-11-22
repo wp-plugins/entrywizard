@@ -1,13 +1,11 @@
-
-
+'use strict';
 
 /* Disables the selected spreadsheet columns in any other element of the same class */
 /* Called on change of any element of class uniq_class                              */
 function disable_ss_options(uniq_class) {
-   'use strict';
    var nowselected = [];
    // for each ss select list
-   jQuery(uniq_class).each(function(index) {
+   jQuery(uniq_class).each(function() {
       // enable all items
       var jthis = jQuery(this);
       jthis.children().removeAttr("disabled");
@@ -18,14 +16,15 @@ function disable_ss_options(uniq_class) {
    });
 
    // for each ss select list
-   jQuery(uniq_class).each(function(index) {
+   jQuery(uniq_class).each(function() {
       // for each selected item
       var sel;
       for (sel in nowselected ) {
-         // disable the same item in all the other select lists
-         if (sel !== this.value) {
+          if (!nowselected.hasOwnProperty(sel)) { continue; }
+          // disable the same item in all the other select lists
+          if (sel !== this.value) {
             jQuery(this.options[nowselected[sel]]).attr("disabled", "disabled");
-         }
+          }
       }
    });
 }
@@ -45,7 +44,6 @@ function disable_ss_options(uniq_class) {
  */
 function numinput_str(idstring, namestring, nosel, start, end, vval)
 {
-   'use strict';
    var qidstring, qnmstring, code, sel, i;
 
    qidstring = "'" + idstring + "'";
@@ -65,17 +63,16 @@ function numinput_str(idstring, namestring, nosel, start, end, vval)
 
 /* returns html for a text input element,  max size mw, value vval  with optional onChange function */
 function textinput_str(idstring, namestring, mw, vval, func) {
-   'use strict';
    var qqidstring, qqnmstring, qqmw, retstr;
 
    qqidstring = '"' + idstring + '"';
    qqnmstring = '"' + namestring + '"';
    qqmw = '"' + mw + '"';
    retstr = '<input type="text" ';
-   if ( typeof  func  !== 'undefined' ){
+   if (   func  !== undefined ){
       retstr += ' ' + func + ' ';
    }
-    if( typeof  vval  === 'undefined' ){
+    if(   vval  === undefined ){
         vval = '';
     }
    retstr += ' id=' + qqidstring + ' name=' + qqnmstring + ' maxlength=' + qqmw + ' value="' + vval + '">';
@@ -84,7 +81,6 @@ function textinput_str(idstring, namestring, mw, vval, func) {
 
 // returns html for a checkbox input element with optional onChange function
 function checkboxinput_str(idstring, namestring, checked, func) {
-   'use strict';
    var qqidstring, qqnmstring, chkd, retstr, disabled;
 
    qqidstring = '"' + idstring + '"';
@@ -96,7 +92,7 @@ function checkboxinput_str(idstring, namestring, checked, func) {
    }
    chkd = ((true == checked) ? ' checked="checked"' : '');
    retstr = '<input type="checkbox" ';
-   if ( typeof func !== 'undefined') {
+   if (  func !== undefined) {
       retstr += ' ' + func + ' ';
    }
    retstr += ' value="1" id=' + qqidstring + ' name=' + qqnmstring + chkd + disabled + '>';
@@ -105,8 +101,7 @@ function checkboxinput_str(idstring, namestring, checked, func) {
 
 function isblank(string)
 {
-   'use strict';
-   if (typeof string === 'undefined') {
+   if ( string === undefined) {
       return true;
    }
    if (null == string) {
@@ -118,7 +113,6 @@ function isblank(string)
 
 /* show a help dialog */
 function ewz_help(help_id) {
-   'use strict';
    jQuery('#' + help_id + '_help').dialog({
       'title': 'EntryWizard Help',
       'dialogClass': 'wp-dialog',
@@ -130,7 +124,6 @@ function ewz_help(help_id) {
 }
 
 function ewz_info(infostring) {
-   'use strict';
 
    jQuery("#info-text").html(infostring);
    jQuery("#info-text").dialog({
@@ -143,7 +136,6 @@ function ewz_info(infostring) {
 }
 
 function field_values(fieldtype, isreq, select_name, select_id, options) {
-   'use strict';
    var txt = '';
    switch (fieldtype) {
       case 'str':
@@ -192,12 +184,10 @@ function field_values(fieldtype, isreq, select_name, select_id, options) {
 
 /* Opens the associated closed postbox, or closes the open one */
 function toggle_postbox(handle) {
-   'use strict';
    jQuery(handle).closest('.postbox').toggleClass('closed');
 }
 
 function add_expander() {
-   'use strict';
    var close_text, open_text, open_close;
 
    // add 'Collapse All' and 'Expand All'
@@ -220,7 +210,6 @@ function add_expander() {
 /* return the html for an image format selection box */
 /* called by img_fields_str */
 function imgformat_input_str(id, name, values) {
-   'use strict';
    var str = '<select multiple="multiple" id="' + id + '" name="' + name + '">';
    str += '   <option value="image/jpeg" ' + (values.lastIndexOf('image/jpeg') >= 0 ? " selected" : '') + '>jpeg/jpg</option>';
    str += '   <option value="image/pjpeg" ' + (values.lastIndexOf('image/pjpeg') >= 0 ? " selected" : '') + '>pjpeg (older IE)</option>';
@@ -232,7 +221,6 @@ function imgformat_input_str(id, name, values) {
 
 /* find and return from an array of objects the index of the first one found that has the_key = the_value */
 function js_find_by_key(the_array, the_key, the_value) {
-   'use strict';
    var k, len;
 
    if (null === the_array) {
@@ -246,7 +234,7 @@ function js_find_by_key(the_array, the_key, the_value) {
       return -1;
    }
    for (k = 0; k < len; k++) {
-      if (typeof the_array[k] !== 'undefined' && the_array[k][the_key] == the_value) {
+      if ( the_array[k] !== undefined && the_array[k][the_key] == the_value) {
          return k;
       }
    }
@@ -257,16 +245,16 @@ function js_find_by_key(the_array, the_key, the_value) {
 /* To stop IE from generating errors if a console.log call was left in */
 function fixConsole()
 {
-   if (typeof console === 'undefined')
+   if ( console === undefined)
    {
       console = {}; // define it if it doesn't exist already
    }
-   if (typeof console.log === 'undefined')
+   if ( console.log === undefined)
    {
       console.log = function() {
       };
    }
-   if (typeof console.dir === 'undefined')
+   if ( console.dir === undefined)
    {
       console.dir = function() {
       };
@@ -275,7 +263,6 @@ function fixConsole()
 
 if (!Array.prototype.indexOf) {
    Array.prototype.indexOf = function(find, i /*opt*/) {
-      "use strict";
       var n, t, len, k, kstart;
 
       n = 0;
@@ -291,7 +278,7 @@ if (!Array.prototype.indexOf) {
       k;
       kstart = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
       for ( k = kstart ; len > k; k++ ) {
-         if ( typeof t[k] !== 'undefined' && t[k] === find) {
+         if (  t[k] !== undefined && t[k] === find) {
             return k;
          }
       }
@@ -301,11 +288,10 @@ if (!Array.prototype.indexOf) {
 
 if (!Array.prototype.forEach) {
    Array.prototype.forEach = function(action, that /*opt*/) {
-      'use strict';
       var i, n;
 
       for ( i = 0, n = this.length; i < n; i++){
-         if (typeof this[i] !== 'undefined'){
+         if ( this[i] !== undefined){
             action.call(that, this[i], i, this);
          }
       }
@@ -316,7 +302,6 @@ if (!Array.prototype.lastIndexOf)
 {
    Array.prototype.lastIndexOf = function(searchElement, fromIndex/*opt*/)
    {
-      "use strict";
       var t, len,n, k;
 
       t = Object ( this );

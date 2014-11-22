@@ -1,5 +1,5 @@
-
-jQuery(document).ready(function($) {
+'use strict';
+jQuery(document).ready(function() {
     init_ewz_layouts();
 });
 var ewzG;
@@ -7,7 +7,6 @@ var ewzG;
 /* called on load                                   */
 /* generates the whole page from the ewzG structure */
 function init_ewz_layouts() {
-    'use strict';
     fixConsole();
     var i, restr;
     // ewzG is null if not logged in
@@ -41,7 +40,6 @@ function init_ewz_layouts() {
 
 /* Returns the html string for a postbox containing a single layout */
 function layout_str(lnum, fObj) {
-    'use strict';
 
     var i, key, str, kvalue, khead, korigin;
     /*********** Postbox *************/
@@ -175,7 +173,6 @@ function layout_str(lnum, fObj) {
 
 /* return the html for a new blank restriction */
 function new_restriction_str(lnum, button) {
-    'use strict';
 
     var restrs = jQuery(button).parent().find('button[id^="x' + jQuery(button).attr("id") + '"]'),
         rnum = 0,
@@ -184,7 +181,7 @@ function new_restriction_str(lnum, button) {
 
     if (restrs.length) {
         rnum = restrs.last().attr("id").replace(/^.*R/, '').replace(/_$/, '');
-        rnum = +(rnum) + 1;
+        rnum = parseInt(rnum, 10 ) + 1;
     }
     txt = '<div id="restr_title_f' + lnum + '_r' + rnum + '_" class="ewz_subpost postbox closed">';
     txt += '   <div class="handlediv" onClick="toggle_postbox(this)" title="Click to toggle"><br /></div>';
@@ -196,7 +193,7 @@ function new_restriction_str(lnum, button) {
     txt += '          <table class="ewz_field"><tr><td colspan="2">Forbidden combination:</td></tr>';
     jcurr_form = jQuery(button).closest('form[id^="cfg_form_f"]');
 
-    jcurr_form.find('select[id$="_field_type_"]').each(function(index) {
+    jcurr_form.find('select[id$="_field_type_"]').each( function() {
         var inside, field_id, nmstr, fieldname, isreq, fieldtype, option_list;
         
         inside = jQuery(this).closest('div[class="inside"]');
@@ -213,9 +210,8 @@ function new_restriction_str(lnum, button) {
             // do this in javascript instead of getting from db so it will reflect current changes
             if ('opt' === fieldtype) {
                 option_list = '';
-                inside.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').each( function(index) {
+                inside.find('table[id^="data_fields_"]').find('tr[id$="_row_"]').each( function() {
                     var label, val;
-
                     label = jQuery(this).find('input[id$="_label_"]').val();
                     val = jQuery(this).find('input[id$="_value_"]').val();
 
@@ -226,6 +222,7 @@ function new_restriction_str(lnum, button) {
             txt += field_values(fieldtype, isreq, nmstr, 'f' + lnum + '_restrictions_' + rnum + '__' + field_id + '_', option_list);
         }
     });
+   
     txt += '       </td>';
     txt += '   </tr>';
     txt += '   <tr><td ><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'rmsg\')">&nbsp;Message: ';
@@ -244,7 +241,6 @@ function new_restriction_str(lnum, button) {
 }
 
 function add_layout_button_str() {
-    'use strict';
     var str = '<div class="alignleft">';
     str += '       <button  type="button" id="add_layout" class="button-secondary" onClick="add_layout_copy()">Add a New Layout</button>';
     str += '           &nbsp; with options copied from: ';
@@ -258,7 +254,6 @@ function add_layout_button_str() {
 
 /* return the html for a "field" div */
 function field_str(lnum, i, fObj) {
-    'use strict';
     var fld, fid, str;
 
     fld = 'fields[' + i + ']';
@@ -309,7 +304,6 @@ function field_str(lnum, i, fObj) {
 /* return the html string for the data specific to the field type - image size limits, options, text input length, etc */
 /* appears to the right of the header, datatype, etc items that are common to all field types                          */
 function type_data_field_str(lnum, fid, fld, field_type, fdata) {
-    'use strict';
     var str, fdid, fdld;
     // hide the table borders for a radio button, which has no options
     var hidetable = ( field_type == 'rad' ) ?  ' style="border: #EEEEEE";' : '';
@@ -346,7 +340,6 @@ function type_data_field_str(lnum, fid, fld, field_type, fdata) {
 /* called by type_data_field_str */
 function text_fields_str(lnum, fdid, fdld, tObj)
 {
-    'use strict';
     var str = '';
     if (tObj) {
         str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxchar\')">&nbsp;Maximum number of characters: </td><td>' + numinput_str(fdid + 'maxstringchars_', fdld + '[maxstringchars]', '', 1, 200, Number(tObj.maxstringchars)) + '</td></tr>';
@@ -360,7 +353,6 @@ function text_fields_str(lnum, fdid, fdld, tObj)
 /* called by type_data_field_str */
 function opt_fields_str(fdid, fdld, oObj)
 {
-    'use strict';
     var str = '',
         len = 0,
         rownum;
@@ -375,7 +367,6 @@ function opt_fields_str(fdid, fdld, oObj)
     return str;
 }
 function opt_row_str(fdid, fdld, rownum, opts) {
-    'use strict';
     var label, value, maxnum, rowfid, rowfld, str;
 
     label = opts ? opts.label : '';
@@ -397,14 +388,12 @@ function opt_row_str(fdid, fdld, rownum, opts) {
 /* called by type_data_field_str */
 function rad_fields_str(fdid, fdld, oObj)
 {
-    'use strict';
     return '<tr><td><input type="hidden" id="' + fdid + '" name="' +  fdld + '[radio]"></td></tr>';
 }
 /* return the html for setting the specific checkbutton data -- ie max num allowed */
 /* called by type_data_field_str */
 function chk_fields_str(fdid, fdld, oObj)
 {
-    'use strict';
     var chk_maxnum = oObj.chkmax ? Number(oObj.chkmax) : '';
     
     var str = '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'chkmax\')"> &nbsp; (optional) Maximum number that may be checked</td>';
@@ -417,7 +406,6 @@ function chk_fields_str(fdid, fdld, oObj)
 /* the various ...input_str functions are in ewz-common.js */
 /* called by type_data_field_str */
 function img_fields_str(lnum, fdid, fdld, iObj) {
-    'use strict';
     if (!iObj) {
         iObj = ewzG.empty_img;
     }
@@ -456,7 +444,6 @@ function img_fields_str(lnum, fdid, fdld, iObj) {
 /* Returns the html string for the field-type selection box */
 /*    which on change, calls insert_blank_data_field       */
 function type_opt_str(lnum, fid, fld, field_type) {
-    'use strict';
     var sel = 'selected="selected"',
         str = '<select id="' + fid + 'field_type_" name="' + fld + '[field_type]" ';
 
@@ -474,7 +461,6 @@ function type_opt_str(lnum, fid, fld, field_type) {
 /* Returns the html string for a drop-down to select a spreadsheet column */
 /* including onClick call to disable_ss_options                              */
 function colinput_str(idstring, namestring, vval, uniq_class) {
-    'use strict';
     var qidstring = "'" + idstring + "'",
         qnmstring = "'" + namestring + "'",
         qclass = "'." + uniq_class + "'",
@@ -505,7 +491,6 @@ function colinput_str(idstring, namestring, vval, uniq_class) {
 
 /* disable editing of fields appearing in restrictions */
 function disable_restricted_fields(lnum) {
-    'use strict';
     jQuery("#restricts_f" + lnum + '_').find('option:selected').each(function() {
         if (jQuery(this).val() !== '~*~') {
             var field_id, optval, jTxt;
@@ -532,7 +517,6 @@ function disable_restricted_fields(lnum) {
 
 /* disable "required" checkbox if the field type is radio or checkbox */
 function disable_required_for_radio_chk(lnum){
-    'use strict';
     var jfield = jQuery("#cfg_form_f" + lnum + "_").find('input[id$="_field_ident_"]').filter(function() {
         return (this.value == 'followupQ' );}).closest('table[class="ewz_field"]');
     var type = jfield.find( 'select[id$="_field_type_"]').val();
@@ -542,7 +526,6 @@ function disable_required_for_radio_chk(lnum){
 }
 
 function enable_restricted_fields(lnum) {
-    'use strict';
     var content;
     jQuery("#cfg_form_f" + lnum + "_").find(".ewz_disabled").each(function() {
         jQuery(this).find('input,button').prop("disabled", false);
@@ -552,7 +535,6 @@ function enable_restricted_fields(lnum) {
 }
 
 function disable_and_flag(jElement) {
-    'use strict';
     var w, h;
     jElement.prop("disabled", true);
     if (!jElement.parent().hasClass("ewz_disabled")) {
@@ -565,7 +547,6 @@ function disable_and_flag(jElement) {
 
 /* Set up some onChange functions for a layout                              */
 function setup_layout(for_lnum, from_lnum) {
-    'use strict';
     set_restr_selections(for_lnum, ewzG.layouts[from_lnum]);
 
     var jLayout = jQuery('#ewz_admin_layouts_f' + for_lnum + '_');
@@ -611,7 +592,6 @@ function setup_layout(for_lnum, from_lnum) {
 /*    ( unless the field has identifier 'followupQ' )
 /* Also disable numbers less than this in the max_num_items drop-down */
 function disable_max_vals(jLayout) {
-    'use strict';
     var jMaxNum, opt_max_limit, mni_min;
     jMaxNum = jLayout.find('select[name="max_num_items"]');
     opt_max_limit = jMaxNum.val();
@@ -627,17 +607,16 @@ function disable_max_vals(jLayout) {
             }
             jselect.find('option').prop("disabled", false);
             jselect.find('option').filter(function(){
-                return  parseInt(jQuery(this).val()) > opt_max_limit } ).prop("disabled", true);
+                return  parseInt(jQuery(this).val(), 10) > opt_max_limit; } ).prop("disabled", true);
         }
     });
     jMaxNum.find('option').prop("disabled", false);
     jMaxNum.find('option').filter(function(){
-        return  parseInt(jQuery(this).val()) < mni_min } ).prop("disabled", true);
+        return  parseInt(jQuery(this).val(), 10) < mni_min; }).prop("disabled", true);
 }
 
 /* Restrictions are initially created blank. This fills in the details */
 function set_restr_selections(lnum, layout) {
-    'use strict';
     var restrict, field, field_id, jmsg, junescaped, jpbox;
     for (restrict in layout.restrictions) {
         if (layout.restrictions.hasOwnProperty(restrict)) {
@@ -657,7 +636,6 @@ function set_restr_selections(lnum, layout) {
 }
 
 function add_restriction(button) {
-    'use strict';
     var jRestrictDiv = jQuery(button).parent().find('div[id^="restricts_f"]'),
         lnum = get_layout_num(button);
 
@@ -665,7 +643,6 @@ function add_restriction(button) {
 }
 
 function delete_restr(button) {
-    'use strict';
     var lnum = get_layout_num(button);
     // delete the restriction
     jQuery(button).closest('.postbox').remove();
@@ -676,7 +653,6 @@ function delete_restr(button) {
 
 /* Called on change of layout name, to change the postbox title */
 function update_layout_name(textfield) {
-    'use strict';
     var jtext, jlayout;
 
     jtext = jQuery(textfield);
@@ -688,7 +664,6 @@ function update_layout_name(textfield) {
 
 /* Called on change of field column header to update postbox */
 function update_title(textfield) {
-    'use strict';
     var jtext = jQuery(textfield);
     jtext.closest(jQuery('div[id$="field_mbox_"]')).find('h3[id^="field_title_"]').text(jtext.val());
 }
@@ -696,7 +671,6 @@ function update_title(textfield) {
 /* Called when the type of a field is changed.  Changes the right-hand side of the field area   */
 /*    to a new, blank area of the relevant type, and enables/disables the "required" field      */
 function insert_blank_data_field(lnum, type_sel, type) {
-    'use strict';
     var sel, field_id, parenttable, datafield, tid, fdata;
 
     sel = jQuery(type_sel);
@@ -737,8 +711,7 @@ function insert_blank_data_field(lnum, type_sel, type) {
 
 /* Adds a new option to the option list  */
 function add_option(add_opt_btn) {
-    'use strict';
-    var jQtable, tid, jQrows, row, re, fieldnum, fieldid, str, jLayout, lnum;
+    var jQtable, tid, jQrows, row, re, fieldnum, fieldid, str, jLayout;
 
     jQtable = jQuery(add_opt_btn).parent().find('table[id^="data_fields_"]'); //data_fields_f0_fields1_
     tid = jQtable.attr("id");
@@ -748,10 +721,6 @@ function add_option(add_opt_btn) {
     fieldnum = tid.replace(re, '').replace('_', ''); //1
     fieldid = tid.replace("data_fields_", '');
     str = opt_row_str(fieldid + 'fdata_', 'fields[' + fieldnum + '][fdata]', row, null);
-
-
-
-    lnum = tid.match(/data_fields_f([0-9]+)_/);
 
     jQuery(str).insertAfter(jQrows.last());
     jQtable.find('input[id$="_label_"]').change(function() {
@@ -774,7 +743,6 @@ function add_option(add_opt_btn) {
 
 /* Deletes the option        */
 function delete_option(del_opt_btn) {
-    'use strict';
     var row, optnum, table, jtable, trows, jQrow, oldid, i, i1, i2;
 
     row = del_opt_btn.parentNode.parentNode;
@@ -804,7 +772,6 @@ function delete_option(del_opt_btn) {
 
 /* Adds a new field to the current layout, of type defined by field_type */
 function add_field(add_field_btn, field_type) {
-    'use strict';
     var form, cnum, newid, lnum, fdata, data;
 
     form = jQuery(add_field_btn).closest('form[id^="cfg_form"]');
@@ -848,7 +815,6 @@ function add_field(add_field_btn, field_type) {
 
 /* Creates a new layout as a copy of the one selected */
 function add_layout_copy() {
-    'use strict';
     var fromid, layouts, to_num, fromstringid, tostringid, jQnew, sscstr, newhtml;
 
     fromid = jQuery('#ewz_addlayout').prop("selectedIndex");
@@ -900,7 +866,6 @@ function add_layout_copy() {
 
 /* Just deletes the item on the current page, does not change what is stored on the server */
 function delete_js_layout(id, thediv, lname) {
-    'use strict';
     var re, index;
 
     thediv.remove();
@@ -913,7 +878,6 @@ function delete_js_layout(id, thediv, lname) {
 
 /* Just deletes the item on the current page, does not change what is stored on the server */
 function delete_js_field(layout_id, field_id, jdiv) {
-    'use strict';
     var index = js_find_by_key(ewzG.layouts, 'layout_id', layout_id);
     jdiv.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
     delete ewzG.layouts[index].fields[field_id];
@@ -925,7 +889,6 @@ function delete_js_field(layout_id, field_id, jdiv) {
 /* First checks for attached webforms or items */
 /* Actually deletes the layout on the server via ajax. If successful, calls delete_js_layout to delete it on the current page. */
 function delete_layout(button, nwebforms, nitems) {
-    'use strict';
     var jbutton, lname, confirmstring, thediv, id, del_nonce, jqxhr;
 
     jbutton = jQuery(button);
@@ -943,7 +906,7 @@ function delete_layout(button, nwebforms, nitems) {
         alert(ewzG.errmsg.deletehasitems);
         return;
     }
-    if (typeof id === 'undefined' || '' == id ) {
+    if (id === undefined || '' == id ) {
         delete_js_layout(id, thediv, lname);
     } else {
 
@@ -978,13 +941,12 @@ function delete_layout(button, nwebforms, nitems) {
 
 /* Actually deletes the field on the server via ajax. If successful, deletes it on the current page. */
 function delete_field(del_field_btn) {
-    'use strict';
     var jbutton, fname, jfield_div, jform_div, field_id, layout_id, del_nonce, jqxhr;
 
     jbutton = jQuery(del_field_btn);
     jfield_div = jbutton.closest('div[id$="field_mbox_"]');
     field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
-    if (typeof field_id === undefined || '' == field_id ) {
+    if (field_id === undefined || '' == field_id ) {
         jfield_div.find('select[id$="_maxnum_"]').prop("selectedIndex", 0);
         jfield_div.find('select[id$="_maxnum_"]').change();
         jfield_div.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
@@ -1019,12 +981,10 @@ function delete_field(del_field_btn) {
 }
 
 function ewz_esc(instring) {
-    'use strict';
     return instring.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function get_layout_num(element) {
-    'use strict';
     var dv = jQuery(element).closest('div[id^="ewz_admin_layouts_f"]');
 
     return dv.attr("id").replace('ewz_admin_layouts_f', '').replace('_', '');
@@ -1032,7 +992,6 @@ function get_layout_num(element) {
 
 /* called on submit, err_alert disables submit */
 function ewz_check_layout_input(form, do_check) {
-    'use strict';
     var ok, jform, lnum, maxnumitems, maxs;
     ok = true;
     jform = jQuery(form);
@@ -1041,6 +1000,7 @@ function ewz_check_layout_input(form, do_check) {
     if (do_check) {
         try {
             // remove leading and trailing spaces from all inputs
+            // NB: need index arg so value is correctly assigned
             jform.find('input').val(function(index, value) {
                 return value.replace(/ +$/, '').replace(/^ +/, '');
             });
@@ -1048,7 +1008,6 @@ function ewz_check_layout_input(form, do_check) {
             if (!jform.find('input[id$="_layout_name_"]').val()) {
                 err_alert( lnum, ewzG.errmsg.layoutname);
                 return false;
-                
             }
             // no max num items
             maxnumitems = jform.find('select[id$="_max_num_items_"]').val();

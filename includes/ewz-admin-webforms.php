@@ -251,7 +251,20 @@ function ewz_webforms_menu()
                 $webform->field_names[$field->field_id] = ewz_html_esc( $field->field_header );
                 $webform->field_options[$field->field_id] = ewz_option_list( ewz_html_esc( $field->get_field_list_array() ) );
             }
-
+            if( method_exists( 'Ewz_Custom_Data', 'selection_list' ) ){
+                foreach ( Ewz_Custom_Data::$data as $key => $name ){
+                    $list = Ewz_Custom_Data::selection_list( $key );
+                    if( $list ){
+                        $opts = array(array('value'=>'~*~', 'display'=> 'Any', 'selected' => true));
+                        $webform->custom_header[$key] = $name;
+                        foreach( $list as $key1 => $val ){
+                            $x =  array( 'value' => $val, 'display' => $val );
+                            array_push( $opts, $x );
+                        }
+                        $webform->custom_options[$key] = ewz_option_list( ewz_html_esc( $opts ) );
+                    }
+                }
+            }
             $l_options = Ewz_Layout::get_layout_opt_array( 'Ewz_Permission',
                                                          'can_assign_layout',
                                                          $webform->layout_id );
@@ -290,6 +303,10 @@ function ewz_webforms_menu()
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname(__FILE__) ) ;
         $ewzG['helpIcon'] = plugins_url( 'images/help.png' , dirname(__FILE__) ) ;
         $ewzG['maxUploadMb'] = EWZ_MAX_SIZE_MB;
+
+        system("zip --version > /dev/null 2>&1;", $status );
+
+        $ewzG['canzip'] =  !( $status );   // command returns 0 for success, non-zero for failure
 
         $ewzG['errmsg'] = array(
             'warn' => '*** WARNING ***' ,
@@ -497,7 +514,14 @@ function ewz_webforms_menu()
             <p>The data management area for the webform lets you select all its
                 items or just some of them.
                A selection list is generated here for each field in the webform's
-               layout, except for required text and image fields.
+               layout, except for required text and image fields.  
+             </p>
+             <p><i>New in version 1.2.5 for those who created an ewz_extra plugin to allow entrywizard to
+                access custom fields: </i> If you have a custom field that <u>may take on only a limited number
+                of values</u>,  you may add a new "selection_list" function  to your ewz_extra.php file that 
+                enables you to select by this field, too.  See ewz_extra.txt file.
+             </p>
+             <p>
                With the selected images you may do one of several things:
             <ul>
              <li> Download a spreadsheet containing all the uploaded information
@@ -532,15 +556,22 @@ function ewz_webforms_menu()
                    If you are happy with that, you do not need to read any further.</p>
 
                <h2>Adding a Prefix to the Filename</h2>
-               <p>If you wish, <u>you may choose to add a prefix</u> to each of the image file names.<br>  
-                  The prefix may be applied to each file as soon as it is uploaded to the server ( in which case the new filename
-                  will be displayed to the person uploading ),
-                  or it may only be applied to files which are downloaded using the Download Images buttons below.</p>
-                <p> Applying the prefix ( or generating the filename ) immediately on upload is usually the safer choice.
-                    If using the Download buttons on this page takes too long and times out ( which may happen if your webhost limits the time 
-                    a process may take ), you may then use ftp to download the renamed files from the <?php print EWZ_IMG_UPLOAD_DIR ?> folder.
-                    On the other hand, doing this does mean that you cannot change your mind later about what prefix to use, and the user  
-                    cannot edit any item used as part of the prefix.<br> 
+               <p>If you wish, <u>you may choose to add a prefix</u> to each of the image file names, or even replace the filename 
+                  with a generated one.
+               <ul>
+                  <li> 
+                  The prefix is normally applied to each file as it is uploaded to the server ( and the new filename
+                  is displayed to the person uploading ). <br>
+                  If using the Download buttons on this page takes too long and times out ( which may happen if your webhost limits 
+                  certain resources and you attempt to download too many images ), you may then use ftp to obtain the renamed 
+                  files from the <?php print EWZ_IMG_UPLOAD_DIR ?> folder.
+                  </li>
+                  <li> 
+                  If you deselect this option, the prefix is applied only to the files downloaded using the Download Images buttons below.  
+                  But in that case, EntryWizard has to actually create the zip archive file on the server. On some webhosts doing so may 
+                  reduce the number of images you can download before running up against time and IO limits.
+                  </li>
+                </ul>
                 </p>
 
                 <p>

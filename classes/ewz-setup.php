@@ -19,6 +19,10 @@ class Ewz_Setup
         if( !defined( 'EWZ_LAYOUT_TABLE' ) ){
             ewz_init_globals();
         }
+        $tz_opt = get_option('timezone_string');
+        if( $tz_opt ){
+            date_default_timezone_set( $tz_opt );
+        }
 
         $layout_table = EWZ_LAYOUT_TABLE;
         $field_table = EWZ_FIELD_TABLE;
@@ -153,18 +157,6 @@ class Ewz_Setup
             dbDelta( $create_item_sql );
     }
 
-    /* ***************************************************
-     * For development, deactivate removes all data
-     * ************************************************** */
-
-    public static function deactivate_ewz()
-    {
-        error_log( "EWZ: deactivating" );
-        if ( CLEANUP_ON_DEACTIVATE ) {
-            self::uninstall_ewz();
-        }
-        error_log( "EWZ: EntryWizard deactivated" );
-    }
 
     /* ***************************************************
      * Drop our database tables and remove any entries we created in WP tables

@@ -27,6 +27,7 @@ class Ewz_Item_List_Input extends Ewz_Input
                     'webform_id'   => array( 'type' => 'to_seq',    'req' => true,    'val' => ''            ),
                     'ewznonce'     => array( 'type' => 'anonce',    'req' => true,   'val' => ''            ), 
                     'fopt'         => array( 'type' => 'v_fopts',   'req' => false,   'val' => array()       ),
+                    'copt'         => array( 'type' => 'v_copts',   'req' => false,   'val' => array()       ),
                     '_wpnonce'     => array( 'type' => 'to_string', 'req' => false,   'val' => ''            ),  // for WP_List_Table
                     'action'       => array( 'type' => 'limited',   'req' => false,   'val' => array('ewz_attach_imgs',
                                                                                                      'ewz_set_ipp',
@@ -53,18 +54,31 @@ class Ewz_Item_List_Input extends Ewz_Input
         $this->validate();          
     }
 
+   function validate(){
+
+        parent::validate();
+	// an unchecked checkbox does not create any matching value in $_POST
+	if ( !array_key_exists( 'img_comment', $this->input_data ) ) {
+	    $this->input_data['img_comment'] = false;
+	}
+        if ( !array_key_exists( 'fopt', $this->input_data ) ) {
+            $this->fopt = array();
+        }
+        if ( !array_key_exists( 'copt', $this->input_data ) ) {
+            $this->copt = array();
+        }
+        return true;
+   }
+
     function v_fopts( $value, $arg ){
          assert( is_array( $value ) || empty( $value ) );
          assert( isset( $arg ) );
         return Ewz_Webform_Data_Input::v_fopts( $value, $arg );
     }
+    function v_copts( $value, $arg ){
+         assert( is_array( $value ) || empty( $value ) );
+         assert( isset( $arg ) );
+        return Ewz_Webform_Data_Input::v_copts( $value, $arg );
+    }
 
-     function validate( ){
-         parent::validate();
-	// an unchecked checkbox does not create any matching value in $_POST
-	if ( !array_key_exists( 'img_comment', $this->input_data ) ) {
-	    $this->input_data['img_comment'] = false;
-	}
-        return true;
-     }
 }

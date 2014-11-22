@@ -507,8 +507,9 @@ function ewz_list_items() {
  * @param    $extra_opts   show only items uploaded within the last $uploaddays
  * @return   html
  */
-function  ewz_get_opt_display_string( $field_opts, $extra_opts ){
+function  ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts ){
     assert( is_array(  $field_opts ) ) || empty( $field_opts );
+    assert( is_array(  $custom_opts ) ) || empty( $custom_opts );
     assert( is_array(  $extra_opts ) ) || empty( $extra_opts );
 
     $optname = array();
@@ -520,6 +521,13 @@ function  ewz_get_opt_display_string( $field_opts, $extra_opts ){
             $optval[$field_id] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', $fval ) ) );
         }
     }
+    if ( isset( $custom_opts ) ) {
+        foreach( $custom_opts as $custom_name=>$cval ){
+            $optname[$custom_name] = Ewz_Custom_Data::$data[$custom_name];
+            $optval[$custom_name] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', $cval ) ) );
+        }
+    }
+
     $str ="<ul>\n";
     foreach ( $optname as $f => $name ) {
         $str .= "<li>$name = $optval[$f]</li>\n";
@@ -618,15 +626,19 @@ function  ewz_display_list_page( $message, $requestdata ){
     if ( isset( $requestdata['fopt'] ) ) {
         $field_opts = $requestdata['fopt'];
     }
+    $custom_opts = array();
+    if ( isset( $requestdata['copt'] ) ) {
+        $custom_opts = $requestdata['copt'];
+    }
 
     $extra_opts = array();             // this is set up to allow for other options than just uploaddays
     if( isset( $requestdata['uploaddays'] ) ){
         $extra_opts['uploaddays'] = $requestdata['uploaddays'];
     }
-    $opt_display_string = ewz_get_opt_display_string( $field_opts,  $extra_opts );
+    $opt_display_string = ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts );
 
 
-    $items = Ewz_Item::filter_items( $field_opts, $extra_opts,
+    $items = Ewz_Item::filter_items( $field_opts, $custom_opts, $extra_opts,
                                      Ewz_Item::get_items_for_webform( $webform_id, false ) );
     $extra_cols = Ewz_Layout::get_extra_cols( $webform->layout_id );
 

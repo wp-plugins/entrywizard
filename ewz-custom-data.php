@@ -13,6 +13,9 @@ function ewz_add_custom_class(){
 
             public function  __construct( $user_id ){
             }
+               
+            public static function selection_list( $item ){
+            }
         }
     }
 }

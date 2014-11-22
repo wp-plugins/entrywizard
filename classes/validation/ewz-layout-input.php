@@ -58,6 +58,7 @@ class Ewz_Layout_Input extends Ewz_Input {
                 throw new EWZ_Exception( "Invalid spreadsheet column type '$key'" );
             }
         }
+        $used_cols = array();
         foreach ( $arg as $key ) {
             if ( isset( $value[$key] ) ) {
                 if ( !( is_string( $value[$key] ) &&
@@ -66,8 +67,14 @@ class Ewz_Layout_Input extends Ewz_Input {
                         ( int ) $value[$key] <= 1000 ) ) {
                     throw new EWZ_Exception( 'Invalid spreadsheet column ' . $value[$key] );
                 }
+                $value[$key] = intval( $value[$key] );
+
+                // make sure each ss column ( except -1 )  only assigned once
+                if( $value[$key] >= 0  && isset( $used_cols[$value[$key]] ) ){
+                    throw new EWZ_Exception( 'Spreadsheet column used twice: ' . ( $value[$key] + 1 ) );
+                } 
             }
-            $value[$key] = intval( $value[$key] );
+            $used_cols[$value[$key]] = 1;
         }
         return true;
     }

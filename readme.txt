@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 4.0
-Stable tag: 1.2.4
+Tested up to: 4.0.1
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,11 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.5 =
+* Allow selection by (some) custom fields in the Data Management area.
+  NB: If you created an ewz_extra plugin to make use of extra user data, please read the new version of ewz-extra.txt.
+* Changed the method of generating the zip archive. On some servers this may increase the number of images that can be downloaded without timing out.
+* Added an EWZ shortcodes menu in the tinyMCE editor ( second line ), showing only shortcodes for webforms the user has some permissions for.
 = 1.2.4 =
 fixed issue with max number of items allowed in Layouts page
 protect upload folder from listing, use random filenames for downloads
@@ -230,8 +235,6 @@ CHANGE: Require a minimum longest dimension for uploaded images instead of a min
 == To Do ==
 
 Enhancements planned eventually (in no particular order):
-
-* Make the shortcode easier to edit within the TinyMCE editor
 
 * Make layouts and webforms sortable
 

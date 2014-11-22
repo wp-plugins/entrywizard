@@ -26,6 +26,18 @@ abstract class Ewz_Base
         return true;
     }
 
+    // delete options whose name starts with $prefix
+    public static function delete_ewz_options( $prefix ){
+        assert( is_string( $prefix ) );
+
+        global $wpdb;
+        $options = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . ' WHERE option_name like "' . $prefix . '%"' );
+        foreach ( $options as $option_name ) {
+            delete_option( $option_name );
+        }
+    }
+
+
     public static function toDatePickerFormat( $dateFormat ){
         assert( is_string( $dateFormat ) );
         $map = array( 

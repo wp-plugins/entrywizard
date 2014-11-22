@@ -25,7 +25,7 @@ class Ewz_Item extends Ewz_Base {
     public $item_data;
 
     public $layout_id;
-
+    
     // Keep list of db data names/types as a convenience for iteration and so
     // we can easily add new ones. Dont include item_id here for safety
     public static $varlist = array(
@@ -97,11 +97,11 @@ class Ewz_Item extends Ewz_Base {
      * @param array   $in_items     list of items to be filtered
      * @return array  those members of the input items list that match all the options
      */
-    public static function filter_items( $field_opts, $extra_opts, $in_items ) {
+    public static function filter_items( $field_opts, $custom_opts, $extra_opts, $in_items ) {
         assert( is_array( $field_opts ) || empty( $field_opts ) );
+        assert( is_array( $custom_opts ) || empty( $custom_opts ) );
         assert( is_array( $extra_opts ) || empty( $extra_opts ) );
         assert( is_array( $in_items ) );
-
         $out_items = array( );
         foreach ( $in_items as $item ) {
             // go through all the item's fields. If all match, add to $out_items
@@ -111,7 +111,6 @@ class Ewz_Item extends Ewz_Base {
                 } else {
                     $itemval = NULL;
                 }
-
                 switch ( $optval ) {
                     case "~*~":           // anything
                         break;
@@ -130,6 +129,13 @@ class Ewz_Item extends Ewz_Base {
                             continue 3;
                         }
                 }
+            }
+            
+            $custom = new Ewz_Custom_Data( $item->user_id );
+            foreach ( $custom_opts as $key => $value ){                
+                if( ( $value != '~*~' ) && ( $custom->$key !=  $value ) ){
+                    continue 2;      // go to next item
+                } 
             }
             array_push( $out_items, $item );
         }
@@ -157,8 +163,9 @@ class Ewz_Item extends Ewz_Base {
              if( $tz_opt ){
                    date_default_timezone_set( $tz_opt );
              }
+             // strtotime returns unix timestamp
             $uploadedtime = strtotime( ( empty( $item->upload_date ) ?  $item->last_change : $item->upload_date )  );
-            $now = current_time( 'timestamp', 1 );  
+            $now = time();  // current unix timestamp
             if ( ( $now - $uploadedtime ) < $seconds ) {
                 array_push( $filtered, $item );
             }
@@ -420,6 +427,12 @@ class Ewz_Item extends Ewz_Base {
         if ( isset( $this->item_files ) && count( $this->item_files ) > 0 ) {
             // No stripslashes here - wp doesn't escape $_FILES as it does $_POST
             $data['item_files'] = serialize( $this->item_files ) ;
+        }
+
+        // for saving last_change and upload_date
+        $tz_opt = get_option('timezone_string');
+        if( $tz_opt ){
+            date_default_timezone_set( $tz_opt );
         }
 
         $datatypes = array( '%d', '%d', '%s', '%s' );

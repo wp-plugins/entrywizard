@@ -1,11 +1,11 @@
+"use strict";
 
-jQuery(document).ready(function($) {
+jQuery(document).ready(function() {
     init_ewz_webforms();
 });
 var ewzG;
 /* toggle visibility of hideable controls in the same form */
 function toggle_hidden_controls(checkbox){
-    'use strict';
     fixConsole();
     var jcheckbox = jQuery(checkbox),
            jtable = jcheckbox.closest('form');
@@ -22,7 +22,6 @@ function toggle_hidden_controls(checkbox){
 /* called on load                                   */
 /* generates the whole page from the ewzG structure */
 function init_ewz_webforms(){
-    'use strict';
     var i, jthis;
 
     // ewzG is null if not logged in
@@ -72,7 +71,6 @@ function init_ewz_webforms(){
 
 /* Returns the html string for a postbox containing a single webform */
 function ewz_management(evnum, eObj){
-    'use strict';
     if(!eObj){
         eObj= {};
     }
@@ -116,7 +114,6 @@ function ewz_management(evnum, eObj){
 }
 /* Return the html string for the data management section */
 function data_management_str( evnum, eObj ){
-    'use strict';
     var str='';
     str +=   '<h4>Data Management</h4>';
     if(eObj.can_manage_webform){
@@ -136,21 +133,21 @@ function data_management_str( evnum, eObj ){
 
     if( eObj.hasOwnProperty('field_options' )){
 
-        str += field_options_str( evnum, eObj );
+        str += field_options_str( eObj );
     }
     str += upload_date_str( evnum );
 
     str +=   '    <TABLE class="ewz_buttonrow">';
     if( eObj.itemcount > 0 && eObj.can_manage_webform ){
-        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
+        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\', ' + evnum + ')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
         str +=   '     <TD></TD>';
         str +=   '  </TR>';
     }
     if(eObj.can_download){
         str +=   '  <TR>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'spread\')" id="spread_' + evnum + '" class="button-secondary">Download Spreadsheet</button></TD>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'images\')" id="images_' + evnum + '" class="button-secondary">Download Images</button></TD>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'download\')" id="download_' + evnum + '" class="button-secondary">Download Images and Spreadsheet</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'spread\', ' + evnum + ')" id="spread_' + evnum + '" class="button-secondary">Download Spreadsheet</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'images\', ' + evnum + ')" id="images_' + evnum + '" class="button-secondary">Download Images</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'download\',' + evnum + ')" id="download_' + evnum + '" class="button-secondary">Download Images and Spreadsheet</button></TD>';
         str +=   '  </TR>';
     }
     str +=   '  </TABLE>';
@@ -161,15 +158,68 @@ function data_management_str( evnum, eObj ){
     return str;
 }
 
-function set_mode(button, mode){
-    jform = jQuery( button ).closest('form');
-    jform.find('input[name="ewzmode"]').val(mode);
+function set_mode(button, mode, evnum){
+    var jform = jQuery( button ).closest('form');
+    var jmode = jform.find('input[name="ewzmode"]');
+    var jwebform = jQuery( '#cfg_form_ev' + evnum + '_');
+    var jbutton = jQuery(button);
+    var renameOnDownload = jwebform.find('input[name="prefix"]').first().val().trim().length && 
+        !jwebform.find('input[name="apply_prefix"]').is(':checked');  // have a prefix not applied on upload
+    switch( mode ){
+        case 'spread':
+        case 'list':
+           jform.find('input[name="ewzmode"]').val(mode);
+        jform.submit();
+           break;
+        case 'images':
+           if( ewzG.canzip  && !renameOnDownload ){
+               jmode.val('zimages');
+               jform.submit();
+           } else {
+               jmode.val('images');
+               gen_zipfile( jform, jbutton );
+           }
+           break;
+        case 'download':
+           if( ewzG.canzip && !renameOnDownload ){
+               jmode.val('zdownload');
+               jform.submit();
+           } else { 
+               jmode.val('download');
+               gen_zipfile( jform, jbutton );
+           }
+           break;
+    }
+}
+
+function gen_zipfile( jform, jbutton ){
+               
+    jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
+
+    jform.append('<input type="hidden" id="ajax_action" name="action" value="ewz_gen_zipfile" />');
+    var jqxhr = jQuery.post( ajaxurl,
+                         jform.serialize(),
+                         function(response) {
+                             jQuery("#temp_load").remove();
+                             if ( response.match(/^ewz_.*/) ) {
+                                 jQuery('#ajax_action').remove();
+                                 download_zipfile( jform, response );
+                             } else {
+                                 jQuery('#ajax_action').remove();
+                                 alert( response );
+                             }
+                         }
+                       );
+}
+        
+
+function download_zipfile( jform, response ){
+    jform.append( '<input type="hidden" name="archive_id" value="' + response + '">');
     jform.submit();
 }
 
 /* Return the html string for the editable form of the webform data */
 function webform_data_str(evnum, eObj) {
-    'use strict';
     var divid = 'usel' + evnum + '_',
         clickstr = 'user_select(' + "'" + divid + "'" + ')',
         str = '';
@@ -207,7 +257,7 @@ function webform_data_str(evnum, eObj) {
     str +=   '            <td>Apply prefix on upload &nbsp; ';
     str +=                  checkboxinput_str("apply_prefix_" + evnum, "apply_prefix", eObj.apply_prefix );
     str +=   '            </td>';
-    str +=   '            <td>Generate a filename using the prefix &nbsp; ';
+    str +=   '            <td>Generate the entire filename from the prefix &nbsp; ';
     str +=                  checkboxinput_str("gen_fname_" + evnum, "gen_fname", eObj.gen_fname );
     str +=   '            </td>';
     str +=   '        </tr>';
@@ -251,7 +301,6 @@ if(eObj.user_options){
 
 /* Return the html string for the read-only form of the webform data */
 function read_only_info_str( eObj ){
-    'use strict';
     var str='';
     str +=   '             <table>';
     str +=   '                 <tr><td>Name for this webform</td>';
@@ -275,7 +324,6 @@ function read_only_info_str( eObj ){
 
 /* Return the html string for the Extra Data Upload form */
 function xtra_data_upload_str(  evnum, eObj ){
-    'use strict';
     var str = '',
         inputid = 'csv_data_' + evnum + '_';
     str +=   '<td><form method="post" enctype="multipart/form-data" action="" id="csv_form_ev' + evnum + '_"  onSubmit="return ewz_check_csv_input("csv",' + evnum + ', \'' + inputid + '\' ) ">';
@@ -293,7 +341,6 @@ function xtra_data_upload_str(  evnum, eObj ){
 }
 /* Return the html string for the Admin Data Upload form */
 function itmcsv_data_upload_str(  evnum, eObj ){
-    'use strict';
     var str = '',
         inputid = 'itmcsv_data_' + evnum + '_';
     str +=   '<td><form method="post" enctype="multipart/form-data" action="" id="itmcsv_form_ev' + evnum + '_"  onSubmit="return ewz_check_csv_input("itmcsv",' + evnum + ', \'' + inputid + '\' ) ">';
@@ -311,10 +358,11 @@ function itmcsv_data_upload_str(  evnum, eObj ){
 }
 
 /* Return the html string for the field options select boxes */
-function field_options_str( evnum, eObj ){
-    'use strict';
+function field_options_str( eObj ){
     var field_id1,
         field_id2,
+        data1,
+        data2,
         fid,
         num  = 0,
         str  = '';
@@ -334,6 +382,14 @@ function field_options_str( evnum, eObj ){
                str +=   '</TH>';
            }
         }
+        for ( data1 in eObj.custom_header ){
+           if(eObj.custom_header.hasOwnProperty(data1)){
+               str +=   '<TH>';
+               str +=   eObj.custom_header[data1];
+               str +=   '</TH>';
+           }
+        }
+
         str +=   '</TR>';
         str +=   '<TR>';
         for( field_id2 in eObj.field_options ){
@@ -347,6 +403,16 @@ function field_options_str( evnum, eObj ){
                str +=   '</TD>';
            }
         }
+        for( data2 in eObj.custom_options ){
+           if(eObj.custom_options.hasOwnProperty(data2)){
+               str +=   '      <TD>';
+                   str +=   '      <select name="copt[' + data2 +']"  id="l'+ eObj.webform_id + 'c' + data2 + '_opt_">';
+                   str +=              eObj.custom_options[data2];
+                   str +=   '      </select>';
+               str +=   '</TD>';
+           }
+        }
+        
         str +=   '</TR></TBODY></TABLE>';
     }
     return str;
@@ -354,7 +420,6 @@ function field_options_str( evnum, eObj ){
 
 /* Return the html string for the upload date selection */
 function upload_date_str( evnum ){
-    'use strict';
     var day,
         str  = '';
 
@@ -376,7 +441,6 @@ function upload_date_str( evnum ){
 
 /* Return the html string for the "add webform" button */
 function webform_button_str(){
-    'use strict';
     var str  = '<div class="clear alignleft">';
     str += '         <button  type="button" class="button-secondary" id="webform_add_" onClick="add_new_webform()">Add a New Web Form</button> ';
     str += '    </div> ';
@@ -385,7 +449,6 @@ function webform_button_str(){
 
 /* Return the html string for the layout selection */
 function select_layout_str( evnum, eObj ){
-    'use strict';
     var str = '';
     str +=   '                 <td>';
     str +=   '                    <select id="layout_id' + evnum + '" name="layout_id" onChange=disable_override(' + evnum + ')>';
@@ -393,7 +456,8 @@ function select_layout_str( evnum, eObj ){
     str += '                      </select>';
     str +=   '                 </td>';
     if(eObj.itemcount > 0){
-        str +=   '             <td colspan="2"><div class="ewz_warn">Warning: This form has uploaded data. <br>Changing the layout now could cause problems.</div></td>';
+        str +=   '             <td colspan="2"><div class="ewz_warn">WARNING: This form has uploaded data. ';
+        str +=   '                             <br>Changing the layout or the prefix options now could cause problems.</div></td>';
     }
     return str;
 }
@@ -404,7 +468,6 @@ function disable_override(evnum){
 }
 
 function user_select(id){
-    'use strict';
    if(jQuery('#' + id ).is(':visible')){
         jQuery('#' + id ).hide();
     } else {
@@ -416,15 +479,14 @@ function user_select(id){
 
 /* Actually delete the form on the server via ajax.  If successful, delete it from the page. */
 function delete_webform(button, itemcount){
-    'use strict';
     var jbutton = jQuery(button),
         lname = jbutton.closest('div[id^="ewz-postbox-webform_ev"]').find('span[id^="wf_title_"]').text(),
         confirmstring = '',
-        thediv,id,ok,del_nonce,jqxhr;
+        thediv,id,del_nonce,jqxhr;
 
     thediv = jbutton.closest('div[id^="ewz_admin_webforms_ev"]');
     id = thediv.find('input[name="webform_id"]').first().attr("value");
-    if( '' === id || null === id || 'undefined' === typeof id ){
+    if( '' === id || null === id || undefined ===  id ){
         thediv.remove();
         return;
     }
@@ -435,7 +497,6 @@ function delete_webform(button, itemcount){
     confirmstring += "\n" + ewzG.errmsg.noundo;
 
     if( confirm( confirmstring ) ){
-            ok = 'no';
             jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
             del_nonce = thediv.find('input[name="ewznonce"]').val();
             jqxhr = jQuery.post( ajaxurl,
@@ -453,14 +514,12 @@ function delete_webform(button, itemcount){
                                              alert( response );
                                          }
                                      }
-                                   );
-        
+                                   );       
     }
 }
 
 
 function add_new_webform(){
-    'use strict';
     var jthis,
         num = ewzG.webforms.length,
         newform = {},
@@ -506,7 +565,6 @@ function add_new_webform(){
 
 /* Validation */
 function ewz_check_csv_input(ftype, evnum, file_input_id){
-    'use strict';
     var  theFile = document.getElementById(file_input_id).files[0],
           mb;
     jQuery('#' + ftype+'_btn_' + evnum ).prop("disabled", true);
@@ -532,7 +590,6 @@ function ewz_check_csv_input(ftype, evnum, file_input_id){
 }
 
 function ewz_check_webform_input(form, evnum, do_js_check){
-    'use strict';
     var jform,
     pref;
     jform = jQuery(form);

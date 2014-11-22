@@ -1,16 +1,17 @@
+"use strict";
+
 /* Set the selections to reflect the  permissions stored for the selected user */
 /* Show a summary of these permissions */
 
 var ewzG;
 
 function ewz_set_user(){
-    userid = jQuery("#ewz_have_perm").val(),
+    var userid = jQuery("#ewz_have_perm").val();
     jQuery("#ewz_user_perm").val(userid);
     ewz_show_perms();
 }
 
 function ewz_show_perms(){
-    'use strict';
     jQuery("#ewz_can_edit_layout").val([]);
     jQuery("#ewz_can_assign_layout").val([]);
     jQuery("#ewz_can_edit_webform").val([]);
@@ -51,7 +52,6 @@ function ewz_show_perms(){
 
 /* validation and removal of "none" options */
 function ewz_check_perm_input(the_form){
-    'use strict';
     jQuery('#submit').prop("disabled", true);
     try{
         var user = jQuery("#ewz_user_perm option:selected").val();

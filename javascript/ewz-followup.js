@@ -1,4 +1,4 @@
-
+'use strict';
 var ewzF;
 
 jQuery(document).ready(function() {
@@ -8,20 +8,19 @@ jQuery(document).ready(function() {
 });
 
 
-
 /* To stop IE from generating errors if a console.log call was left in */
 function f_fixConsole()
 {
-    if (typeof console === 'undefined')
+    if ( console === undefined)
     {
         console = {}; // define it if it doesn't exist already
     }
-    if (typeof console.log === 'undefined')
+    if ( console.log === undefined)
     {
         console.log = function() {
         };
     }
-    if (typeof console.dir === 'undefined')
+    if ( console.dir === undefined)
     {
         console.dir = function() {
         };
@@ -30,8 +29,6 @@ function f_fixConsole()
 
 // the OnLoad function
 function init_ewz_followup() {
-    'use strict';
-    var name, row, ff;
     f_fixConsole();
     // show the user any message coming from the server
     if (ewzF.errmsg) {
@@ -84,7 +81,6 @@ function f_fix_cbs(){
 /* Each value is an array whose first entry is the entered value,               */
 /* and whose second entry contains additional data depending on the input type */
 function f_get_value( jitem ){
-    'use strict';
     var fieldval;
     if (jitem.length > 0) {
         switch(ewzF.f_field.field_type){
@@ -93,7 +89,7 @@ function f_get_value( jitem ){
             break;
         case 'img':
             if( jitem.prop("src") ) {
-                fieldvals[i] = [ jitem.attr("src"), 'old' ];
+                fieldval = [ jitem.attr("src"), 'old' ];
             } else {
                 fieldval = [ jitem.val(), 'new' ];
             }
@@ -127,7 +123,6 @@ function f_get_value( jitem ){
 
 /* Check any max rules on drop-down option selections */
 function f_options_check( field){
-    'use strict';
     var msg = '', status = true, maxn, key, text;
     if (  field.field_type === 'opt' || field.field_type === 'chk'  ) {
         var optcount = {};
@@ -137,7 +132,7 @@ function f_options_check( field){
             var val = sel[0];
             if ( val ) {
                 textvals[ val ] =  sel[1]; // for display to user
-                if (typeof optcount[ val ] === 'undefined') {
+                if ( optcount[ val ] === undefined) {
                     optcount[ val ] = 1;
                 } else {
                     ++optcount[ val ];
@@ -170,8 +165,7 @@ function f_options_check( field){
 
 
 /* validation                                           */
-function f_check_missing( field ) {
-    'use strict';
+function f_check_missing( ) {
     var status = true;
     jQuery('#foll_form').find('[id^="rdata_"]').each(function() {
         try {

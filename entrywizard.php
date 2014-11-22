@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.4
+  Version: 1.2.5
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -59,11 +59,7 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
 /**
  * ACTIONS
  */
-
 add_action('plugins_loaded', 'ewz_requires_version');   // first useable hook
-
-// in the admin area we add another function after this, so make sure we know its priority
-add_action( 'init', 'ewz_set_dev_env', 1 );
 
 add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
 
@@ -78,8 +74,55 @@ add_action( 'init', 'Ewz_Webform::schedule_close' );
 add_action( 'deleted_user', 'Ewz_Item::delete_user_items' );
 
 /*
- * SHORTCODE
+ * SHORTCODES
  */
+
+/* Set up the EWZShortcodes menu in tinyMCE */
+function ewz_shortcode_menu() {
+    // only hook up these filters if we're in the admin panel, and the current user has permission
+    // to edit posts and pages, and has some entrywizard permissions
+    if ( current_user_can( 'edit_posts' ) && current_user_can( 'edit_pages' ) && Ewz_Permission::can_see_webform_page() ) {
+        add_filter( 'mce_buttons_2', 'ewz_mce_button' );
+        add_filter( 'mce_external_plugins', 'ewz_mce_plugin' );
+
+        foreach( array('post.php','post-new.php') as $hook ){
+            add_action( "admin_head-$hook", 'ewz_admin_head' );
+        }     
+    }
+}
+add_action( 'admin_init',  'ewz_shortcode_menu' );
+
+/* pass the data to javascript */
+function ewz_admin_head(){
+    global $all_text;
+    $ewzdata = array();
+    $ewzdata['webforms'] = array_values(array_filter( Ewz_Webform::get_all_webforms(),
+                                                      "Ewz_Permission::can_view_webform" ));;
+     ?>
+<script type='text/javascript'>
+     var EWZdata =  <?php echo json_encode( $ewzdata ); ?>;
+</script>
+    <?php
+}  
+
+
+/* pass the button data to mce_buttons filter */
+function ewz_mce_button( $buttons ) {
+    assert( is_array( $buttons ) );
+
+    array_push( $buttons,'ewz_shortcodes');
+    return $buttons;
+}
+ 
+/* pass the javascript file name to mce_external_plugins filter */
+function ewz_mce_plugin( $plugins ) {
+    assert( is_array( $plugins ) );
+
+    $plugins['ewz_shortcodes'] = plugins_url() . '/entrywizard/javascript/ewz-shortcodes.js';
+    return $plugins;
+}
+
+
 if ( ! is_admin() ) { 
     // adding this for all admin pages triggers warnings for some themes and plugins
     // just add it specifically for the ajax calls when they are run in ewz-admin.php
@@ -87,7 +130,9 @@ if ( ! is_admin() ) {
     add_shortcode( 'ewz_followup', 'ewz_followup' );
 }
 
-
+/*
+ * UPDATES
+ */
 function ewz_check_for_db_updates(){
     $data             = get_plugin_data( __FILE__, false, false );
     $this_version     = $data['Version'];
@@ -158,40 +203,6 @@ function ewz_add_stylesheet() {
                       );
  }
 
-function ewz_set_dev_env(){
-    if ( is_file( plugin_dir_path( __FILE__ ). 'DEVE_ENV' )   // only true in development environment
-        && ! ( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
-        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] ) 
-      ){   
-        /*
-         * ASSERT OPTIONS
-         */
-        assert_options( ASSERT_ACTIVE, true );
-        assert_options( ASSERT_BAIL, false );
-        assert_options( ASSERT_WARNING, false );
-        function ewz_assert_handler( $file, $line, $code )
-        {
-            // no assert
-            error_log( "EWZ: Assertion Failed at $file: $line: $code" );
-        }
-        assert_options( ASSERT_CALLBACK, 'ewz_assert_handler' );
-        define( 'EWZ_DBG', true );
-        define( 'CLEANUP_ON_DEACTIVATE', true );
-        $is_admin = is_admin() ? 'ADMIN' : '';
-        error_log( "EWZ: ~~~~~~~~ Starting entrywizard.php ( magic quotes not yet added )  $is_admin ~~~~~~~ \n"
-                   . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
-                   . 'GET:   ' . print_r( $_GET, true )
-                   . 'POST:  ' . print_r( $_POST, true )
-                   . 'FILES: ' . print_r( $_FILES, true )
-                  );
-    } else {
-        define( 'EWZ_DBG', false );
-        assert_options( ASSERT_ACTIVE, false );
-        define( 'CLEANUP_ON_DEACTIVATE', false );
-    }
-}
-
-
 function ewz_init_globals(){
     global $wpdb;
 
@@ -218,7 +229,7 @@ function ewz_init_globals(){
     define( 'EWZ_MAX_STRING_LEN', 50 );           // default max length of text input field
     define( 'EWZ_MAX_FIELD_WIDTH', 10 );          // default max field width of text input field
 
-    define( 'EWZ_FILE_DOWNLOAD_TIME', 30 );       // number of seconds to add to max time allowance for every 50 files
+    define( 'EWZ_FILE_DOWNLOAD_TIME', 30 );       // number of seconds to add to max time allowance for every 25 files
     define( 'UPLOAD_ERR_EMPTY',   5 );            // error if uploaded file is empty -- see includes/ewz-upload.php
 
 
