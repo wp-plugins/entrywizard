@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.0.1
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,8 +113,10 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.6 =
+* bugfix
 = 1.2.5 =
-* Allow selection by (some) custom fields in the Data Management area.
+* Allow selection by (some) custom fields in the Data Management area, and their use in file prefixes.
   NB: If you created an ewz_extra plugin to make use of extra user data, please read the new version of ewz-extra.txt.
 * Changed the method of generating the zip archive. On some servers this may increase the number of images that can be downloaded without timing out.
 * Added an EWZ shortcodes menu in the tinyMCE editor ( second line ), showing only shortcodes for webforms the user has some permissions for.

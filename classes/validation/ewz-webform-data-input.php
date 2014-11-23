@@ -34,10 +34,10 @@ class Ewz_Webform_Data_Input extends Ewz_Input
 
         parent::validate();
         if ( !array_key_exists( 'fopt', $this->input_data ) ) {
-            $this->fopt = array();
+            $this->input_data['fopt'] = array();
         }
         if ( !array_key_exists( 'copt', $this->input_data ) ) {
-            $this->copt = array();
+            $this->input_data['copt'] = array();
         }
         return true;
    }
