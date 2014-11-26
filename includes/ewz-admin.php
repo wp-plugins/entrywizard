@@ -187,8 +187,9 @@ add_action( 'admin_menu', 'ewz_admin_menu' );
  */
 function ewz_echo_data() {
     // Rest is only run if we are in the right mode
+    // But note this check is run even if we are doing ajax calls
     if ( isset( $_GET["ewzmode"] ) &&
-             ( in_array( $_GET["ewzmode"], array( 'spread', 'download', 'images','zdownload', 'zimages' ) ) ) ) {
+             ( in_array( $_GET["ewzmode"], array( 'spread', 'stored','zdownload', 'zimages' ) ) ) ) {
         if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
             try {
                  ewz_wipe_buffers();
@@ -205,13 +206,10 @@ function ewz_echo_data() {
                            Ewz_Item::get_items_for_webform( $data['webform_id'], false )
                         );
                 switch ( $data['ewzmode'] ) {
-                    case 'images':
-                        $webform->echo_stored_archive( $data['archive_id'] );    
-                        break;
                     case 'zimages':
                         $webform->gen_and_echo_archive( $items, Ewz_Webform::IMAGES );    
                         break;
-                    case 'download':
+                    case 'stored':
                         $webform->echo_stored_archive( $data['archive_id'] );
                         break;
                     case 'zdownload':

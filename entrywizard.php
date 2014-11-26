@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.6
+  Version: 1.2.7
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -60,6 +60,9 @@ register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
  * ACTIONS
  */
 add_action('plugins_loaded', 'ewz_requires_version');   // first useable hook
+
+// in the admin area we add another function after this, so make sure we know its priority
+add_action( 'init', 'ewz_set_dev_env', 1 );
 
 add_action( 'wp_enqueue_scripts', 'ewz_add_stylesheet' );
 
@@ -202,6 +205,38 @@ function ewz_add_stylesheet() {
                        true      // in footer, so $ewzG has been defined
                       );
  }
+
+function ewz_set_dev_env(){
+    if ( is_file( plugin_dir_path( __FILE__ ). 'DEVE_ENV' )   // only true in development environment
+        && ! ( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
+        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] ) 
+      ){   
+        /*
+         * ASSERT OPTIONS
+         */
+        assert_options( ASSERT_ACTIVE, 1 );
+        assert_options( ASSERT_BAIL, false );
+        assert_options( ASSERT_WARNING, false );
+        function ewz_assert_handler( $file, $line, $code )
+        {
+            // no assert
+            error_log( "EWZ: Assertion Failed at $file: $line: $code" );
+        }
+        assert_options( ASSERT_CALLBACK, 'ewz_assert_handler' );
+        define( 'EWZ_DBG', true );
+        $is_admin = is_admin() ? 'ADMIN' : '';
+        error_log( "EWZ: ~~~~~~~~ Starting entrywizard.php  $is_admin ~~~~~~~ \n"
+                   . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
+                   . 'GET:   ' . print_r( $_GET, true )
+                   . 'POST:  ' . print_r( $_POST, true )
+                   . 'FILES: ' . print_r( $_FILES, true )
+                  );
+    } else {
+        define( 'EWZ_DBG', false );
+        assert_options( ASSERT_ACTIVE, 0 );
+    }
+}
+
 
 function ewz_init_globals(){
     global $wpdb;

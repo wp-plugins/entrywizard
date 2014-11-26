@@ -15,7 +15,7 @@ class Ewz_Webform_Data_Input extends Ewz_Input
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $this->rules = array(
-                             'ewzmode'          => array( 'type' => 'limited',   'req' => true,  'val' => array( 'list', 'spread', 'download', 'images','zdownload', 'zimages' ) ),
+                             'ewzmode'          => array( 'type' => 'limited',   'req' => true,  'val' => array( 'list', 'spread', 'stored', 'download', 'images','zdownload', 'zimages' ) ),
                              'ewznonce'         => array( 'type' => 'anonce',    'req' => true,  'val' => '' ),
                              '_wp_http_referer' => array( 'type' => 'to_string', 'req' => true,  'val' => '' ),
                              'page'             => array( 'type' => 'fixed',     'req' => true,  'val' => 'entrywizlist' ),

@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.0.1
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,8 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.7 =
+* another bugfix release: in a hurry to fix the issue some people had with downloads in 1.2.5, I missed one part of the problem.
 = 1.2.6 =
 * bugfix
 = 1.2.5 =

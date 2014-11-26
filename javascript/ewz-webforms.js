@@ -177,7 +177,7 @@ function set_mode(button, mode, evnum){
                jform.submit();
            } else {
                jmode.val('images');
-               gen_zipfile( jform, jbutton );
+               gen_zipfile( jform, jbutton, 'images' );
            }
            break;
         case 'download':
@@ -186,13 +186,13 @@ function set_mode(button, mode, evnum){
                jform.submit();
            } else { 
                jmode.val('download');
-               gen_zipfile( jform, jbutton );
+               gen_zipfile( jform, jbutton, 'download' );
            }
            break;
     }
 }
 
-function gen_zipfile( jform, jbutton ){
+function gen_zipfile( jform, jbutton, mode ){
                
     jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
 
@@ -203,6 +203,7 @@ function gen_zipfile( jform, jbutton ){
                              jQuery("#temp_load").remove();
                              if ( response.match(/^ewz_.*/) ) {
                                  jQuery('#ajax_action').remove();
+                                 jform.find('input[name="ewzmode"]').val(mode);
                                  download_zipfile( jform, response );
                              } else {
                                  jQuery('#ajax_action').remove();
@@ -214,6 +215,7 @@ function gen_zipfile( jform, jbutton ){
         
 
 function download_zipfile( jform, response ){
+    jform.find('input[name="ewzmode"]').val('stored');
     jform.append( '<input type="hidden" name="archive_id" value="' + response + '">');
     jform.submit();
 }
