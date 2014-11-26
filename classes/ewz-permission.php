@@ -98,7 +98,7 @@ class Ewz_Permission {
             global $wpdb;
 
             $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " .
-                    $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can%'" );
+                                            $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can%'", OBJECT );
             foreach ( $meta_ids as $umeta ) {
                  delete_user_meta( $umeta->user_id, $umeta->meta_key );
             }
@@ -121,7 +121,7 @@ class Ewz_Permission {
         if ( current_user_can( 'manage_options' ) ) {
             $perm = '';
             $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value " .
-                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can%'" );
+                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can%'", OBJECT );
             foreach ( $perms as $key=>$perm ) {
                 $perms[$key]->meta_value = unserialize( $perm->meta_value );
             }
@@ -148,7 +148,7 @@ class Ewz_Permission {
         if ( current_user_can( 'manage_options' ) || get_current_user_id() == $user_id  ) {
             $perms = $wpdb->get_results( "SELECT meta_key, meta_value
                     FROM $wpdb->usermeta
-                    WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'" );
+                    WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'", OBJECT );
 
             $allowed = array( );
             foreach ( self::$ewz_caps as $cap ) {
@@ -355,7 +355,7 @@ class Ewz_Permission {
      * Is the current user allowed to manage either the specified webform,
      *        any webform, or any webform with the specified webform's layout
      *
-     * @param  mixed    $webform   ( webform_id or Ewz_Webform )
+     * @param  mixed    $in_webform   ( webform_id or Ewz_Webform )
      * @return boolean
      */
     public static function can_manage_webform( $in_webform ) {
