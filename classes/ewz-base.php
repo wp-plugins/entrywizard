@@ -46,7 +46,7 @@ abstract class Ewz_Base
              'D' => 'M',                // Day, three letters
              'j' => 'd',                // Day of the month without leading zeros
              'l' => 'DD',               // Day of the week, full
-             'z' => 'oo',               // The day of the year 	0 through 365
+             'z' => 'oo',               // The day of the year  0 through 365
              'F' => 'MM',               // Month, full
              'm' => 'mm',               // Numeric representation of a month, with leading zeros
              'M' => 'M',                // Month, 3 letters
@@ -103,17 +103,17 @@ public static function toStrftimeFormat( $dateFormat ) {
         assert( is_array( $variables ) );
         assert( is_array( $data ) );
 
-	foreach ( $variables as $key => $type ) {
-	    if ( array_key_exists( $key, $data ) ) {
-		switch ( $type ) {
-		    case 'object':
-			if ( is_string( $data[$key] ) ) {
-			    $this->$key = unserialize( $data[$key] );
-			} else {
-			    $this->$key = (object) $data[$key];
-			}
-			break;
-		    case 'array':
+        foreach ( $variables as $key => $type ) {
+            if ( array_key_exists( $key, $data ) ) {
+                switch ( $type ) {
+                    case 'object':
+                        if ( is_string( $data[$key] ) ) {
+                            $this->$key = unserialize( $data[$key] );
+                        } else {
+                            $this->$key = (object) $data[$key];
+                        }
+                        break;
+                    case 'array':
                         if ( !$data[$key] ){
                             $this->$key = array();
                         } else {
@@ -123,24 +123,24 @@ public static function toStrftimeFormat( $dateFormat ) {
                                 $this->$key = (array) $data[$key];
                             }
                         }
-			break;
-		    case 'boolean':
-			$this->$key = (boolean) $data[$key];
-			break;
-		    case 'integer':
-			$this->$key = (integer) $data[$key];
-			break;
-		    case 'string':
-			$this->$key = (string) $data[$key];
-			break;
-		    default:
+                        break;
+                    case 'boolean':
+                        $this->$key = (boolean) $data[$key];
+                        break;
+                    case 'integer':
+                        $this->$key = (integer) $data[$key];
+                        break;
+                    case 'string':
+                        $this->$key = (string) $data[$key];
+                        break;
+                    default:
                         error_log("EWZ: warning - invalid data type $type passed to base class");
-			$this->$key = NULL;
-		}
-	    } else {
-		$this->$key = NULL;
-	    }
-	}
+                        $this->$key = NULL;
+                }
+            } else {
+                $this->$key = NULL;
+            }
+        }
     }
 
     /**

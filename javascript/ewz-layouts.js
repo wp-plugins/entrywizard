@@ -359,14 +359,14 @@ function opt_fields_str(fdid, fdld, oObj)
     if (oObj.options) {
         len = oObj.options.length;
     }
-    str += "<tr><th>Label for Web Page</th><th>Value for Spreadsheet</th><th>Maximum number allowed</th>";
+    str += "<tr><th>Label for Web Page</th><th>Value Stored</th><th colspan='2'>Maximum number allowed</th>";
     str += '    <th><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'opt\')"></th></tr>';
     for (rownum = 0; rownum < len; ++rownum) {
-        str += opt_row_str(fdid, fdld, rownum, oObj.options[rownum]);
+        str += opt_row_str(fdid, fdld, rownum, oObj.options[rownum], len );
     }
     return str;
 }
-function opt_row_str(fdid, fdld, rownum, opts) {
+function opt_row_str(fdid, fdld, rownum, opts, numrows) {
     var label, value, maxnum, rowfid, rowfld, str;
 
     label = opts ? opts.label : '';
@@ -375,12 +375,19 @@ function opt_row_str(fdid, fdld, rownum, opts) {
     rowfid = fdid + rownum + '_';
     rowfld = fdld + '[options][' + rownum + ']';
     str = '<tr id="' + rowfid + 'row_">';
-
     str += '   <td>' + textinput_str(rowfid + "label_", rowfld + "[label]", 20, label) + '</td>';
     str += '   <td>' + textinput_str(rowfid + "value_", rowfld + "[value]", 20, value) + '</td>';
     str += '   <td>' + numinput_str(rowfid + "maxnum_", rowfld + "[maxnum]", 'no max', 1, 100, maxnum) + '</td>';
+    str += '   <td><input type="radio" name="' + fdid + '_optrow_" id="' + rowfid + 'optrow_"></td>';
+    if( rownum == 0 ){ 
+        str += '   <td rowspan = "' + numrows + '">';
+        str += '       <button type="button" class="button-secondary" id="' + fdid + 'up_" onClick="option_up(this)">^</button><br>';
+        str += '       <button type="button" class="button-secondary" id="' + fdid + 'dn_" onClick="option_down(this)">V</button>';
+        str += '   </td>';
+    }
     str += '   <td><button type="button" class="button-secondary" name="' + rowfld + '[del]" ';
     str += '        id="' + rowfid + 'del_" onClick="delete_option(this)">X</button></td>';
+
     str += '</tr>';
     return str;
 }
@@ -711,18 +718,20 @@ function insert_blank_data_field(lnum, type_sel, type) {
 
 /* Adds a new option to the option list  */
 function add_option(add_opt_btn) {
-    var jQtable, tid, jQrows, row, re, fieldnum, fieldid, str, jLayout;
+    var jQtable, tid, jQrows, row, re, fieldnum, fieldid, str, jLayout, nrows;
 
     jQtable = jQuery(add_opt_btn).parent().find('table[id^="data_fields_"]'); //data_fields_f0_fields1_
     tid = jQtable.attr("id");
     jQrows = jQtable.children().first().children();
     row = jQrows.length - 1;
+    nrows = row + 1;
     re = new RegExp('^.*_fields');
     fieldnum = tid.replace(re, '').replace('_', ''); //1
     fieldid = tid.replace("data_fields_", '');
-    str = opt_row_str(fieldid + 'fdata_', 'fields[' + fieldnum + '][fdata]', row, null);
-
+    str = opt_row_str(fieldid + 'fdata_', 'fields[' + fieldnum + '][fdata]', row, null, nrows );
+    
     jQuery(str).insertAfter(jQrows.last());
+    jQtable.find('td[rowspan]').attr('rowspan', nrows);
     jQtable.find('input[id$="_label_"]').change(function() {
         var jthis, the_label, jvalue;
         jthis = jQuery(this);
@@ -740,6 +749,88 @@ function add_option(add_opt_btn) {
 
 }
 
+/* Moves the option up by one */
+function option_up( up_opt_btn ) {
+    var jradio, jrow, jprev, ind, ind1;
+
+    jradio =  jQuery(up_opt_btn).closest('table').find( 'input[id$="optrow_"]:checked' );
+    if( !jradio ){
+        return;
+    }
+    jrow = jradio.closest('tr');
+    ind = jrow.prevAll().length - 1; // -1 because of header row
+    if( ind < 1 ){
+        alert( 'cant move first up' );
+        return;
+    }
+    ind1 =  ind - 1;
+    jprev = jrow.prev();
+    
+    renumber( jrow, ind, ind1 );
+    renumber( jprev, ind1, ind );
+
+    jrow.insertBefore(jprev);
+    reset_colspan(jrow);   
+}
+
+/* Moves the option down by one */
+function option_down(down_opt_btn) {
+    var jradio, jrow, jnext, ind, ind1;
+
+    jradio =  jQuery(down_opt_btn).closest('table').find( 'input[id$="optrow_"]:checked' );
+    if( !jradio ){
+        return;
+    }
+    jrow = jradio.closest('tr');
+    ind =  jrow.prevAll().length - 1; // -1 because of header row
+    if( ind >= jrow.siblings().length - 1 ){
+        alert( 'cant move last down' );
+        return;
+    }
+    ind1 =  ind + 1;
+    jnext = jrow.next();
+    
+    jrow = renumber( jrow, ind, ind1 );
+    jnext = renumber( jnext, ind1, ind );
+
+    jrow.insertAfter(jnext);
+    reset_colspan(jrow);   
+}
+
+function reset_colspan(jrow){
+    var numrows =  jrow.siblings().length;
+    var rowid = jrow.attr("id");
+    var re = new RegExp('_[0-9][[0-9]*_row_$');
+
+    var prefix = jrow.attr("id").replace( re, '' ); 
+    jrow.find('td[rowspan]').remove();
+    jrow.siblings().each( function() {
+        jQuery(this).find('td[rowspan]').remove();
+        });
+
+    var str = '';
+        str += '   <td rowspan = "' + numrows + '">';
+        str += '       <button type="button" class="button-secondary" id="' + prefix + '_up_" onClick="option_up(this)">^</button><br>';
+        str += '       <button type="button" class="button-secondary" id="' + prefix + '_dn_" onClick="option_down(this)">V</button>';
+        str += '   </td>';
+
+     jQuery(str).insertBefore(jrow.parent().children().eq(1).children().last());
+}
+   
+
+
+function renumber( jrow, oldn, newn ){
+        var oldid = jrow.attr("id");
+        jrow.attr("id", oldid.replace('fdata_' + oldn + '_', 'fdata_' + newn + '_'));
+        jrow.find('[id]').each(function() {
+            jQuery(this).attr("id", jQuery(this).attr("id").replace('fdata_' + oldn + '_', 'fdata_' + newn + '_'));
+        });
+        jrow.find('[name]').each(function() {
+            jQuery(this).attr("name", jQuery(this).attr("name").replace('[options][' + oldn + ']', '[options][' + newn + ']'));
+        });
+
+    return jrow;
+}
 
 /* Deletes the option        */
 function delete_option(del_opt_btn) {
@@ -750,8 +841,6 @@ function delete_option(del_opt_btn) {
     table = row.parentNode.parentNode;
     jtable = jQuery(table);
     trows = jtable.children().first().children();
-
-
     for (i = optnum + 1; i < trows.length; ++i) {
         jQrow = jQuery(trows[i]);
         i1 = i - 1;
@@ -763,10 +852,11 @@ function delete_option(del_opt_btn) {
             jQuery(this).attr("id", jQuery(this).attr("id").replace('fdata_' + i1 + '_', 'fdata_' + i2 + '_'));
         });
         jQrow.find('[name]').each(function() {
-            jQuery(this).attr("name", jQuery(this).attr("name").replace('[fdata][' + i1 + ']', '[fdata][' + i2 + ']'));
+            jQuery(this).attr("name", jQuery(this).attr("name").replace('[options][' + i1 + ']', '[options][' + i2 + ']'));
         });
     }
     table.deleteRow(optnum);
+
     disable_max_vals(jtable.closest('div[id^="ewz_admin_layouts_f"]'));
 }
 
@@ -1183,6 +1273,7 @@ function ewz_check_layout_input(form, do_check) {
  
             // enable all the disabled stuff so right data gets sent
             jform.find('select:disabled,input:disabled,button:disabled').prop("disabled", false);
+            jform.find('input[id$="optrow_"]').prop("disabled", true);  // we DO want this disabled
 
             jform.append('<input type="hidden" name="action" value="ewz_layout_changes" />');
             jQuery.post(ajaxurl,

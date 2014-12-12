@@ -420,7 +420,7 @@ function ewz_get_img_sizes() {
  */
 function ewz_get_img_size_options( $selected ) {
     assert( is_string( $selected )|| $selected == null );
-    $options = '';
+    $options = '<option value="">--- Select Image Size ---</option>';
     foreach ( ewz_get_img_sizes() as $size ) {
         $sel = '';
         if( $size == $selected ){
@@ -571,7 +571,8 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
     assert( is_array( $attach_prefs ) || empty( $attach_prefs ) );
     assert( is_array( $fields ) );
 
-    $dropdown = wp_dropdown_pages( array( 'name'=>'ewz_page_sel', 'selected'=>$attach_prefs['ewz_page_sel'], 'echo'=>0 ) );
+    $dropdown = wp_dropdown_pages( array( 'name'=>'ewz_page_sel', 'selected'=>$attach_prefs['ewz_page_sel'], 
+                                          'echo'=>0, 'show_option_none' => '--- Select Page ---') );
     $size_args = ewz_get_img_size_options( $attach_prefs['img_size'] );
     $image_columns = ewz_get_img_cols( $fields );
     $commentChecked = $attach_prefs['img_comment'] ? 'checked' : '';
@@ -713,6 +714,12 @@ function  ewz_display_list_page( $message, $requestdata ){
                in the page thumbnails of all the attached images, which link to larger versions. If you have
                uploaded a .csv file of image data, it's contents will determine the headers and captions of the
                images.</p>
+            <p>Your theme determines the format of the gallery.  The "twentyeleven" theme shows a gallery that
+            displays the title and excerpt below the thumbnail, and the title, excerpt and content on the image 
+            page it links to.  Some other themes may not display all three  pieces of text with each image.
+            Some may display the text only on mouseover. ( If you know how to do it, you can often change the 
+            look of the gallery by adding css using either a child theme or a css plugin. )</p>
+
             <p> <i><b>NB:</b> The Wordpress gallery functionality is in the process of changing.
                Currently there are two formats for the shortcode:
            <ul><li>[gallery]  ( with optional parameters like the number of columns ). In this form,
@@ -720,10 +727,10 @@ function  ewz_display_list_page( $message, $requestdata ){
                <li>[gallery ids="n1, n2, n3 ...."] where n1 n2 etc are the id's of the images to
                    display. Only the specified images are displayed, and they do not need to be
                    attached to the page.</li>
-            </ul>
-                EntryWizard currently assumes the first format.</i>
-                 As of wordpress version 3.5, once the page has been edited to change the gallery
-                 content, the shortcode will
+            </ul> EntryWizard currently assumes the first format.</i>
+
+                 As of wordpress version 3.5, once the gallery content has been changed using the Wordpress 
+                 editor, the shortcode will
                  automatically be put in the "list of images" format, and newly attached images will
                  not be displayed in the gallery.
                  This may be changed by using the "text" tab in the page editor to change the gallery
@@ -733,8 +740,9 @@ function  ewz_display_list_page( $message, $requestdata ){
              <p>-------------------------------</p>
     	     <p>If you wish the gallery to display scores or other image-specific information not
                  uploaded by the member, you need first
-                to upload a csv file containing this data, using the "Upload extra data" button on
-                the "Webforms" page</p>
+                to upload a csv file containing this data, using the "Upload extra <u>per-image</u> data" button on
+                the "Webforms" page. Make sure that you put the text into the title, excerpt and/or content 
+                depending on which your theme actually displays.</p>
              <p>-------------------------------</p>
              <p>Images attached to pages are copied. So deleting them here will not delete them from
                  the page they are attached to.</p>

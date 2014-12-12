@@ -89,7 +89,7 @@ function ewz_layout_menu()
         /*   Get all the layouts -- including the attached fields */
         /**********************************************************/
         // get editable layouts sorted by layout_id
-        $editable_layouts = array_values( Ewz_Layout::get_all_layouts( 'Ewz_Permission', 'can_edit_layout' ) );
+        $editable_layouts = array_values( Ewz_Layout::get_all_layouts( 'can_edit_layout' ) );
         foreach ( $editable_layouts as $k => $layout ) {
             // add an "forder" ( array ) component to the layout to specify the field order
             // -- saves having to sort by pg_column in javascript
@@ -123,7 +123,7 @@ function ewz_layout_menu()
         $ewzG['can_do'] = Ewz_Permission::can_edit_all_layouts();
 
         // get option list of editable layouts sorted by layout_id to match the order of the layout objects
-        $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'Ewz_Permission', 'can_edit_layout' ) ) );
+        $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'can_edit_layout' ) ) );
         $ewzG['nonce_string'] = $nonce_string;
         $ewzG['message'] =  wp_strip_all_tags( $message );   // alerts cant show html tags
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname( __FILE__ ) );
@@ -167,9 +167,9 @@ function ewz_layout_menu()
             'nomaximgsz' => 'Each image field must have a max image size.' ,
             'maximgsz' => 'The max image size should consist of digits only, ' .
                 'representing the number of Megabytes allowed.' ,
-            'sysmaxsz' => 'The system limits the size of uploaded files to ' . $ewzG['maxUploadMb'] . 'M or less' ,
+            'sysmaxsz' => 'Your php settings limit the size of uploaded files to ' . $ewzG['maxUploadMb'] . 'M or less' ,
             'sysmaxup' => 'There is a maximum total upload of ' . $ewzG['maxTotalMb'] .
-                'M allowed by your system.  If a user submits all allowed images at ' .
+                'M allowed by your php settings.  If a user submits all allowed images at ' .
                 'maximum allowed size, their upload may fail without any message. Continue anyway?' ,
             'optlabel' => 'Each option in an option list must have a label for the web page.' ,
             'optvalue' => 'Each option in an option list must have a value.' ,
@@ -456,7 +456,7 @@ function ewz_layout_menu()
                      the column in which it is to appear. If you select 'None', the item will not appear
                      in the spreadsheet at all.
                 </p>
-                <p>The system will not allow you to select a column you have already chosen for
+                <p>EntryWizard will not allow you to select a column you have already chosen for
                     another field
                 </p>
             </div>

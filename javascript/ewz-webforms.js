@@ -138,16 +138,17 @@ function data_management_str( evnum, eObj ){
     str += upload_date_str( evnum );
 
     str +=   '    <TABLE class="ewz_buttonrow">';
+    var renameOnDownload = eObj.prefix.length && !eObj.apply_prefix;
     if( eObj.itemcount > 0 && eObj.can_manage_webform ){
-        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\', ' + evnum + ')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
+        str +=   '  <TR> </TD><TD><button type="button" onClick="set_mode(this,\'list\', ' + evnum + ',' + renameOnDownload  + ')"  id="list_' + evnum + '" class="button-secondary">Manage Items</button></TD>';
         str +=   '     <TD></TD>';
         str +=   '  </TR>';
     }
     if(eObj.can_download){
         str +=   '  <TR>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'spread\', ' + evnum + ')" id="spread_' + evnum + '" class="button-secondary">Download Spreadsheet</button></TD>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'images\', ' + evnum + ')" id="images_' + evnum + '" class="button-secondary">Download Images</button></TD>';
-        str +=   '    <TD><button type="button" onClick="set_mode(this,\'download\',' + evnum + ')" id="download_' + evnum + '" class="button-secondary">Download Images and Spreadsheet</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'spread\', ' + evnum + ', ' + renameOnDownload  + ')" id="spread_' + evnum + '" class="button-secondary">Download Spreadsheet</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'images\', ' + evnum + ', ' + renameOnDownload  + ')" id="images_' + evnum + '" class="button-secondary">Download Images</button></TD>';
+        str +=   '    <TD><button type="button" onClick="set_mode(this,\'download\',' + evnum + ', ' + renameOnDownload  + ')" id="download_' + evnum + '" class="button-secondary">Download Images and Spreadsheet</button></TD>';
         str +=   '  </TR>';
     }
     str +=   '  </TABLE>';
@@ -158,13 +159,18 @@ function data_management_str( evnum, eObj ){
     return str;
 }
 
-function set_mode(button, mode, evnum){
+function set_mode(button, mode, evnum, renameOnDownload ){
     var jform = jQuery( button ).closest('form');
     var jmode = jform.find('input[name="ewzmode"]');
     var jwebform = jQuery( '#cfg_form_ev' + evnum + '_');
     var jbutton = jQuery(button);
-    var renameOnDownload = jwebform.find('input[name="prefix"]').first().val().trim().length && 
+    var doRenameOnDownload;
+    if( jwebform.find('input[name="prefix"]').length ){
+        doRenameOnDownload = jwebform.find('input[name="prefix"]').first().val().trim().length && 
         !jwebform.find('input[name="apply_prefix"]').is(':checked');  // have a prefix not applied on upload
+    } else {
+        doRenameOnDownload = renameOnDownload;
+    }
     switch( mode ){
         case 'spread':
         case 'list':
@@ -172,7 +178,7 @@ function set_mode(button, mode, evnum){
         jform.submit();
            break;
         case 'images':
-           if( ewzG.canzip  && !renameOnDownload ){
+           if( ewzG.canzip  && !doRenameOnDownload ){
                jmode.val('zimages');
                jform.submit();
            } else {
@@ -181,7 +187,7 @@ function set_mode(button, mode, evnum){
            }
            break;
         case 'download':
-           if( ewzG.canzip && !renameOnDownload ){
+           if( ewzG.canzip && !doRenameOnDownload ){
                jmode.val('zdownload');
                jform.submit();
            } else { 
@@ -194,13 +200,13 @@ function set_mode(button, mode, evnum){
 
 function gen_zipfile( jform, jbutton, mode ){
                
-    jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
+    jbutton.after('<span id="temp_gen" style="text-align:left"> Processing, please wait ... <img alt="Please Wait" src="' + ewzG.load_gif + '"/></span>');
 
     jform.append('<input type="hidden" id="ajax_action" name="action" value="ewz_gen_zipfile" />');
     var jqxhr = jQuery.post( ajaxurl,
                          jform.serialize(),
                          function(response) {
-                             jQuery("#temp_load").remove();
+                             jQuery("#temp_gen").remove();
                              if ( response.match(/^ewz_.*/) ) {
                                  jQuery('#ajax_action').remove();
                                  jform.find('input[name="ewzmode"]').val(mode);
@@ -305,14 +311,29 @@ if(eObj.user_options){
 function read_only_info_str( eObj ){
     var str='';
     str +=   '             <table>';
-    str +=   '                 <tr><td>Name for this webform</td>';
+    str +=   '                 <tr><td>Name for this webform:</td>';
     str +=   '                     <td>' + eObj.webform_title + '</td>';
     str +=   '                 </tr>';
-    str +=   '                 <tr><td>Identifier for use in file names</td>';
+    str +=   '                 <tr><td>Identifier for use in file names: &nbsp;</td>';
     str +=   '                     <td>' +  eObj.webform_ident + '</td>';
     str +=   '                 </tr>';
     str +=   '                 <tr><td>Webform layout: </td>';
     str +=   '                     <td>' +  eObj.layout_name + '</td></tr>';
+    str +=   '                 <tr><td>';
+    var when;
+    if( eObj.apply_prefix ){
+        when = ' on upload ';
+    } else {
+        when =  ' on download ';
+    }
+    if( eObj.gen_fname ){
+        str += 'Filename generated <br> &nbsp;  &nbsp; ' + when + ' from formula: ';
+    } else {
+        str += 'Prefix formula applied <br> &nbsp;  &nbsp; to filename ' + when;
+    }
+    str +=   '</td>';
+    str +=   '                     <td>' +  eObj.prefix + '</td>';
+        
     str +=   '                 <tr><td>Open for Uploads: </td>';
     if(eObj.upload_open ){
         str +=   '                 <td>Yes</td>';
@@ -499,7 +520,7 @@ function delete_webform(button, itemcount){
     confirmstring += "\n" + ewzG.errmsg.noundo;
 
     if( confirm( confirmstring ) ){
-            jbutton.after('<span id="temp_load" style="text-align:left"> &nbsp; <img alt="" src="' + ewzG.load_gif + '"/></span>');
+            jbutton.after('<span id="temp_del" style="text-align:left"> Processing, please wait ... <img alt="Please Wait" src="' + ewzG.load_gif + '"/></span>');
             del_nonce = thediv.find('input[name="ewznonce"]').val();
             jqxhr = jQuery.post( ajaxurl,
                                      {
@@ -509,7 +530,7 @@ function delete_webform(button, itemcount){
                                          ewznonce: del_nonce
                                      },
                                      function (response) {
-                                         jQuery("#temp_load").remove();
+                                         jQuery("#temp_del").remove();
                                          if( '1' == response ){
                                              thediv.remove();
                                          } else {

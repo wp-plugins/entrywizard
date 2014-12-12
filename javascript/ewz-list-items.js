@@ -11,9 +11,21 @@ function processForm(formId) {
             !(jform.find('input[type="radio"][name="ifield"]:checked').length > 0) ){
             jQuery('#doaction').prop("disabled", false );
             jQuery('#doaction2').prop("disabled", false );
-            alert( "Please select an image column");
+            alert( "Please select an image column.");
             return false;
         }
+        if( !jform.find('select[id="ewz_page_sel"]').val() ){
+            jQuery('#doaction').prop("disabled", false );
+            jQuery('#doaction2').prop("disabled", false );
+            alert( "Please select a destination page.");
+            return false;
+        }  
+        if( !jform.find('select[id="img_size"]').val() ) {
+            jQuery('#doaction').prop("disabled", false );
+            jQuery('#doaction2').prop("disabled", false );
+            alert( "Please select an image size.");
+            return false;
+        }  
     }      
            
 

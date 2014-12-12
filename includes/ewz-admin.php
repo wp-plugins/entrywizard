@@ -53,11 +53,11 @@ function ewz_enqueue_item_list_scripts() {
 
 /********************************************************************************/
 function ewz_admin_init() {
-    wp_register_style( 'jquery-ui-dialog', includes_url() . "/css/jquery-ui-dialog.css" );
-    wp_register_style( 'ewz-admin-style', plugins_url( 'styles/ewz-admin.css', dirname(__FILE__) ) );
+    wp_register_style( 'jquery-ui-dialog', includes_url() . "/css/jquery-ui-dialog.css", array(), EWZ_CURRENT_VERSION );
+    wp_register_style( 'ewz-admin-style', plugins_url( 'styles/ewz-admin.css', dirname(__FILE__) ), array(), EWZ_CURRENT_VERSION );
 
     wp_register_script( 'ewz-common', plugins_url( 'javascript/ewz-common.js', dirname( __FILE__ ) ),
-                        array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog' ) );
+                        array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog' ),  EWZ_CURRENT_VERSION );
 
     if( isset( $_REQUEST['page'] ) ){
         if( $_REQUEST['page'] == 'ewzlayouts' ){
@@ -66,7 +66,7 @@ function ewz_admin_init() {
                                plugins_url( 'javascript/ewz-layouts.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-widget', 'jquery-ui-dialog',
                                       'jquery-ui-position','ewz-common', 'jquery-ui-sortable' ),
-                               false,
+                               EWZ_CURRENT_VERSION,
                                true         // in footer, so $ewzG has been defined
                                );
         } elseif( $_REQUEST['page'] == 'ewzperms' ){
@@ -74,7 +74,7 @@ function ewz_admin_init() {
                                'ewz-admin-permissions',
                                plugins_url( 'javascript/ewz-permissions.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'ewz-common' ),
-                               false,
+                               EWZ_CURRENT_VERSION,
                                true         // in footer, so $ewzG has been defined
                                );
         } elseif( $_REQUEST['page'] == 'entrywizard' ){
@@ -82,7 +82,7 @@ function ewz_admin_init() {
                                'ewz-admin-webforms',
                                plugins_url( 'javascript/ewz-webforms.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'jquery-ui-datepicker', 'ewz-common' ),
-                               false,
+                               EWZ_CURRENT_VERSION,
                                true         // in footer, so $ewzG has been defined
                                );
         } elseif( $_REQUEST['page'] == 'entrywizlist' ){
@@ -91,7 +91,7 @@ function ewz_admin_init() {
                                plugins_url( 'javascript/ewz-list-items.js', dirname(__FILE__) ),
                                array( 'jquery', 'jquery-ui-core', 'jquery-ui-widget',
                                       'jquery-ui-dialog', 'jquery-ui-position', 'ewz-common' ),
-                               false,
+                               EWZ_CURRENT_VERSION,
                                true         // in footer, so $ewzG has been defined
                                );
             ewz_enqueue_common_styles();

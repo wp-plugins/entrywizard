@@ -800,8 +800,11 @@ function ewz_to_upload_arr( $webform_id, $postdata, $fields ) {
                 if( isset( $filename ) && $filename ){
                     $prefix = '';
                     $newfilename = $filename;
-                    $add_underscore = !$webform->gen_fname;   // if filename ends in a digit, we normally add an underscore to the end
-                                                              // but not if the final digit came from a prescribed prefix                    
+
+                    // if filename ends in a digit, we normally add an underscore to the end, but not 
+                    // if the final digit came from a prescribed "prefix" being used as the filename                    
+                    $add_underscore = !( $webform->apply_prefix && $webform->gen_fname ); 
+  
                     if( $webform->apply_prefix ){
                         // do the substitutions in the prefix
                         foreach( $upload[$row]['data'] as $fid => $val ){                            
@@ -969,7 +972,7 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
 
     $upload_errors = array(
         UPLOAD_ERR_OK => "No errors.",
-        UPLOAD_ERR_INI_SIZE => "Larger than the maximum allowed by the system.",
+        UPLOAD_ERR_INI_SIZE => "Larger than the maximum allowed by the server.",
         UPLOAD_ERR_FORM_SIZE => "Larger than the maximum allowed by this application.",
         UPLOAD_ERR_PARTIAL => "Partial upload.",
         UPLOAD_ERR_NO_FILE => "No file.",

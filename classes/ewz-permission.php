@@ -291,9 +291,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_download( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
-        assert( Ewz_Base::is_pos_int( $webform->layout_id ) );
-
+        assert( Ewz_Base::is_nn_int( $webform ) || ( is_object( $webform ) && Ewz_Base::is_nn_int( $webform->webform_id ) ) );
         if ( current_user_can( 'manage_options' ) ) {
             return true;
         }
@@ -301,6 +299,11 @@ class Ewz_Permission {
         $perms_for_user = self::get_ewz_permissions_for_user();
         if ( in_array( -1, $perms_for_user['ewz_can_download_webform'] ) ) {
             return true;
+        }
+        if ( is_object( $webform ) ) {
+            $webform = $webform;
+        } else {
+            $webform = new Ewz_Webform( $webform );
         }
         if ( in_array( $webform->webform_id, $perms_for_user['ewz_can_download_webform'] ) ) {
             return true;
@@ -318,7 +321,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_view_webform( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
+        assert( Ewz_Base::is_nn_int( $webform ) || ( is_object( $webform ) && Ewz_Base::is_nn_int( $webform->webform_id ) ) );
 
         if ( self::can_manage_webform( $webform ) ) {
             return true;
@@ -336,7 +339,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_edit_webform( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
+        assert( Ewz_Base::is_nn_int( $webform ) || ( is_object( $webform ) && Ewz_Base::is_nn_int( $webform->webform_id ) ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -344,6 +347,14 @@ class Ewz_Permission {
         $perms_for_user = self::get_ewz_permissions_for_user();
         if ( in_array( -1, $perms_for_user['ewz_can_edit_webform'] ) ) {
             return true;
+        }
+        if ( is_object( $webform ) ) {
+            $webform = $webform;
+        } else {
+            $webform = new Ewz_Webform( $webform );
+        }
+        if ( !isset( $webform->webform_id ) || !isset( $webform->layout_id ) ) {
+            return false;
         }
         if ( in_array( $webform->webform_id, $perms_for_user['ewz_can_edit_webform'] ) ) {
             return true;
@@ -359,7 +370,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_manage_webform( $in_webform ) {
-        assert( Ewz_Base::is_nn_int( $in_webform ) || Ewz_Base::is_nn_int( $in_webform->webform_id ) );
+        assert( Ewz_Base::is_nn_int( $in_webform ) || ( is_object( $in_webform ) && Ewz_Base::is_nn_int( $in_webform->webform_id ) ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -403,7 +414,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_edit_layout( $layout ) {
-        assert( Ewz_Base::is_nn_int( $layout ) || Ewz_Base::is_nn_int( $layout->layout_id ) );
+        assert( Ewz_Base::is_nn_int( $layout ) || ( is_object( $layout ) && Ewz_Base::is_nn_int( $layout->layout_id ) ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -431,7 +442,7 @@ class Ewz_Permission {
      * @return boolean
      */
     public static function can_assign_layout( $layout ) {
-        assert( Ewz_Base::is_pos_int( $layout ) || Ewz_Base::is_pos_int( $layout->layout_id ) );
+        assert( Ewz_Base::is_nn_int( $layout ) || ( is_object( $webform ) && Ewz_Base::is_nn_int( $layout->layout_id ) ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -451,7 +462,12 @@ class Ewz_Permission {
         return false;
     }
 
-    /**
+     public static function truefunc()
+    {
+        return true;
+    }
+
+   /**
      * Validate the input $_POST data
      *
      * @return string  $bad_data  comma-separated list of bad data

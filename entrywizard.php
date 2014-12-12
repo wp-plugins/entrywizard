@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.7
+  Version: 1.2.8
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -99,8 +99,7 @@ add_action( 'admin_init',  'ewz_shortcode_menu' );
 function ewz_admin_head(){
     global $all_text;
     $ewzdata = array();
-    $ewzdata['webforms'] = array_values(array_filter( Ewz_Webform::get_all_webforms(),
-                                                      "Ewz_Permission::can_view_webform" ));;
+    $ewzdata['webforms'] = array_values(array_filter( Ewz_Webform::get_all_webforms( 'can_view_webform' )));
      ?>
 <script type='text/javascript'>
      var EWZdata =  <?php echo json_encode( $ewzdata ); ?>;
@@ -187,21 +186,21 @@ function ewz_check_for_db_updates(){
 
 
 function ewz_add_stylesheet() {
-    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ) );
+    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ), array(), EWZ_CURRENT_VERSION );
     wp_enqueue_style( 'ewz-style' );
 
     wp_enqueue_script(
                        'ewz-upload',
                        plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       false,
+                       EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
     wp_enqueue_script(
                        'ewz-followup',
                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       false,
+                       EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
  }
@@ -367,7 +366,9 @@ function ewz_requires_version(){
    $reqvers = ewz_required_versions_warning();
    if ( $reqvers ) {
        add_action( 'admin_notices', 'ewz_admin_notice' );
-   }     
+   }  
+   $data             = get_plugin_data( __FILE__, false, false );
+   define( 'EWZ_CURRENT_VERSION',  $data['Version'] );
 }
    
 function ewz_required_versions_warning(){

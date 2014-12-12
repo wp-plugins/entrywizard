@@ -214,8 +214,7 @@ function ewz_webforms_menu()
 
         $user_info =  Ewz_User::get_user_opt_array();
 
-        $webforms = array_values(array_filter( Ewz_Webform::get_all_webforms(),
-                                               "Ewz_Permission::can_view_webform" ));
+        $webforms = array_values( Ewz_Webform::get_all_webforms('can_view_webform' ));
                  // list of users for whom the webform may be opened,
                  // or null if current user has no permission to list them
 
@@ -265,9 +264,8 @@ function ewz_webforms_menu()
                     }
                 }
             }
-            $l_options = Ewz_Layout::get_layout_opt_array( 'Ewz_Permission',
-                                                         'can_assign_layout',
-                                                         $webform->layout_id );
+            $l_options = Ewz_Layout::get_layout_opt_array( 'can_assign_layout',
+                                                           $webform->layout_id );
             $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
             $base_options = $webform->layouts_options;
             $webform->close_time_opts = ewz_option_list(  ewz_html_esc( $webform->get_close_opt_array() ) );

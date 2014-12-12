@@ -45,7 +45,7 @@ class Ewz_Webform extends Ewz_Base {
     public $auto_date;
     public $auto_time;
 
-    private $files_done;
+    private $files_done;     // files added to zipfile for download
 
     // keep list of db data names/types as a convenience for iteration and so we can easily add new ones.
     // Dont include webform_id
@@ -88,13 +88,16 @@ class Ewz_Webform extends Ewz_Base {
      * @param   none
      * @return  array of all  webforms
      */
-    public static function get_all_webforms() {
+    public static function get_all_webforms( $filter = 'truefunc' ) {
         global $wpdb;
+        assert(is_string( $filter ) );
         $list = $wpdb->get_col( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" );
         $webforms = array( );
         foreach ( $list as $webform_id ) {
-            $webform = new Ewz_Webform( $webform_id );
-            array_push( $webforms, $webform );
+            if ( call_user_func( array( 'Ewz_Permission',  $filter ), $webform_id ) ) {
+                $webform = new Ewz_Webform( $webform_id );
+                array_push( $webforms, $webform );
+            }
         }
         return $webforms;
     }
@@ -281,6 +284,9 @@ class Ewz_Webform extends Ewz_Base {
     public function generate_zip_archive( $items, $inclusion ) {
         assert( is_array( $items ) );
         assert(  $inclusion == self::IMAGES || $inclusion == self::BOTH  );
+        if ( !$this->can_download ) {
+             throw new EWZ_Exception( "No Permission" );
+         }
         if ( count( $items ) < 1 ) {
             throw new EWZ_Exception( "No matching items found." );
         }
@@ -339,7 +345,6 @@ class Ewz_Webform extends Ewz_Base {
 
         $date = current_time( 'Ymd_Hi' );  // for filename ewz_{$date}.zip of downloaded zip attachment
         $fnames = $this->get_fname_list( $items,  $inclusion );
-        $n = count( $items );
         
         self::ewz_disable_gzip();    
 
@@ -430,6 +435,7 @@ class Ewz_Webform extends Ewz_Base {
                 }
                 if ( is_file( $item_file['fname'] ) ) {
                     $fnames .= $item_file['fname'] . " ";
+                    $this->files_done[$item_file['fname']] = true;
                 } else {
                     error_log("EWZ: cant find " .  $item_file['fname'] );
                     $msg .= "\n\nUnable to find file " . basename( $item_file['fname'] );
@@ -939,6 +945,9 @@ class Ewz_Webform extends Ewz_Base {
      */
     public function schedule_closing( $close_time ){
         assert( is_string( $close_time ) );
+        if( !$this->can_manage_webform ){
+            throw new EWZ_Exception( "No Permission" );
+        }
         // Remove existing cron event for this webform if one exists
         wp_clear_scheduled_hook( 'ewz_do_close_webform', array( $this->webform_id) );
         $tz_opt = get_option('timezone_string');
@@ -1166,11 +1175,14 @@ class Ewz_Webform extends Ewz_Base {
     public function get_attach_prefs() {
         global $wpdb;
 
-        $prefs = array();
+        $prefs = array( 'ewz_page_sel' => 0, 'img_size' => 'thumbnail', 'img_comment' => false );
         if ( $this->webform_id ) {
 
-            $prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
+            $wf_prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
                                                                   " WHERE  webform_id = %d", $this->webform_id ) ) );
+            if( $wf_prefs ){
+                $prefs =  $wf_prefs;
+            }
         }
         return $prefs;
     }
@@ -1194,6 +1206,9 @@ class Ewz_Webform extends Ewz_Base {
 
         if ( $this->webform_id ) {
 
+            if( !Ewz_Permission::can_manage_webform( $this->webform_id ) ) {
+                throw new EWZ_Exception( 'No permission to manage webform' );
+            }
             $data = stripslashes_deep( array( 'attach_prefs' => serialize( $prefs ) ) );
 
             $rows = $wpdb->update( EWZ_WEBFORM_TABLE, $data, array( 'webform_id' => $this->webform_id ), array( '%s' ), array( '%d' ) );
@@ -1304,7 +1319,16 @@ class Ewz_Webform extends Ewz_Base {
         }
     }
 
+    /*     * ******************  Utility Functions ********************* */
        
+    /*
+     * Used as a default filter when none is specified
+     */
+    public static function truefunc()
+    {
+        return true;
+    }
+
     /**
      * Return a random string of lower-case alpha, upper-case alpha or integer characters
      *
