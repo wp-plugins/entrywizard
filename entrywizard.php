@@ -186,21 +186,21 @@ function ewz_check_for_db_updates(){
 
 
 function ewz_add_stylesheet() {
-    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ), array(), EWZ_CURRENT_VERSION );
+    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ) );
     wp_enqueue_style( 'ewz-style' );
 
     wp_enqueue_script(
                        'ewz-upload',
                        plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       EWZ_CURRENT_VERSION,
+                       false,
                        true      // in footer, so $ewzG has been defined
                       );
     wp_enqueue_script(
                        'ewz-followup',
                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       EWZ_CURRENT_VERSION,
+                       false,
                        true      // in footer, so $ewzG has been defined
                       );
  }
@@ -367,8 +367,6 @@ function ewz_requires_version(){
    if ( $reqvers ) {
        add_action( 'admin_notices', 'ewz_admin_notice' );
    }  
-   $data             = get_plugin_data( __FILE__, false, false );
-   define( 'EWZ_CURRENT_VERSION',  $data['Version'] );
 }
    
 function ewz_required_versions_warning(){
