@@ -1,0 +1,88 @@
+<?php
+  /*
+   Plugin Name: EWZ_EXTRA
+  */
+
+  /* Sample of a small plugin designed to allow EntryWizard access to custom fields defined by another plugin. */
+  /* You will need a function for each field that will retrieve the field from the database given the user id. */
+  
+
+     ////////////////////////////////////////////////////////////////////////////////////////////////////
+     // Change #1, #2, #3, #4, #5, #6 as follows:                                                      //
+     //                                                                                                //
+     // #1, #2 are names for your fields. They will display as headers when you list uploaded data.    //
+     //        -- e.g.: 'Level', 'Membership Number'                                                   //
+     //                                                                                                //
+     // #3, #4 are the functions your other plugin uses to obtain the first field from the database.   //
+     //        -- e.g. get_cimyFieldValue( $user_id, 'COMPETITION_LEVEL' )                             //
+     //            or  get_user_field('competition_level', $user_id)                                   //
+     //        -- see your plugin documentation                                                        //
+     //                                                                                                //
+     // #5, #6 are lists of allowed values for the custom fields.  If there are not too many different //
+     //        possible values, you can fill these in and will then be able to select those values     //
+     //        in the Data Management area of the Webforms page.                                       //
+     //        For example, if you are storing a competition "level" for each member in $custom2,      //
+     //        replace #6 with the allowed values in single quotes, separated by commas:               //
+     //               'Novice', 'Intermediate', 'Advanced'                                             //
+     //                                                                                                //
+     //                                                                                                //
+     //  If you only need one field, delete the rows for custom2                                       //
+     //  If you need more fields, add extra lines where indicated, following the same pattern          //
+     //                                                                                                //
+     //  **** Save the file as "ewz-extra.php" in your plugins folder ****                             //    
+     //                                                                                                //
+     //  **** Activate the  EWZ_EXTRA plugin ****                                                      //
+     //                                                                                                //
+     ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  
+
+defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
+
+add_action('init', 'ewz_extra_custom_class', 10);
+ 
+function ewz_extra_custom_class(){
+    class Ewz_Custom_Data
+    {
+        /* you may have up to 9 items here, called $custom1, $custom2 .... $custom9 */
+        public $custom1;
+        public $custom2;
+
+        /* if needed, add more lines here for "$custom3", "$custom4", etc. */
+
+
+        public static $data =
+            array(
+                  'custom1' => '#1',              
+                  'custom2' => '#2',        
+
+                  /* if needed, add more lines here for "custom3", "custom4", etc. */
+                  );
+
+
+        public function  __construct( $user_id ){
+
+            $this->custom1 = #3;
+
+            $this->custom2 = #4;  
+
+            /* if needed, add more lines here for "custom3", "custom4", etc. */
+        }
+
+
+        /* If you have a custom field that can only have a limited number of values, listing those */
+        /* values here will allow you to choose items having those values in the Data Management   */
+        /* area of the Webforms page                                                               */
+        public static function selection_list( $custom_field ){
+            switch( $custom_field ){
+            case 'custom1': return array( #5 );
+                break;
+            case 'custom2': return array( #6 );
+                break;
+            /* if needed, add more lines here for "custom3", "custom4", etc. */
+
+            default:  return array();
+            }
+        }
+    }
+}

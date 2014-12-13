@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file 
 class Ewz_User
 {
    /**
-    * Return the array of users for use in an option lise
+    * Return the array of users for use in an option list
     *
     * @return array
     */
