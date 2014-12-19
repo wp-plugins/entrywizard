@@ -2,7 +2,7 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 4.0.1
+Tested up to: 4.1
 Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
