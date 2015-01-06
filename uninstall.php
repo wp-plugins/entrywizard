@@ -4,8 +4,11 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
    error_log( 'EWZ: Attempt to uninstall without WP_UNINSTALL_PLUGIN defined' );
    exit();
 }
+if ( ! current_user_can( 'activate_plugins' ) ){
+   exit();
+}
 
-   global $wpdb;
+global $wpdb;
 
    $prefix = $wpdb->prefix;
 
@@ -40,6 +43,12 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
    foreach ( $meta_ids as $umeta_id ) {
       delete_metadata_by_mid( 'user', $umeta_id );
    }
+
+   $options = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . " WHERE option_name in ('ewz_data_version', 'ewz_db_version')" );
+   foreach ( $options as $option_name ) {
+      delete_option( $option_name );
+   }
+
 
    // remove the uploaded images folder
     error_log( 'EWZ: removing images' );
