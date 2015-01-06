@@ -4,8 +4,11 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
    error_log( 'EWZ: Attempt to uninstall without WP_UNINSTALL_PLUGIN defined' );
    exit();
 }
+if ( ! current_user_can( 'activate_plugins' ) ){
+   exit();
+}
 
-   global $wpdb;
+global $wpdb;
 
    $prefix = $wpdb->prefix;
 

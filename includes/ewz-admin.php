@@ -6,6 +6,8 @@ require_once( EWZ_PLUGIN_DIR . 'classes/ewz-exception.php' );
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-item.php');
 require_once( EWZ_PLUGIN_DIR . 'classes/ewz-webform.php');
 require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-data-input.php');
+require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-webform-set-input.php');
+require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-layout-set-input.php');
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-layouts.php');
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-webforms.php');
 require_once( EWZ_PLUGIN_DIR . 'includes/ewz-admin-permissions.php');
@@ -53,7 +55,7 @@ function ewz_enqueue_item_list_scripts() {
 
 /********************************************************************************/
 function ewz_admin_init() {
-    wp_register_style( 'jquery-ui-dialog', includes_url() . "/css/jquery-ui-dialog.css", array(), EWZ_CURRENT_VERSION );
+    wp_register_style( 'jquery-ui-dialog', includes_url() . "/css/jquery-ui-dialog.css" );
     wp_register_style( 'ewz-admin-style', plugins_url( 'styles/ewz-admin.css', dirname(__FILE__) ), array(), EWZ_CURRENT_VERSION );
 
     wp_register_script( 'ewz-common', plugins_url( 'javascript/ewz-common.js', dirname( __FILE__ ) ),
@@ -81,7 +83,7 @@ function ewz_admin_init() {
             wp_register_script(
                                'ewz-admin-webforms',
                                plugins_url( 'javascript/ewz-webforms.js', dirname(__FILE__) ),
-                               array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'jquery-ui-datepicker', 'ewz-common' ),
+                               array( 'jquery', 'jquery-ui-core', 'jquery-ui-dialog', 'jquery-ui-datepicker', 'ewz-common', 'jquery-ui-sortable' ),
                                EWZ_CURRENT_VERSION,
                                true         // in footer, so $ewzG has been defined
                                );
@@ -144,7 +146,7 @@ function ewz_admin_menu() {
         }
         if ( isset( $_REQUEST['webform_id'] ) &&
              ( Ewz_Base::is_nn_int( $_REQUEST['webform_id'] ) ) &&
-             Ewz_Permission::can_manage_webform( intval( $_REQUEST['webform_id'] ) ) ) {
+             Ewz_Permission::can_manage_webform( intval( $_REQUEST['webform_id'], 10 ), 0 ) )  { 
 
             $list_hook_suffix  = add_submenu_page(
                                                   'NULL', 'EntryWizard Item List', 'ItemList',
@@ -246,6 +248,49 @@ add_action( 'init', 'ewz_echo_data', 30 );
  *  the javascript and usually alerted to the viewer, then exits.
  *
  */
+
+ /**
+  * Save the order of layouts on the layouts page
+  *
+  */
+ function ewz_save_layout_order_callback() {
+     if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+         try {
+              $input = new Ewz_Layout_Set_Input( $_POST );
+              $num_updated = Ewz_Layout::save_layout_order( $input->get_input_data() );
+         } catch (Exception $e) {
+             error_log("EWZ: ewz_save_layout_order_callback exception");
+         }
+         echo "$num_updated layouts updated";
+     } else {
+         echo "Insufficient permissions - may have expired";
+         error_log( "EWZ: ewz_save_layout_order_callback, check_admin_referer failed" );
+     }
+     exit();
+ }
+ add_action( 'wp_ajax_ewz_save_layout_order', 'ewz_save_layout_order_callback' );
+
+/**
+ * Save the order of webforms on the webforms page
+ *
+ */
+
+function ewz_save_webform_order_callback() {
+    if ( check_admin_referer( 'ewzadmin', 'ewznonce' ) ) {
+        try {
+             $input = new Ewz_Webform_Set_Input( $_POST );
+             $num_updated = Ewz_Webform::save_webform_order( $input->get_input_data() );
+        } catch (Exception $e) {
+            error_log("EWZ: ewz_save_webform_order_callback exception");
+        }
+        echo "$num_updated webforms updated";
+    } else {
+        echo "Insufficient permissions - may have expired";
+        error_log( "EWZ: ewz_save_webform_order_callback, check_admin_referer failed" );
+    }
+    exit();
+}
+add_action( 'wp_ajax_ewz_save_webform_order', 'ewz_save_webform_order_callback' );
 
 /**
  * Generate a zip file of images

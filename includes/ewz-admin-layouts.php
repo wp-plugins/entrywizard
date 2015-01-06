@@ -202,7 +202,6 @@ function ewz_layout_menu()
 ?>
 
     <div class="wrap">
-        <div id="ewz_layouts" class="ewz-menu-layouts ewz-menu-group">
             <h2>EntryWizard Layout Management</h2>
             <div class="ewz_inotes">
                 <b>Notes: </b>
@@ -214,6 +213,8 @@ function ewz_layout_menu()
                 <img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon']; ?>">.
 
             </div>
+        <div id="ewz_layouts">
+        <br>
         </div>
         <div id="help-text" style="display:none">
             <!-- HELP POPUP image min dimensions -->
@@ -222,7 +223,16 @@ function ewz_layout_menu()
                 <p>If set to a few pixels less that the maximum longest dimension it may also be used to set a "target" dimension. 
                 <p>Some software may size an image 1 or 2 pixels smaller than the dimension requested, so this value should normally be at least 1 or 2 pixels smaller than the maximum dimension</p>    
             </div>
-
+          
+            <!-- HELP POPUP lsort -->
+            <div id="lsort_help" class="wp-dialog" >
+               <p>Add a New Layout creates a new Layout copied from the one you select ( except for any restrictions ). 
+                  You then need to at least give it a name  before saving it. 
+                  ( Of course, there would be little point in doing this unless you were going to make other changes, too )</p>
+               <p>Layouts may be dragged to rearrange them.  
+                  Clicking "Save Order of Layouts" will save the order, and
+                  the new order will subsequently be used for this page, and for the dropdown menus of layouts in the webforms page</p>
+            </div>
             <!-- HELP POPUP append -->
             <div id="append_help" class="wp-dialog" >
               <p>If your theme does not allow a sufficiently wide page width, a webform ( after clicking "Add, Change or Delete" ) may

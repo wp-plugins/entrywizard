@@ -321,7 +321,6 @@ function ewz_webforms_menu()
         );
         $ewzG['jsvalid'] = Ewz_Base::validate_using_javascript();
                            // normally true, set false to test server validation
-
         wp_localize_script( 'ewz-admin-webforms', 'ewzG1',  array( 'gvar'=>$ewzG ) );
 
     ?>
@@ -331,8 +330,10 @@ function ewz_webforms_menu()
             &nbsp; A regular webform may be inserted into any page using the shortcode &nbsp;
                  <b>&#91;ewz_show_webform&nbsp;&nbsp;identifier="xxx"&#93;</b>
              &nbsp; where xxx is the identifier you created for the form</p>
-        <div id="ewz_management"> </div>
 
+             <div id="ewz_management">
+                <br>  
+             </div>
         <div id="help-text" style="display:none">
 
         <!-- HELP POPUP shortcode -->
@@ -370,6 +371,15 @@ function ewz_webforms_menu()
          <i>( The motivation for this was the use by some camera clubs of a yearly "Second Chance" competition
               in which previously uploaded images could be re-submitted for a second chance if they did not 
               place in the competition they were originally entered in. )</i>
+        </div>
+
+        <!-- HELP POPUP wfsort -->
+        <div id="wfsort_help" class="wp-dialog" >
+            <p>Add a New Webform creates a new, blank webform. 
+               You then need to give it a title, an identifier and a layout before saving it.</p>
+            <p>Webforms may be dragged to rearrange them.  
+               Clicking "Save Order of Webforms" will save the order, and
+               the new order will subsequently be used for this page</p>
         </div>
 
         <!-- HELP POPUP wlayout -->

@@ -37,6 +37,7 @@ class Ewz_Layout extends Ewz_Base
     public $override;
     public $restrictions;
     public $extra_cols;      // columns for the spreadsheet generated from WP member data and other tables
+    public $layout_order;
 
     // other data generated
     public $fields;
@@ -50,6 +51,7 @@ class Ewz_Layout extends Ewz_Base
         'override'      => 'boolean',
         'restrictions'  => 'array',
         'extra_cols'    => 'array',
+        'layout_order'  => 'integer',
     );
 
     // items selectable for display in spreadsheet
@@ -181,7 +183,7 @@ class Ewz_Layout extends Ewz_Base
         global $wpdb;
         assert(is_string( $filter ) );
 
-        $list = $wpdb->get_col( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_id" );
+        $list = $wpdb->get_col( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_order" );
         $layouts = array();
         foreach ( $list as $layout_id ) {
             if ( call_user_func( array( 'Ewz_Permission',  $filter ), $layout_id ) ) {
@@ -225,7 +227,7 @@ class Ewz_Layout extends Ewz_Base
 
         $options = array();
         $layouts = $wpdb->get_results( "SELECT layout_id, layout_name  FROM " .
-                                       EWZ_LAYOUT_TABLE . " ORDER BY layout_id", OBJECT );
+                                       EWZ_LAYOUT_TABLE . " ORDER BY layout_order", OBJECT );
         foreach ( $layouts as $layout ) {
             if ( call_user_func( array( 'Ewz_Permission',  $filter ), $layout->layout_id ) ) {
                 if ( $layout->layout_id == $selected_id ) {
@@ -265,6 +267,58 @@ class Ewz_Layout extends Ewz_Base
         return ( 1 == $count );
     }
 
+     /**
+      * Get a count of the layouts
+      *
+      * @return   int count
+      */
+     public static function count_layouts( ) {
+         global $wpdb;
+         $count = $wpdb->get_var(  "SELECT count(*) FROM " . EWZ_LAYOUT_TABLE  );
+         return $count;
+     }
+
+     /* Save the order of the layouts
+      *
+      * @return  number of rows updated
+      */
+     public static function save_layout_order( $l_orders ) {
+         global $wpdb;
+         assert( is_array($l_orders['lorder']) );
+         $n = 0;
+         foreach( $l_orders['lorder'] as $layout_id => $order ){
+             $n = $n + $wpdb->query($wpdb->prepare("UPDATE " . EWZ_LAYOUT_TABLE . " wf " .
+                                                   "   SET layout_order = $order where layout_id = %d ", $layout_id ));  
+         }
+         return $n;
+     }
+ 
+     /**
+      * Renumber the subsequent layouts when one is deleted
+      */
+     private static function renumber_layouts( $order ) {
+         global $wpdb;
+         assert( Ewz_Base::is_nn_int( $order ) );
+         $wpdb->query($wpdb->prepare("UPDATE " . EWZ_LAYOUT_TABLE . " wf " .
+                                     "   SET layout_order = layout_order - 1 WHERE  layout_order > %d " , $order ));  
+     }
+ 
+ 
+     /**
+     /**
+      * Deal with upgrade -- set layout_order field in layouts 
+      * 
+      */
+     public static function set_layout_order(){
+         global $wpdb;
+         $list = $wpdb->get_col( $wpdb->prepare( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_id" ) );
+         $n = 0;
+         foreach ( $list as $layout_id ) {                      
+             $wpdb->query( "UPDATE " . EWZ_LAYOUT_TABLE .
+                           "   SET layout_order = $n WHERE layout_id = $layout_id");
+             ++$n;
+         }
+     }
 
     /*     * ****************** Object Functions ************************* */
 
@@ -514,7 +568,7 @@ class Ewz_Layout extends Ewz_Base
     {
         global $wpdb;
         if( $this->layout_id ){
-            if ( !Ewz_Permission::can_edit_layout( $this ) ) {
+            if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
                     throw new EWZ_Exception( 'Insufficient permissions to edit layout',
                             "$this->layout_id" );
             }
@@ -522,20 +576,31 @@ class Ewz_Layout extends Ewz_Base
             if ( !Ewz_Permission::can_edit_all_layouts() ) {
                 throw new EWZ_Exception( 'Insufficient permissions to create a new layout' );
             }
+            $this->layout_order = self::count_layouts();
         }
         $this->check_errors();
         $data = stripslashes_deep( array(
-            'layout_name' => $this->layout_name,
-            'max_num_items' => $this->max_num_items,
-            'override' => $this->override ? 1 : 0,
-            'restrictions' => serialize( stripslashes_deep( $this->restrictions ) ),
-            'extra_cols' => serialize( stripslashes_deep( $this->extra_cols ) ),
-                ) );
-        $datatypes = array('%s', '%d', '%s');
+                                         'layout_name' => $this->layout_name,          // %s
+                                         'max_num_items' => $this->max_num_items,      // %d
+                                         'override' => $this->override ? 1 : 0,        // %d
+                                         'restrictions' => serialize( stripslashes_deep( $this->restrictions ) ),   // %s
+                                         'extra_cols' => serialize( stripslashes_deep( $this->extra_cols ) ),       // %s
+                                         'layout_order' => $this->layout_order,        // %d
+                                         ) );
+        $datatypes = array( '%s', // = layout_name
+                            '%d', // = max_num_items 
+                            '%d', // = override
+                            '%s', // = restrictions 
+                            '%s', // = extra_cols 
+                            '%d', // = layout_order
+                            );
+
         // update or insert the layout itself
         if ( $this->layout_id ) {
-            $rows = $wpdb->update( EWZ_LAYOUT_TABLE, $data,
-                            array('layout_id' => $this->layout_id), $datatypes, array('%d') );
+            $rows = $wpdb->update( EWZ_LAYOUT_TABLE, 
+                                   $data,        array('layout_id' => $this->layout_id), 
+                                   $datatypes,   array('%d') 
+                                 );
             if ( $rows > 1 ) {
                 throw new EWZ_Exception( 'Problem with update of layout ' . $this->layout_name );
             }
@@ -559,13 +624,12 @@ class Ewz_Layout extends Ewz_Base
                 }
             }
         }
-        
+        $restrs = serialize( stripslashes_deep( $this->restrictions ) ); 
         // save the restrictions again
         if(  $havenewfield && $this->restrictions ){
             $rows = $wpdb->update( EWZ_LAYOUT_TABLE, 
-                                   array( 'restrictions' => serialize( stripslashes_deep( $this->restrictions ) ) ),
-                                   array( 'layout_id' => $this->layout_id ),
-                                   array( '%s' ) );
+                                   array( 'restrictions' => $restrs ),  array( 'layout_id' => $this->layout_id ),
+                                   array( '%s' ),                       array( '%d' ) );
             if ( $rows != 1 ) {
                 throw new EWZ_Exception( "$rows: Problem with update of restrictions for new fields  " . $this->layout_name );
             }
@@ -643,10 +707,14 @@ class Ewz_Layout extends Ewz_Base
         foreach ( $this->fields as $field ) {
             $field->delete();
         }
+
+        // now delete the layout and renumber the layout_order for the remaining ones
         $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_LAYOUT_TABLE .
                 " where layout_id = %d", $this->layout_id ) );
-        if ( $rowsaffected != 1 ) {
-            throw new EWZ_Exception( "Problem deleting layout ( id=$this->layout_id )" );
+        if ( 1 == $rowsaffected ) {
+            self::renumber_layouts($this->layout_order);
+        } else {
+            throw new EWZ_Exception( "Problem deleting layout '$this->layout_name '" );
         }
     }
 

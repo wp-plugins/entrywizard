@@ -14,14 +14,15 @@ function init_ewz_layouts() {
         ewzG = ewzG1.gvar;
         for (i = 0; i < ewzG.layouts.length; ++i) {
             // error message, page titles, fields
-            jQuery('#ewz_layouts').append(layout_str(i, ewzG.layouts[i]));
+            var lid = ewzG.layouts[i].layout_id;
+            jQuery('#ewz_layouts').append(layout_str(i, lid, ewzG.layouts[i]));
 
             // restrictions (one blank for each existing - will fill out later
             for (restr = 0; restr < ewzG.layouts[i].restrictions.length; ++restr) {
-                jQuery('#restricts_f' + i + '_').append(new_restriction_str(i, jQuery('#add_restr_f' + i + '_').get()));
+                jQuery('#restricts_f' + lid  + '_').append(new_restriction_str(lid, jQuery('#add_restr_f' + lid + '_').get()));
             }
             // add some functionality
-            setup_layout(i, i);
+            setup_layout( lid,  lid );
         }
         if (ewzG.message) {
             alert(ewzG.message);
@@ -30,6 +31,10 @@ function init_ewz_layouts() {
         if (ewzG.can_do) {
             jQuery('#ewz_layouts').append(add_layout_button_str());
         }
+         // make the layout postboxes sortable
+         jQuery('#ewz_layouts').sortable({
+             containment: 'parent'
+         });
         // add expand_all, close_all
         add_expander();
     }
@@ -39,7 +44,7 @@ function init_ewz_layouts() {
 /************************ Functions Returning an HTML String ****************************************/
 
 /* Returns the html string for a postbox containing a single layout */
-function layout_str(lnum, fObj) {
+function layout_str(i, lnum, fObj) {
 
     var i, key, str, kvalue, khead, korigin;
     /*********** Postbox *************/
@@ -154,7 +159,7 @@ function layout_str(lnum, fObj) {
 
     /*********** Save/Delete *************/
     str += '                <div class="ewz_numc"></div>';
-    str += '                   <button type="submit" id="lsub_f' + lnum + '_" class="button-primary">Save Changes to <i>' + fObj.layout_name + '</i></button> &nbsp;  &nbsp;  &nbsp;  &nbsp; ';
+    str += '                   <button type="submit" id="lsub_f' + lnum + '_" class="button-primary">Save Changes to <i>' + fObj.layout_name + '</i></button> &nbsp;  &nbsp;  &nbsp;  &nbsp;';
 
     if (ewzG.can_do) {
         str += '               <button type="button" id="ldel_f' + lnum + '_" class="button-secondary" ';
@@ -242,12 +247,14 @@ function new_restriction_str(lnum, button) {
 
 function add_layout_button_str() {
     var str = '<div class="alignleft">';
+    str += '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'lsort\')">&nbsp;';
+    str += '         &nbsp; <button  type="button" class="button-secondary" id="layouts_save_" onClick="save_layout_order()">Save Order of Layouts</button> &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp;  &nbsp;  &nbsp; &nbsp; ';
     str += '       <button  type="button" id="add_layout" class="button-secondary" onClick="add_layout_copy()">Add a New Layout</button>';
     str += '           &nbsp; with options copied from: ';
     str += '       <select id="ewz_addlayout" >';
     str += ewzG.layouts_options;
     str += '       </select> ';
-    str += ' &nbsp; ( <i>Restrictions will not be copied</i> ) ';
+    str += ' &nbsp; ( <i>Restrictions will not be copied</i> ) <br>';
     str += '    </div> ';
     return str;
 }
@@ -496,6 +503,33 @@ function colinput_str(idstring, namestring, vval, uniq_class) {
 
 /************************ Functions That Actually Do Something  ****************************************/
 
+function save_layout_order(){
+    var l_nonce = jQuery('input[name="ewznonce"]').val();
+    var data = {
+        action: 'ewz_save_layout_order',
+        ewznonce:   l_nonce,
+        ewzmode:  'lset',
+        lorder: new Object()
+    }
+    if( jQuery('input[id^="layout_id"][value=""]').length > 0 ){
+        alert("Please save your unsaved Layout before trying to rearrange them");
+        return;
+    }
+        
+    jQuery('input[id^="layout_id"]').each(function(index){ 
+        data['lorder'][jQuery(this).val()] = index;
+    });
+    data['action'] = 'ewz_save_layout_order';
+    data['ewznonce'] = l_nonce;
+    var jqxhr = jQuery.post( ajaxurl,
+                             data,
+                             function (response) {
+                                 jQuery("#temp_del").remove();
+                                     alert( response );
+                             }
+                           );       
+}
+
 /* disable editing of fields appearing in restrictions */
 function disable_restricted_fields(lnum) {
     jQuery("#restricts_f" + lnum + '_').find('option:selected').each(function() {
@@ -553,49 +587,52 @@ function disable_and_flag(jElement) {
 
 
 /* Set up some onChange functions for a layout                              */
-function setup_layout(for_lnum, from_lnum) {
-    set_restr_selections(for_lnum, ewzG.layouts[from_lnum]);
+function setup_layout(for_lid, from_lid) {
+    var index = js_find_by_key(ewzG.layouts, 'layout_id', from_lid);
+    set_restr_selections(for_lid, ewzG.layouts[index]);
 
-    var jLayout = jQuery('#ewz_admin_layouts_f' + for_lnum + '_');
+    var jLayout = jQuery('#ewz_admin_layouts_f' + for_lid + '_');
 
     // set postbox header from title
-    jQuery('#f' + for_lnum + '_layout_name_').keyup(function() {
+    jQuery('#f' + for_lid + '_layout_name_').keyup(function() {
         update_layout_name(this);
     });
-    jQuery('#f' + for_lnum + '_layout_name_').change(function() {
+    jQuery('#f' + for_lid + '_layout_name_').change(function() {
         update_layout_name(this);
     });
 
     // make sure individual option max nums are less than overall max
-    jQuery('#f' + for_lnum + '_max_num_items_').change(function() {
+    jQuery('#f' + for_lid + '_max_num_items_').change(function() {
         disable_max_vals(jLayout);
     });
     jLayout.find('select[id$="_maxnum_"]').change(function() {
         disable_max_vals(jLayout);
     });
 
-    disable_ss_options('.ssc' + for_lnum);
-    jQuery("#f" + for_lnum + "_max_num_items_").change();
+    disable_ss_options('.ssc' + for_lid);
+    jQuery("#f" + for_lid + "_max_num_items_").change();
 
     // make the field postboxes sortable
-    jQuery('#ewz_sortable_f' + for_lnum + '_').sortable({
-        containment: 'parent'
+    jQuery('#ewz_sortable_f' + for_lid + '_').sortable({
+        containment: 'parent',
+        items: "> div",
+        distance: 5
     });
 
     // add the nonce
     jLayout.find('.ewz_numc').html(ewzG.nonce_string);
     jLayout.find('input[name="ewznonce"]').each(function(index) {
-        jQuery(this).attr('id', 'ewznonce' + for_lnum + index);
+        jQuery(this).attr('id', 'ewznonce' + for_lid + index);
     });
 
     // disable fields appearing in restrictions
-    disable_restricted_fields(for_lnum);
+    disable_restricted_fields(for_lid);
 
     // disable required fields for checkboxes and radio buttons
-    disable_required_for_radio_chk(for_lnum);
+    disable_required_for_radio_chk(for_lid);
 }
 
-/* For the maxnum dropdown box in an option field, disable any maxnum >= the overall max num items */
+/* For the maxnum dropdown box in an option field OR A CHECKBOX FIELD, disable any maxnum >= the overall max num items */
 /*    ( unless the field has identifier 'followupQ' )
 /* Also disable numbers less than this in the max_num_items drop-down */
 function disable_max_vals(jLayout) {
@@ -604,7 +641,7 @@ function disable_max_vals(jLayout) {
     opt_max_limit = jMaxNum.val();
     mni_min = 0;
 
-    jLayout.find("select[id$='_maxnum_']").each(function() {
+    jLayout.find("select[id$='_maxnum_'],select[id$='_chkmax_']").each(function() {
         var jselect, optval;
         jselect = jQuery(this);
         if( !(jselect.closest('table[class="ewz_field"]').find('input[id$="_field_ident_"]').val() == 'followupQ') ){
@@ -743,10 +780,10 @@ function add_option(add_opt_btn) {
         }
     });
     jLayout = jQtable.closest(jQuery('div[id^="ewz_postbox-layout_f"]'));
-    jQtable.find('select[id$="_maxnum_"]').change(function() {
+    jQtable.find('select[id$="_maxnum_"],select[id$="_chkmax_"]').change(function() {
         disable_max_vals(jLayout);
     });
-
+    disable_max_vals(jLayout);
 }
 
 /* Moves the option up by one */
@@ -899,15 +936,23 @@ function add_field(add_field_btn, field_type) {
     form.find('div[id^="ewz_sortable"]').append(jQuery(field_str(lnum, 'X' + cnum, data)));
     jQuery('h3[id="field_title_' + newid + '"]').html("-- New Field --");
 
+    var jNewBox = jQuery('#' + newid + 'field_mbox_');
     // fire a change event on the spreadsheet column select boxes to disable used columns
-    jQuery('#' + newid + 'field_mbox_').find('select[onchange^="disable_ss_options"]').change();
+    jNewBox.find('select[onchange^="disable_ss_options"]').change();
+
+    var jLayout = jQuery(add_field_btn).closest('div[id^=ewz_admin_layouts_f]');
+    jNewBox.find('select[id$="_maxnum_"],select[id$="_chkmax_"]').change(function() {
+        disable_max_vals(jLayout);
+    });
+    disable_max_vals(jLayout);
 }
 
 /* Creates a new layout as a copy of the one selected */
 function add_layout_copy() {
-    var fromid, layouts, to_num, fromstringid, tostringid, jQnew, sscstr, newhtml;
+    var fromid, fromnum, layouts, to_num, fromstringid, tostringid, jQnew, sscstr, newhtml;
 
-    fromid = jQuery('#ewz_addlayout').prop("selectedIndex");
+    fromid = jQuery('#ewz_addlayout').val();
+    fromnum = jQuery('#ewz_addlayout').prop("selectedIndex");
     layouts = jQuery('div[id^="ewz_admin_layouts_f"]');
     to_num = layouts.length;
     fromstringid = 'ewz_admin_layouts_f' + fromid + '_';
@@ -1037,8 +1082,8 @@ function delete_field(del_field_btn) {
     jfield_div = jbutton.closest('div[id$="field_mbox_"]');
     field_id = jfield_div.find('input[name^="fields"]').filter(":hidden").val();
     if (field_id === undefined || '' == field_id ) {
-        jfield_div.find('select[id$="_maxnum_"]').prop("selectedIndex", 0);
-        jfield_div.find('select[id$="_maxnum_"]').change();
+        jfield_div.find('select[id$="_maxnum_"],select[id$="_chkmax_"]').prop("selectedIndex", 0);
+        jfield_div.find('select[id$="_maxnum_"],select[id$="_chkmax_"]').change();
         jfield_div.find('select[onchange^="disable_ss_options"]').prop("selectedIndex", 0);
         jfield_div.find('select[onchange^="disable_ss_options"]').change();
         jfield_div.remove();

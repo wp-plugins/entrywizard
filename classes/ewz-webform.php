@@ -28,6 +28,7 @@ class Ewz_Webform extends Ewz_Base {
     public $num_items;
     public $webform_title;
     public $webform_ident;
+    public $webform_order;
     public $upload_open;
     public $open_for;
     public $prefix;
@@ -54,6 +55,7 @@ class Ewz_Webform extends Ewz_Base {
                                    'num_items'  => 'integer',
                                    'webform_title' => 'string',
                                    'webform_ident' => 'string',
+                                   'webform_order' => 'integer',
                                    'upload_open' => 'boolean',
                                    'open_for' => 'array',
                                    'prefix' => 'string',
@@ -73,7 +75,7 @@ class Ewz_Webform extends Ewz_Base {
         assert( Ewz_Base::is_pos_int( $layout_id ) );
 
         $list = $wpdb->get_col( $wpdb->prepare( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE .
-                                                " WHERE layout_id = %d  ORDER by webform_id", $layout_id ) );
+                                                " WHERE layout_id = %d  ORDER by webform_order", $layout_id ) );
         $webforms = array( );
         foreach ( $list as $webform_id ) {
             $webform = new Ewz_Webform( $webform_id );
@@ -91,7 +93,7 @@ class Ewz_Webform extends Ewz_Base {
     public static function get_all_webforms( $filter = 'truefunc' ) {
         global $wpdb;
         assert(is_string( $filter ) );
-        $list = $wpdb->get_col( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" );
+        $list = $wpdb->get_col( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_order" );
         $webforms = array( );
         foreach ( $list as $webform_id ) {
             if ( call_user_func( array( 'Ewz_Permission',  $filter ), $webform_id ) ) {
@@ -110,8 +112,18 @@ class Ewz_Webform extends Ewz_Base {
      */
     public static function get_all_idents() {
         global $wpdb;
-        $list = $wpdb->get_col( "SELECT webform_ident  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" );
+        $list = $wpdb->get_col( "SELECT webform_ident  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_order" );
         return $list;
+    }
+    /**
+     * Get a count of the webforms
+     *
+     * @return   int count
+     */
+    public static function count_webforms( ) {
+        global $wpdb;
+        $count = $wpdb->get_var(  "SELECT count(*) FROM " . EWZ_WEBFORM_TABLE  );
+        return $count;
     }
 
     /**
@@ -128,6 +140,33 @@ class Ewz_Webform extends Ewz_Base {
     }
 
     /**
+     * Save the order of the webforms
+     *
+     * @return  number of rows updated
+     */
+    public static function save_webform_order( $wf_orders ) {
+        global $wpdb;
+        assert( is_array($wf_orders['wforder']) );
+        $n = 0;
+        foreach( $wf_orders['wforder'] as $webform_id => $order ){
+            $n = $n + $wpdb->query($wpdb->prepare("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
+                                                  "   SET webform_order = $order where webform_id = %d ", $webform_id ));  
+        }
+        return $n;
+    }
+
+    /**
+     * Renumber the subsequent webforms when one is deleted
+     */
+    private static function renumber_webforms( $order ) {
+        global $wpdb;
+        assert( Ewz_Base::is_nn_int( $order ) );
+        $wpdb->query($wpdb->prepare("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
+                                    "   SET webform_order = webform_order - 1 WHERE  webform_order > %d " , $order ));  
+    }
+
+
+    /**
      * Deal with upgrade -- set num_items field in webforms 
      * 
      */
@@ -136,6 +175,20 @@ class Ewz_Webform extends Ewz_Base {
         $wpdb->query("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
                      "   SET num_items = ( SELECT  max_num_items from " .  EWZ_LAYOUT_TABLE . " lay " .
                      " WHERE lay.layout_id = wf.layout_id ) " );
+    }
+    /**
+     * Deal with upgrade -- set webform_order field in webforms 
+     * 
+     */
+    public static function set_webform_order(){
+        global $wpdb;
+        $list = $wpdb->get_col( $wpdb->prepare( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" ) );
+        $n = 0;
+        foreach ( $list as $webform_id ) {                      
+            $wpdb->query( "UPDATE " . EWZ_WEBFORM_TABLE .
+                          "   SET webform_order = $n WHERE webform_id = $webform_id");
+            ++$n;
+        }
     }
 
 
@@ -162,8 +215,12 @@ class Ewz_Webform extends Ewz_Base {
      */
     public function __construct( $init ) {
         assert( Ewz_Base::is_pos_int( $init ) || is_string( $init ) || is_array( $init ) );
-        if ( Ewz_Base::is_pos_int( $init ) ) {
-            $this->create_from_id( $init );
+        if ( is_numeric( $init ) ){
+            if( Ewz_Base::is_pos_int( $init ) ) {
+                $this->create_from_id( $init );
+            } else {
+                $this->create_from_id( intval( $init, 10 ) );
+            } 
         } elseif ( is_string( $init ) ) {
             $this->create_from_ident( $init );
         } elseif ( is_array( $init ) ) {
@@ -188,9 +245,6 @@ class Ewz_Webform extends Ewz_Base {
                                           $this->open_for ) ) .
                 ' only';
         }
-        $this->can_download = Ewz_Permission::can_download( $this );
-        $this->can_edit_webform = Ewz_Permission::can_edit_webform( $this );
-        $this->can_manage_webform = Ewz_Permission::can_manage_webform( $this );
     }
 
     /**
@@ -208,8 +262,11 @@ class Ewz_Webform extends Ewz_Base {
                                                      " FROM " .
                                                      EWZ_WEBFORM_TABLE . " WHERE webform_id=%d", $id ), ARRAY_A );
         if ( !$dbwebform ) {
-            throw new EWZ_Exception( 'Unable to find matching webform', $id );
+            throw new EWZ_Exception( 'Unable to find matching webform for id', $id );
         }
+        $this->can_download = Ewz_Permission::can_download( $id, $dbwebform['layout_id'] );
+        $this->can_edit_webform = Ewz_Permission::can_edit_webform( $id );
+        $this->can_manage_webform = Ewz_Permission::can_manage_webform( $id, $dbwebform['layout_id'] );
         $layout = new Ewz_Layout( $dbwebform['layout_id'] );
         if( !$layout->override ||  !$dbwebform['num_items'] ){
             $dbwebform['num_items'] = $layout->max_num_items;
@@ -232,8 +289,12 @@ class Ewz_Webform extends Ewz_Base {
                                                      " FROM " .
                                                      EWZ_WEBFORM_TABLE . " WHERE webform_ident=%s", $ident ), ARRAY_A );
         if ( !$dbwebform ) {
-            throw new EWZ_Exception( 'Unable to find matching webform', $ident );
+            throw new EWZ_Exception( 'Unable to find matching webform for identifier', $ident );
         }
+        $this->can_download = Ewz_Permission::can_download( $dbwebform['webform_id'], $dbwebform['layout_id']);
+        $this->can_edit_webform = Ewz_Permission::can_edit_webform( $dbwebform['webform_id'] );
+        $this->can_manage_webform = Ewz_Permission::can_manage_webform( $dbwebform['webform_id'], $dbwebform['layout_id']  );
+
         $layout = new Ewz_Layout( $dbwebform['layout_id'] );
         if( !$layout->override ||  !$dbwebform['num_items'] ){
             $dbwebform['num_items'] = $layout->max_num_items;
@@ -259,11 +320,27 @@ class Ewz_Webform extends Ewz_Base {
         }
         if ( !array_key_exists( 'webform_id', $data ) ) {
             $data['webform_id'] = 0;
+        } else {
+            $data['webform_id'] = intval( $data['webform_id'], 10 );
+        }    
+        if ( !array_key_exists( 'layout_id', $data ) ) {
+            $data['layout_id'] = 0;
+        } else {
+            $data['layout_id'] = intval( $data['layout_id'], 10 );
+        }
+        $layout = new Ewz_Layout( $data['layout_id'] );
+        if( !$layout->override || !$data['num_items'] ){
+            $data['num_items'] = $layout->max_num_items;
         }
         $this->set_data( $data );
+        $this->can_download = Ewz_Permission::can_download( $data['webform_id'], $data['layout_id'] );
+        $this->can_edit_webform = Ewz_Permission::can_edit_webform( $data['webform_id'] );
+        $this->can_manage_webform = Ewz_Permission::can_manage_webform( $data['webform_id'], $data['layout_id']  );
         $this->check_errors();
         if( $data['auto_close'] ){ 
             $this->schedule_closing( $data['auto_date'] . ' '.  $data['auto_time'] );
+        } else {
+            $this->unschedule_closing();
         }
         $this->set_auto_time();
     }
@@ -485,7 +562,8 @@ class Ewz_Webform extends Ewz_Base {
                             
         $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
 
-        if ( $zip->open( $fpath, ZIPARCHIVE::OVERWRITE ) === TRUE ) {
+        $result = $zip->open( $fpath, ZipArchive::CREATE|ZipArchive::OVERWRITE );
+        if ( $result === TRUE ) {
             foreach ( $items as $item ) {
                 foreach ( $item->item_files as $item_file ) {
                     if ( !isset( $item_file['fname'] ) ) {
@@ -540,7 +618,7 @@ class Ewz_Webform extends Ewz_Base {
                 unlink( $csv_fname );
             }
         } else {
-            throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator." );
+            throw new EWZ_Exception( "Sorry, there was a problem creating the zip archive.  If this continues, please contact your administrator.", $result );
         }
     }
 
@@ -945,7 +1023,7 @@ class Ewz_Webform extends Ewz_Base {
      */
     public function schedule_closing( $close_time ){
         assert( is_string( $close_time ) );
-        if( !$this->can_manage_webform ){
+        if( !$this->can_manage_webform ){ 
             throw new EWZ_Exception( "No Permission" );
         }
         // Remove existing cron event for this webform if one exists
@@ -957,6 +1035,15 @@ class Ewz_Webform extends Ewz_Base {
         $ctime = strtotime ( $close_time );
         wp_schedule_single_event(  $ctime, 'ewz_do_close_webform', array( $this->webform_id ) );
     }
+
+    public function unschedule_closing( ){
+        if( !$this->can_manage_webform ){ 
+            throw new EWZ_Exception( "No Permission" );
+        }
+        // Remove existing cron event for this webform if one exists
+        wp_clear_scheduled_hook( 'ewz_do_close_webform', array( $this->webform_id) );
+    }
+
 
     /**
      * Add the action to schedule the close
@@ -1168,14 +1255,15 @@ class Ewz_Webform extends Ewz_Base {
      * Returned array has values for  'ewz_page_sel' -- id of the selected page, 
      *                                'img_size' -- selected image size option,
      *                                'img_comment' -- boolean, allow comments on attached image
-     *
+     *                                'dups_ok' -- boolean, allow images to be attached more than once to the same page
+     * If there is more than one image field, it may also include a value for 'ifield' -- the image column to use
      * @param   none
      * @return  array of attachment preferences
      */
     public function get_attach_prefs() {
         global $wpdb;
 
-        $prefs = array( 'ewz_page_sel' => 0, 'img_size' => 'thumbnail', 'img_comment' => false );
+        $prefs = array( 'ewz_page_sel' => 0, 'img_size' => 'thumbnail', 'img_comment' => false, 'dups_ok' => false );
         if ( $this->webform_id ) {
 
             $wf_prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
@@ -1196,6 +1284,7 @@ class Ewz_Webform extends Ewz_Base {
      * Input  array should have values for  'ewz_page_sel' -- id of the selected page, 
      *                                      'img_size' -- selected image size option,
      *                                      'img_comment' -- boolean, allow comments on attached image
+     *                                      'dups_ok' -- boolean, allow an image to be attached more than once
      *
      * @param  array of attachment preferences
      * @return none
@@ -1206,7 +1295,7 @@ class Ewz_Webform extends Ewz_Base {
 
         if ( $this->webform_id ) {
 
-            if( !Ewz_Permission::can_manage_webform( $this->webform_id ) ) {
+            if( !$this->can_manage_webform ) {
                 throw new EWZ_Exception( 'No permission to manage webform' );
             }
             $data = stripslashes_deep( array( 'attach_prefs' => serialize( $prefs ) ) );
@@ -1228,41 +1317,54 @@ class Ewz_Webform extends Ewz_Base {
      */
     public function save() {
         global $wpdb;
-
         if ( $this->webform_id ) {
+            // check the old layout_id against the new -- if they are different, need the right permission
+            $old_webform = new Ewz_Webform( $this->webform_id );
 
-            $curr_webform = new Ewz_Webform( $this->webform_id );
-
-            if ( ( $curr_webform->layout_id !== $this->layout_id ) && !Ewz_Permission::can_edit_webform( $curr_webform ) ) {
-                throw new EWZ_Exception( 'No changes saved. Insufficient permissions to change layout', $curr_webform->layout_id );
+            if ( ( $old_webform->layout_id !== $this->layout_id ) &&  !$this->can_edit_webform ) {
+                throw new EWZ_Exception( 'No changes saved. Insufficient permissions to change layout ', $old_webform->layout_id );
             }
-            if ( !Ewz_Permission::can_manage_webform( $curr_webform ) && !defined( 'DOING_CRON' )) {
-                throw new EWZ_Exception( "No changes saved. Insufficient permissions to edit webform '$this->webform_title' )" );
+            if ( !$this->can_manage_webform && !defined( 'DOING_CRON' )) {
+                throw new EWZ_Exception( "No changes saved. Insufficient permissions to change webform '$this->webform_title' )" );
             }
         } else {
             if ( !Ewz_Permission::can_edit_all_webforms() ) {
                 throw new EWZ_Exception( 'No changes saved. Insufficient permissions to create a webform' );
             }
+            $this->webform_order = self::count_webforms();
         }
         // ok, we have all the permissions, go ahead
 
         $this->check_errors();
 
         $data = stripslashes_deep( array(
-                                         'layout_id' => $this->layout_id,
-                                         'num_items' => $this->num_items,
-                                         'webform_title' => $this->webform_title,
-                                         'webform_ident' => $this->webform_ident,
-                                         'upload_open' => $this->upload_open ? 1 : 0,
-                                         'open_for' => serialize( $this->open_for ),
-                                         'prefix' => $this->prefix,
-                                         'apply_prefix' => $this->apply_prefix ? 1 : 0,
-                                         'gen_fname' => $this->gen_fname ? 1 : 0,
+                                         'layout_id' => $this->layout_id,               // %d
+                                         'num_items' => $this->num_items,               // %d
+                                         'webform_title' => $this->webform_title,       // %s
+                                         'webform_ident' => $this->webform_ident,       // %s
+                                         'webform_order' => $this->webform_order,       // %d
+                                         'upload_open' => $this->upload_open ? 1 : 0,   // %d
+                                         'open_for' => serialize( $this->open_for ),    // %s
+                                         'prefix' => $this->prefix,                     // %s
+                                         'apply_prefix' => $this->apply_prefix ? 1 : 0, // %d
+                                         'gen_fname' => $this->gen_fname ? 1 : 0,       // %d
                                          ) );
-        $datatypes = array( '%d','%d', '%s', '%s', '%d', '%s', '%s' );
+        $datatypes = array( '%d',   // = layout_id
+                            '%d',   // = num_items
+                            '%s',   // = webform_title
+                            '%s',   // = webform_ident
+                            '%d',   // = webform_order
+                            '%d',   // = upload_open
+                            '%s',   // = open_for
+                            '%s',   // = prefix
+                            '%d',   // = apply_prefix
+                            '%d',   // = gen_fname
+                            );
 
         if ( $this->webform_id ) {
-            $rows = $wpdb->update( EWZ_WEBFORM_TABLE, $data, array( 'webform_id' => $this->webform_id ), $datatypes, array( '%d' ) );
+            $rows = $wpdb->update( EWZ_WEBFORM_TABLE, 
+                                   $data,       array( 'webform_id' => $this->webform_id ), 
+                                   $datatypes,  array( '%d' ) );
             if ( $rows > 1 ) {
                 throw new EWZ_Exception( "Problem updating the webform '$this->webform_title'" );
             }
@@ -1312,6 +1414,7 @@ class Ewz_Webform extends Ewz_Base {
 
             $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_WEBFORM_TABLE . " where webform_id = %d", $this->webform_id ) );
             if ( 1 == $rowsaffected ) {
+                self::renumber_webforms($this->webform_order);
                 return "1 webform deleted.";
             } else {
                 throw new EWZ_Exception( "Problem deleting webform '$this->webform_title '" );

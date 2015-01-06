@@ -42,6 +42,7 @@ class Ewz_Item_List_Input extends Ewz_Input
                     'ewzmode'      => array( 'type' => 'limited',   'req' => false,   'val' => array('list')    ),  // needed to override other modes in webform
                     'ewz_page_sel' => array( 'type' => 'to_seq',    'req' => $is_att, 'val' => ''               ),  // page for attaching
                     'ifield'       => array( 'type' => 'to_seq',    'req' => false,   'val' => ''               ),  // img col for attach, if more than one
+                    'dups_ok'      => array( 'type' => 'to_bool',   'req' => false,   'val' => ''               ),  // allow images to be attached twice
                     'img_comment'  => array( 'type' => 'to_bool',   'req' => false,   'val' => ''               ),  // comments allowed on imgs being attached?
                     'img_size'     => array( 'type' => 'limited',   'req' => $is_att, 'val' => ewz_get_img_sizes() ), // copy image when attaching
                     'orderby'      => array( 'type' => 'to_seq',    'req' => false,   'val' => ''               ),  // column to order by
@@ -57,10 +58,13 @@ class Ewz_Item_List_Input extends Ewz_Input
    function validate(){
 
         parent::validate();
-	// an unchecked checkbox does not create any matching value in $_POST
-	if ( !array_key_exists( 'img_comment', $this->input_data ) ) {
-	    $this->input_data['img_comment'] = false;
-	}
+        // an unchecked checkbox does not create any matching value in $_POST
+        if ( !array_key_exists( 'img_comment', $this->input_data ) ) {
+            $this->input_data['img_comment'] = false;
+        }
+        if ( !array_key_exists( 'dups_ok', $this->input_data ) ) {
+            $this->input_data['dups_ok'] = false;
+        }
         if ( !array_key_exists( 'fopt', $this->input_data ) ) {
             $this->fopt = array();
         }

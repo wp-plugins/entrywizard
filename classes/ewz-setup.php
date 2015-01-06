@@ -84,6 +84,7 @@ class Ewz_Setup
                                            layout_id smallint(6) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                            layout_name char(60) NOT NULL UNIQUE,
                                            max_num_items smallint(3) NOT NULL,
+                                           layout_order smallint(3) NOT NULL,
                                            override tinyint(1) NOT NULL DEFAULT 0,
                                            restrictions longtext NULL,
                                            extra_cols longtext NULL
@@ -113,6 +114,7 @@ class Ewz_Setup
                                                 prefix char(25) NULL,
                                                 apply_prefix tinyint(1) NULL,
                                                 gen_fname tinyint(1) NULL,
+                                                webform_order smallint(3) NOT NULL,
                                                 upload_open tinyint(1) NOT NULL,
                                                 open_for varchar(1000) NOT NULL,
                                                 attach_prefs varchar(1000) NULL
@@ -209,7 +211,7 @@ class Ewz_Setup
         }
     }
 
-    /*	 * **************************************************
+    /*   * **************************************************
      * Create two sample layouts to act as the starting point
      * ************************************************** */
 
@@ -311,7 +313,8 @@ class Ewz_Setup
                                                'max_num_items' => 4,
                                                'override' => 0,
                                                'restrictions' => '',
-                                               'extra_cols' => ''
+                                               'extra_cols' => '',
+                                               'layout_order' => 0,
                                                ),
                                         array('%s', '%s', '%d', '%s')
                                         );
@@ -525,6 +528,7 @@ class Ewz_Setup
         $rows_affected = $wpdb->insert( $layout_table,
                                         array( 'layout_name' => "Image Pair Layout",
                                                'max_num_items' => 4,
+                                               'layout_order' => 1,
                                                )
                                         );
         $layout_id2 = $wpdb->insert_id;
@@ -664,6 +668,7 @@ class Ewz_Setup
                                               'num_items' => $num_items,
                                               'webform_title' => $webform_title,
                                               'webform_ident' => $webform_ident,
+                                              'webform_order' => 0,
                                               'upload_open' => 1,
                                               'apply_prefix' => 1,
                                               'gen_fname' => 0,

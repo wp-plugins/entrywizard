@@ -50,7 +50,8 @@ function ewz_check_and_attach_imgs()
         return $e->getMessage();
     }
 
-    if( !Ewz_Permission::can_manage_webform( $requestdata['webform_id'] ) ) {
+    $webform = new Ewz_Webform( $requestdata['webform_id'] );
+    if( !Ewz_Permission::can_manage_webform( $webform->webform_id, $webform->layout_id ) ) {
         throw new EWZ_Exception( 'Attempt to attach items without permission to manage webform' );
     }
 
@@ -60,8 +61,8 @@ function ewz_check_and_attach_imgs()
                         'img_comment'  => $requestdata['img_comment'],
                         'img_size'     => $requestdata['img_size'],
                         'ifield'       => $requestdata['ifield'],
+                        'dups_ok'      => $requestdata['dups_ok'],
                         );
-    $webform = new Ewz_webform( $requestdata['webform_id'] );
     $webform->save_attach_prefs( $save_prefs );
 
     $count = 0;
@@ -105,7 +106,13 @@ function ewz_attach_item( $item_id, $requestdata ){
     try{
         $item = new Ewz_Item( $item_id );
         if( !count( $item->item_files ) || !array_key_exists( $requestdata['ifield'], $item->item_files ) ){
-            $msg .= "No image file for item with id $item->item_id.\n";
+            $msg .= "No image file for item with id $item_id.\n";
+            return $msg;
+        }
+        if(  !$requestdata['dups_ok'] && isset( $item->item_data['attachedto'] )&& 
+             ( strpos( $item->item_data['attachedto'], get_the_title( $requestdata['ewz_page_sel'] ) ) !== FALSE ) ){
+            $msg .= "Item $item_id is already attached to " . $requestdata['ewz_page_sel'];
+            return $msg;
         }
         foreach ( $item->item_files as $field_id => $file ) {
             if( ( $requestdata['ifield'] == $field_id ) ) {
@@ -198,7 +205,7 @@ function ewz_batch_delete_items(  )
 {
     $data = array_merge( $_POST, $_GET );
     if ( !( isset( $data['webform_id'] ) &&
-            Ewz_Permission::can_manage_webform( $data['webform_id'] ) ) ){
+            Ewz_Permission::can_manage_webform( $data['webform_id'], 0 ) ) ){
         throw new EWZ_Exception( 'Insufficient Permissions To Modify Data' );
     }
     try{
@@ -465,7 +472,7 @@ function ewz_list_items() {
 
     $data = array_merge( $_POST, $_GET );    // this is normally accessed via GET
     if ( !( isset( $data['webform_id'] ) &&
-            Ewz_Permission::can_manage_webform( $data['webform_id'] ) ) ){
+            Ewz_Permission::can_manage_webform( $data['webform_id'], 0 ) ) ){
         wp_die( "Insufficient Permissions To View Page" );
     }
     // if errors here stop processing
@@ -516,7 +523,7 @@ function  ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts ){
     $optval = array();
     if ( isset( $field_opts ) ) {
         foreach( $field_opts as $field_id=>$fval ){
-            $field = new Ewz_field($field_id);
+            $field = new Ewz_Field($field_id);
             $optname[$field_id] = $field->field_header;
             $optval[$field_id] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', $fval ) ) );
         }
@@ -576,7 +583,8 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
     $size_args = ewz_get_img_size_options( $attach_prefs['img_size'] );
     $image_columns = ewz_get_img_cols( $fields );
     $commentChecked = $attach_prefs['img_comment'] ? 'checked' : '';
-
+    $dupsChecked = $attach_prefs['dups_ok'] ? 'checked' : '';
+    $warn = $dupsChecked ? '<span style="font-size: 1.5em;"> * &nbsp; * &nbsp; * </span>' : '';
     $str =<<<EOF
     <table class="ewz_buttonrow ewz_shaded" style="float:left; margin:20px;">
         <tr><td><img alt="" class="ewz_ihelp" src="$help_icon" onClick="ewz_help('dest');">&nbsp;
@@ -590,19 +598,30 @@ function ewz_attach_options_string( $help_icon, $attach_prefs, $fields ){
             <td><select id="img_size" name="img_size" >$size_args</select></td></tr>
 EOF;
      if ( count( $image_columns ) > 1 ) {
-	foreach ( $image_columns as $fld_id => $fld_head ) {
+         $info = '<img alt="" class="ewz_ihelp" src="' . $help_icon. '" onClick="ewz_help(\'multi\');">&nbsp;';
+        foreach ( $image_columns as $fld_id => $fld_head ) {
+            $col_checked = '';
+            if( isset( $attach_prefs['ifield'] ) && ( $attach_prefs['ifield'] == $fld_id ) ){
+                $col_checked = 'checked';
+            }
             $eschead = esc_html( $fld_head );
-            $str .= "<tr><td>Attach images from column $eschead</td>";
-	    $str .= '    <td><input type="radio" name="ifield" value="' . $fld_id . '"></td>';
-	    $str .= '</tr>';
+            $str .= "<tr><td>$info Attach images from column $eschead</td>";
+            $str .= '    <td><input type="radio" name="ifield" value="' . $fld_id . '" ' . $col_checked . '></td>';
+            $str .= '</tr>';
+            $info = ' &nbsp; &nbsp; &nbsp; &nbsp; ';
         }
-        $str .= '</table>';
 
-     } else {
-         $str .= '</table>';
+     }
+     
+     $str .=  '<tr><td><span class="ewz_inotes"><img alt="" class="ewz_ihelp" src="' . $help_icon . '" onClick="ewz_help(\'dups_ok\');">&nbsp;';
+     $str .=  'Allow an image to be attached more than once </span></td>';
+     $str .=  '<td><input type="checkbox" id="dups_ok" value="1" name="dups_ok" ' . $dupsChecked . " > &nbsp; $warn</td></tr>";
+
+     $str .= '</table>';
+     if ( count( $image_columns ) <= 1 ) { 
          foreach ( $image_columns as $fld_id => $fld_head ) {
              $eschead = esc_html( $fld_head );
-	     $str .= '<input type="hidden" name="ifield" value="' . esc_attr( $fld_id ) . '">';
+             $str .= '<input type="hidden" name="ifield" value="' . esc_attr( $fld_id ) . '">';
          }
      }
      return $str;
@@ -692,20 +711,31 @@ function  ewz_display_list_page( $message, $requestdata ){
 
            <?php print ewz_attach_options_string( $help_icon, $attach_prefs, $fields ); ?>
 
-    	   <div id='message'></div>
+           <div id='message'></div>
 
            <?php $ewz_item_list->display(); ?>
 
-    	   <p class="ewz_pcentre ">
-    	        <button type="button" class="button-primary" id="backButton"
+           <p class="ewz_pcentre ">
+                <button type="button" class="button-primary" id="backButton"
                         onClick="window.location='<?php print esc_url( $webformsurl ); ?>';">
                     Back to WebForms Page</button>
-    	   </p>
+           </p>
         </div>
         </form>
     </div>
 
     <div id="help-text" style="display:none">
+        <div id="multi_help" class="wp-dialog" >
+           <p>Only images from one column may be attached in one action. If you have more than one image column,
+              you need to select one.</p>
+        </div>
+        <div id="dups_ok_help" class="wp-dialog" >
+           <p>If you have a lot of images, it's fairly easy to mistakenly select one that has already been attached. 
+              EntryWizard will only attach it a second time to the same page if you check this box.</p> 
+           <p>But attaching creates new copies of the images, and EntryWizard does not keep track of those.  If you
+              delete one of the attachment copies for some reason, and wish to re-attach the image, you would need to
+              check this box to override the normal behaviour.</p>
+        </div>
         <div id="dest_help" class="wp-dialog" >
             <p>Images that have been "attached" to a page may be displayed on the page in a regular
                 wordpress gallery.
@@ -738,7 +768,7 @@ function  ewz_display_list_page( $message, $requestdata ){
              <p>For documentation about the gallery shortcode, see
                  http://codex.wordpress.org/Gallery_Shortcode.</p>
              <p>-------------------------------</p>
-    	     <p>If you wish the gallery to display scores or other image-specific information not
+             <p>If you wish the gallery to display scores or other image-specific information not
                  uploaded by the member, you need first
                 to upload a csv file containing this data, using the "Upload extra <u>per-image</u> data" button on
                 the "Webforms" page. Make sure that you put the text into the title, excerpt and/or content 

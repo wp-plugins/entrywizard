@@ -27,7 +27,6 @@ class Ewz_Upload_Input extends Ewz_Input
             }
         }
         $this->rules = array(
-                             'layout_id'        => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
                              'webform_id'       => array( 'type' => 'to_seq',    'req' =>  true,  'val' => '' ),
                              'ewzuploadnonce'   => array( 'type' => 'unonce',    'req' =>  true,  'val' => '' ),
                              '_wp_http_referer' => array( 'type' => 'to_string', 'req' =>  false, 'val' => '' ),

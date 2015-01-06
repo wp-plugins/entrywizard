@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 4.0.1
-Stable tag: 1.2.9
+Tested up to: 4.1
+Stable tag: 1.2.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,10 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.10 =
+* fixed a permissions issue with auto-closing webforms
+* made it possible to change the order of layouts and webforms on the admin pages
+* don't attach an image to the same page more than once unless the admin has specifically allowed it
 = 1.2.9 =
 * fixed a bug in 1.2.8
 = 1.2.8 =
@@ -246,8 +250,6 @@ CHANGE: Require a minimum longest dimension for uploaded images instead of a min
 == To Do ==
 
 Enhancements planned eventually (in no particular order):
-
-* Make layouts and webforms sortable
 
 * Copy restrictions when copying a layout
 

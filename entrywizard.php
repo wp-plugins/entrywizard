@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.9
+  Version: 1.2.10
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -27,6 +27,8 @@
 
 
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
+
+define( 'EWZ_CURRENT_VERSION', '1.2.10' );
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
@@ -52,7 +54,6 @@ require_once( EWZ_PLUGIN_DIR . '/includes/ewz-followup.php' );
  * HOOKS
  */
 register_activation_hook( __FILE__,   array( 'Ewz_Setup', 'activate_or_install_ewz' ) );
-register_deactivation_hook( __FILE__, array( 'Ewz_Setup', 'deactivate_ewz' ) );
 // no uninstall hook, use the uninstall.php file
 
 
@@ -135,11 +136,10 @@ if ( ! is_admin() ) {
 /*
  * UPDATES
  */
-function ewz_check_for_db_updates(){
-    $data             = get_plugin_data( __FILE__, false, false );
-    $this_version     = $data['Version'];
+function ewz_check_for_db_updates(){ 
     $ewz_data_version = get_option( 'ewz_data_version', '0.9.1' );
-    if ( version_compare( $ewz_data_version, $this_version,  '<' ) ){
+
+    if ( version_compare( $ewz_data_version, EWZ_CURRENT_VERSION,  '<' ) ){
         // 0.9.6 added new apply_prefix column to webforms table 
         // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
         if ( version_compare( $ewz_data_version, '0.9.6', '<' ) ){
@@ -179,28 +179,35 @@ function ewz_check_for_db_updates(){
         if ( version_compare( $ewz_data_version, '1.2.4', '<' ) ){
             error_log( "EWZ: updating $ewz_data_version to 1.2.4" );
             Ewz_Setup::protect_uploads();
+        }  
+        // 1.2.10 added webform_order to webform table, layout_order to layout table
+        if ( version_compare( $ewz_data_version, '1.2.10', '<' ) ){
+            error_log( "EWZ: updating $ewz_data_version to 1.2.10" );
+            Ewz_Setup::activate_or_install_ewz();
+            Ewz_Webform::set_webform_order();
+            Ewz_Layout::set_layout_order();
         }       
-        update_option( 'ewz_data_version', $this_version );
+        update_option( 'ewz_data_version', EWZ_CURRENT_VERSION );
     }
 }
 
 
 function ewz_add_stylesheet() {
-    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ) );
+    wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ), array(), EWZ_CURRENT_VERSION );
     wp_enqueue_style( 'ewz-style' );
 
     wp_enqueue_script(
                        'ewz-upload',
                        plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       false,
+                       EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
     wp_enqueue_script(
                        'ewz-followup',
                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
                        array( 'jquery', 'jquery-form' ),
-                       false,
+                       EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
  }
@@ -208,7 +215,7 @@ function ewz_add_stylesheet() {
 function ewz_set_dev_env(){
     if ( is_file( plugin_dir_path( __FILE__ ). 'DEVE_ENV' )   // only true in development environment
         && ! ( isset( $_POST['action'] ) && ( 'heartbeat' == $_POST['action'] )  )
-        && ( '/rhcc_site/wp-cron.php' !== $_SERVER['REQUEST_URI'] ) 
+         && !preg_match( '/wp-cron.php$/', $_SERVER['REQUEST_URI'] )  
       ){   
         /*
          * ASSERT OPTIONS
@@ -369,6 +376,11 @@ function ewz_requires_version(){
    }  
 }
    
+/*
+ * Return a string like "WordPress version XXX and PHP version yyy"
+ * if the required versions of WP and PHP are not available.
+ * Also log to error log.
+ */
 function ewz_required_versions_warning(){
    global $wp_version;
    $reqvers = '';
@@ -390,7 +402,9 @@ function ewz_required_versions_warning(){
 
 function ewz_admin_notice() {
     $msg = ewz_required_versions_warning();
-    print "<div class='error'><h2>EntryWizard Warning</h2> EntryWizard requires at least <strong>$msg </strong></h2></div>";
+    if( $msg ){
+        print "<div class='error'><h2>EntryWizard Warning</h2> EntryWizard requires at least <strong>$msg </strong></h2></div>";
+    }
 }
 
 

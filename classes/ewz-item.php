@@ -408,25 +408,10 @@ class Ewz_Item extends Ewz_Base {
         $this->check_errors();  // raises exceptions if errors found
         if ( !( $this->user_id == get_current_user_id()   // user can edit own data
                 ||
-                Ewz_Permission::can_manage_webform( $this->webform_id ) )   // admin can manage webform
+                Ewz_Permission::can_manage_webform( $this->webform_id, $this->layout_id ) )   // admin can manage webform
         ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit item',
                     "item $this->item_id in webform $this->webform_id" );
-        }
-        //**NB: need to stripslashes *before* serialize, otherwise character counts are wrong
-        // WP automatically adds slashes for quotes
-        $data = stripslashes_deep( array(
-                                         'user_id' => $this->user_id,
-                                         'webform_id' => $this->webform_id,
-                                         'item_data' => serialize( stripslashes_deep( $this->item_data ) ),
-                                         ) );
-        // *** don't update item_files unless there was a real image upload ***
-        // item_files is set from the uploaded data, so does not contain any previously uploaded image files
-        // when it is saved, it overwrites anything that was already there
-
-        if ( isset( $this->item_files ) && count( $this->item_files ) > 0 ) {
-            // No stripslashes here - wp doesn't escape $_FILES as it does $_POST
-            $data['item_files'] = serialize( $this->item_files ) ;
         }
 
         // for saving last_change and upload_date
@@ -435,11 +420,33 @@ class Ewz_Item extends Ewz_Base {
             date_default_timezone_set( $tz_opt );
         }
 
-        $datatypes = array( '%d', '%d', '%s', '%s' );
+        //**NB: need to stripslashes *before* serialize, otherwise character counts are wrong
+        // WP automatically adds slashes for quotes
+        $data = stripslashes_deep( array(
+                                         'user_id' => $this->user_id,            // %d
+                                         'webform_id' => $this->webform_id,      // %d
+                                         'item_data' => serialize( stripslashes_deep( $this->item_data ) ),  // %s
+                                         ) );
+        // *** don't update item_files unless there was a real image upload ***
+        // item_files is set from the uploaded data, so does not contain any previously uploaded image files
+        // when it is saved, it overwrites anything that was already there
+
+
+        $datatypes = array( '%d',  // = user_id
+                            '%d',  // = webform_id
+                            '%s',  // = item_data
+                            );
+
+        if ( isset( $this->item_files ) && count( $this->item_files ) > 0 ) {
+            // No stripslashes here - wp doesn't escape $_FILES as it does $_POST
+            $data['item_files'] = serialize( $this->item_files ) ;  
+            array_push( $datatypes, '%s' );
+        }
+
         if ( $this->item_id ) {
            $rows = $wpdb->update( EWZ_ITEM_TABLE,
-                    $data,      array( 'item_id' => $this->item_id ),
-                    $datatypes, array( '%d' ) );
+                                  $data,      array( 'item_id' => $this->item_id ),
+                                  $datatypes, array( '%d' ) );
 
             if ( ( false === $rows ) || ( $rows > 1 ) ) {
                 throw new EWZ_Exception( 'Problem updating item, please reload the page to see your current status.' ,
@@ -448,10 +455,9 @@ class Ewz_Item extends Ewz_Base {
             // only alter last_change if there really was a change
             if ( 1 == $rows ) {
                 $wpdb->update( EWZ_ITEM_TABLE,
-                        array( 'last_change' => current_time( 'mysql' ) ),
-                        array( 'item_id' => $this->item_id ),
-                        array( '%s' ),
-                        array( '%d' ) );
+                               array( 'last_change' => current_time( 'mysql' ) ), array( 'item_id' => $this->item_id ),
+                               array( '%s' ),                                     array( '%d' ) 
+                             );
             }
 
         } else {
@@ -502,7 +508,7 @@ class Ewz_Item extends Ewz_Base {
 
         if ( !( ( $this->user_id == get_current_user_id() )        // user can edit own data
                 ||
-                Ewz_Permission::can_manage_webform( $this->webform_id ) )   // admin can manage webform
+                Ewz_Permission::can_manage_webform( $this->webform_id, $this->layout_id ) )   // admin can manage webform
         ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit item', "item $this->item_id in webform $this->webform_id" );
         }

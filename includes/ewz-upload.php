@@ -205,7 +205,6 @@ function ewz_upload_form( $stored_items, $layout, $webform )
     $output .= '<div class="ewzform">';
     $output .= wp_nonce_field( 'ewzupload', 'ewzuploadnonce', true, false );
     $output .= "\n";
-    $output .= '<input type="hidden" name="layout_id" value="' . esc_attr( $webform->layout_id ) . '">';
     $output .= '<input type="hidden" name="webform_id" value="' .  esc_attr( $webform_id ) . '">';
     $output .= '<input type="hidden" name="identifier" value="' . esc_attr( $webform->webform_ident ) . '">';
     $output .= '<div id="scrollablediv_'. esc_attr( $webform_id ) . '" class="ewz_overflow">';
@@ -697,7 +696,8 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
     /*     * ************************** */
     /* Get the field information */
     /*     * ************************** */
-    $layout = new Ewz_Layout( $postdata['layout_id'], Ewz_Layout::EXCLUDE_FOLLOWUP );
+    $webform = new Ewz_Webform( $webform_id );
+    $layout = new Ewz_Layout( $webform->layout_id, Ewz_Layout::EXCLUDE_FOLLOWUP );
 
     // Reformat the post data to a more usable form,  upload any files,
     // and add the uploaded file data to the item data
@@ -1036,8 +1036,8 @@ function ewz_image_file_check( $imgfile_data, $field_data ) {
  */
 function ewz_user_delete_item( $item_id ){
     assert( is_numeric( $item_id ) );
-    $item = new Ewz_item( $item_id );
-    $webform = new Ewz_webform( $item->webform_id );
+    $item = new Ewz_Item( $item_id );
+    $webform = new Ewz_Webform( $item->webform_id );
     if( $webform->open_for_current_user() ){
         $item->delete();
         return '1';

@@ -347,31 +347,44 @@ class Ewz_Field extends Ewz_Base
     {
         global $wpdb;
         if( $this->layout_id ){
-            if ( !Ewz_Permission::can_edit_layout( $this ) ) {
+            if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
                 throw new EWZ_Exception( 'Insufficient permissions to edit layout', $this->layout_id );
             }
         } else {
-	    if ( !Ewz_Permission::can_edit_all_layouts() ) {
+            if ( !Ewz_Permission::can_edit_all_layouts() ) {
                 throw new EWZ_Exception( 'Insufficient permissions to create a new layout' );
-	    }
+            }
         }
         $this->check_errors();
+
+        //**NB:  for safety, stripslashes *before* serialize as well, otherwise character counts may be wrong
+        //       ( currently should  not be needed in this case because of the field data restrictions )
         $data = stripslashes_deep( array(
-            'layout_id' => $this->layout_id,
-            'field_type' => $this->field_type,
-            'field_header' => $this->field_header,
-            'field_ident' => $this->field_ident,
-            'required' => $this->required ? 1 : 0,
-            'pg_column' => $this->pg_column,
-            'ss_column' => (  '' === $this->ss_column ) ? '-1' : $this->ss_column,
-            'append' => $this->append ? 1 : 0,
-            'fdata' => serialize( $this->fdata )
+                                         'layout_id' => $this->layout_id,            // %d
+                                         'field_type' => $this->field_type,          // %s  
+                                         'field_header' => $this->field_header,      // %s
+                                         'field_ident' => $this->field_ident,        // %s
+                                         'required' => $this->required ? 1 : 0,      // %d
+                                         'pg_column' => $this->pg_column,            // %d
+                                         'ss_column' => (  '' === $this->ss_column ) ? '-1' : $this->ss_column,  // %d
+                                         'append' => $this->append ? 1 : 0,          // %d
+                                         'fdata' => serialize( stripslashes_deep( $this->fdata ) )   // %s
                 ) );
-        $datatypes = array('%d', '%s', '%s', '%s', '%d', '%d', '%d','%d', '%s');
+         $datatypes = array( '%d',    // = layout_id
+                             '%s',    // = field_type
+                             '%s',    // = field_header
+                             '%s',    // = field_ident
+                             '%d',    // = required
+                             '%d',    // = pg_column
+                             '%d',    // = ss_column
+                             '%d',    // = append
+                             '%s',    // = fdata
+                            );
 
         if ( $this->field_id ) {
-            $rows = $wpdb->update( EWZ_FIELD_TABLE, $data,
-                            array('field_id' => $this->field_id), $datatypes, array('%d', '%d') );
+            $rows = $wpdb->update( EWZ_FIELD_TABLE, 
+                                   $data,        array( 'field_id' => $this->field_id ), 
+                                   $datatypes,   array( '%d' ) );
             if ( $rows > 1 ) {
                 throw new EWZ_Exception( 'Failed to update field', $this->field_id );
             }
