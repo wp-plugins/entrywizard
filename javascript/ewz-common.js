@@ -34,12 +34,12 @@ function disable_ss_options(uniq_class) {
 /**
  *  Returns html for a select element with positive integer options start .. end
  *
- * @param  idstring: string   id of select element
- * @param  namestring: string  name of  select element
- * @param  nosel:     label for "no selection" item
- * @param  start:    first selectable integer
- * @param  end:    last  selectable integer
- * @param  vval:   selected value
+ * @param  idstring string   id of select element
+ * @param  namestring string  name of  select element
+ * @param  nosel     label for "no selection" item
+ * @param  start    first selectable integer
+ * @param  end    last  selectable integer
+ * @param  vval   selected value
  * @return string
  */
 function numinput_str(idstring, namestring, nosel, start, end, vval)

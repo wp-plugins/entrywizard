@@ -375,10 +375,10 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
         foreach ( $extra_cols as $xcol => $sscol ) {
             if ( $sscol >= 0 ) {
                 $ssc = $sscol + 1;
-                assert( !isset( $rows[$n][$ssc]) ||  !$rows[$n][$ssc] );
                 $datasource = '';
                 // dont crash on undefined custom data
                 if( isset( $display[$xcol] ) ){
+                    assert( !isset( $rows[$n][$ssc]) || !$rows[$n][$ssc] );
                     switch ( $display[$xcol]['dobject'] ) {
                         case 'wform':
                             $datasource = $wform;

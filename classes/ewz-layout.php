@@ -288,7 +288,7 @@ class Ewz_Layout extends Ewz_Base
          $n = 0;
          foreach( $l_orders['lorder'] as $layout_id => $order ){
              $n = $n + $wpdb->query($wpdb->prepare("UPDATE " . EWZ_LAYOUT_TABLE . " wf " .
-                                                   "   SET layout_order = $order where layout_id = %d ", $layout_id ));  
+                                                   "   SET layout_order = %d WHERE layout_id = %d ", $order, $layout_id ));  
          }
          return $n;
      }
@@ -305,17 +305,16 @@ class Ewz_Layout extends Ewz_Base
  
  
      /**
-     /**
       * Deal with upgrade -- set layout_order field in layouts 
       * 
       */
      public static function set_layout_order(){
          global $wpdb;
-         $list = $wpdb->get_col( $wpdb->prepare( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_id" ) );
+         $list = $wpdb->get_col( "SELECT layout_id  FROM " . EWZ_LAYOUT_TABLE . " ORDER BY layout_id" );
          $n = 0;
          foreach ( $list as $layout_id ) {                      
-             $wpdb->query( "UPDATE " . EWZ_LAYOUT_TABLE .
-                           "   SET layout_order = $n WHERE layout_id = $layout_id");
+             $wpdb->query( $wpdb->prepare( "UPDATE " . EWZ_LAYOUT_TABLE .
+                                           "   SET layout_order = %d WHERE layout_id = %d ", $n, $layout_id ));
              ++$n;
          }
      }
@@ -328,7 +327,7 @@ class Ewz_Layout extends Ewz_Base
      *
      * Calls parent::base_set_data with the list of variables and the data structure
      *
-     * @param  array   $data: input data array.
+     * @param  array   $data input data array.
      * @return none
      */
     protected function set_data( $data )
@@ -365,8 +364,8 @@ class Ewz_Layout extends Ewz_Base
      *
      * Creates the fields array from the database
      *
-     * @param  int  $inc_followup = self::INCLUDE_FOLLOWUP or self::EXCLUDE_FOLLOWUP
      * @param  int  $id  the layout id
+     * @param  int  $inc_followup = self::INCLUDE_FOLLOWUP or self::EXCLUDE_FOLLOWUP
      * @return none
      */
     protected function create_from_id( $id, $inc_followup = self::INCLUDE_FOLLOWUP )
@@ -404,7 +403,6 @@ class Ewz_Layout extends Ewz_Base
                         " WHERE layout_id = %d", $data['layout_id'] ) );
         if ( $ok != 1 ) {
             throw new EWZ_Exception( 'Unable to find layout', $data['layout_id'] );
-            return;
         }
 
         $this->set_data( $data );
@@ -710,7 +708,7 @@ class Ewz_Layout extends Ewz_Base
 
         // now delete the layout and renumber the layout_order for the remaining ones
         $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_LAYOUT_TABLE .
-                " where layout_id = %d", $this->layout_id ) );
+                " WHERE layout_id = %d", $this->layout_id ) );
         if ( 1 == $rowsaffected ) {
             self::renumber_layouts($this->layout_order);
         } else {

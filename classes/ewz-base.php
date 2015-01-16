@@ -33,7 +33,9 @@ abstract class Ewz_Base
         global $wpdb;
         $options = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . ' WHERE option_name like "' . $prefix . '%"' );
         foreach ( $options as $option_name ) {
-            delete_option( $option_name );
+            if( preg_match( '/^ewz_[0-9]+_/', $option_name ) ){
+                delete_option( $option_name );
+            }
         }
     }
 

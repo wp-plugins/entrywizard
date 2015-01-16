@@ -56,6 +56,7 @@ class Ewz_Webform_Input extends Ewz_Input
             $this->input_data['auto_close'] = false;
         }
         if( $this->input_data['auto_close']){
+            $curr_tz = date_default_timezone_get();            
             $tz_opt = get_option('timezone_string');
             if( $tz_opt ){
                 date_default_timezone_set( $tz_opt );
@@ -65,6 +66,10 @@ class Ewz_Webform_Input extends Ewz_Input
             if( $dt < $now + 30 ){
                 throw new EWZ_Exception( 'Input date too early' );
             }
+            if( $tz_opt ){ 
+                date_default_timezone_set( $curr_tz );
+            }
+            
         }
         return true;
      }

@@ -89,8 +89,8 @@ class Ewz_Field extends Ewz_Base
         if( $inc_followup == Ewz_Layout::EXCLUDE_FOLLOWUP ){
             $incfollow = ' AND  field_ident != "followupQ" ';
         }
-        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id  FROM " . EWZ_FIELD_TABLE . " WHERE layout_id = %d $incfollow ORDER BY $orderby",
-                                         $layout_id ) );
+        $list = $wpdb->get_col( $wpdb->prepare( "SELECT field_id  FROM " . EWZ_FIELD_TABLE . " WHERE layout_id = %d $incfollow ORDER BY $orderby ",
+                                               $layout_id ) );
         $fields = array();
         foreach ( $list as $field_id ) {
             $fields[$field_id] = new Ewz_Field( $field_id );
@@ -120,7 +120,7 @@ class Ewz_Field extends Ewz_Base
      * Get the field_id from the layout_id and field_ident by getting the data from the database
      * Needed to add uploaded data to field via .csv file, using item_id and field_ident to specify the field
      *
-     * @param  array  $ident  with elements 'layout_id' and 'field_ident'
+     * @param  array  $ident_arr  with elements 'layout_id' and 'field_ident'
      * @return none
      */
     public static function field_id_from_ident_arr( $ident_arr )
@@ -430,7 +430,7 @@ class Ewz_Field extends Ewz_Base
         $order = $wpdb->get_var( $wpdb->prepare( "SELECT pg_column  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
                                                   $this->field_id ) ); 
         
-        $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_FIELD_TABLE . " where field_id = %d",
+        $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
                                                $this->field_id ) );
         if ( $rowsaffected != 1 ) {
             throw new EWZ_Exception( 'Failed to delete field', $this->field_id );

@@ -259,7 +259,7 @@ add_action( 'init', 'ewz_echo_data', 30 );
               $input = new Ewz_Layout_Set_Input( $_POST );
               $num_updated = Ewz_Layout::save_layout_order( $input->get_input_data() );
          } catch (Exception $e) {
-             error_log("EWZ: ewz_save_layout_order_callback exception");
+             error_log("EWZ: ewz_save_layout_order_callback exception ". $e->getMessage());
          }
          echo "$num_updated layouts updated";
      } else {
@@ -281,7 +281,7 @@ function ewz_save_webform_order_callback() {
              $input = new Ewz_Webform_Set_Input( $_POST );
              $num_updated = Ewz_Webform::save_webform_order( $input->get_input_data() );
         } catch (Exception $e) {
-            error_log("EWZ: ewz_save_webform_order_callback exception");
+            error_log("EWZ: ewz_save_webform_order_callback exception " . $e->getMessage());
         }
         echo "$num_updated webforms updated";
     } else {
@@ -333,7 +333,9 @@ function ewz_gen_zipfile_callback() {
                 }
             } catch (Exception $e) {
                 echo $e->getMessage();
-                Ewz_Base::delete_ewz_options('ewz_' . $data['webform_id']);
+                if( isset( $data['webform_id'] ) ){
+                    Ewz_Base::delete_ewz_options('ewz_' . $data['webform_id']);
+                }
             }
         }
     } else {
@@ -557,6 +559,7 @@ add_action( 'wp_ajax_ewz_layout_changes', 'ewz_layout_changes_callback' );
 
 // delete the output buffers and turn off output buffering
 function ewz_wipe_buffers(){
-      while(ob_get_level() > 0)
-       @ob_end_clean();                          
+    while(ob_get_level() > 0){
+       @ob_end_clean(); 
+    }                         
 }

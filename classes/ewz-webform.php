@@ -150,7 +150,7 @@ class Ewz_Webform extends Ewz_Base {
         $n = 0;
         foreach( $wf_orders['wforder'] as $webform_id => $order ){
             $n = $n + $wpdb->query($wpdb->prepare("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
-                                                  "   SET webform_order = $order where webform_id = %d ", $webform_id ));  
+                                                  "   SET webform_order = %d WHERE webform_id = %d ", $order, $webform_id ) );  
         }
         return $n;
     }
@@ -161,8 +161,8 @@ class Ewz_Webform extends Ewz_Base {
     private static function renumber_webforms( $order ) {
         global $wpdb;
         assert( Ewz_Base::is_nn_int( $order ) );
-        $wpdb->query($wpdb->prepare("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
-                                    "   SET webform_order = webform_order - 1 WHERE  webform_order > %d " , $order ));  
+        $wpdb->query($wpdb->prepare( "UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
+                                     "   SET webform_order = webform_order - 1 WHERE  webform_order > %d " , $order ) );  
     }
 
 
@@ -172,9 +172,9 @@ class Ewz_Webform extends Ewz_Base {
      */
     public static function set_num_items(){
         global $wpdb;
-        $wpdb->query("UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
-                     "   SET num_items = ( SELECT  max_num_items from " .  EWZ_LAYOUT_TABLE . " lay " .
-                     " WHERE lay.layout_id = wf.layout_id ) " );
+        $wpdb->query( "UPDATE " . EWZ_WEBFORM_TABLE . " wf " .
+                      "   SET num_items = ( SELECT  max_num_items from " .  EWZ_LAYOUT_TABLE . " lay " .
+                      " WHERE lay.layout_id = wf.layout_id ) " );
     }
     /**
      * Deal with upgrade -- set webform_order field in webforms 
@@ -182,11 +182,11 @@ class Ewz_Webform extends Ewz_Base {
      */
     public static function set_webform_order(){
         global $wpdb;
-        $list = $wpdb->get_col( $wpdb->prepare( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" ) );
+        $list = $wpdb->get_col( "SELECT webform_id  FROM " . EWZ_WEBFORM_TABLE . " ORDER BY webform_id" );
         $n = 0;
         foreach ( $list as $webform_id ) {                      
-            $wpdb->query( "UPDATE " . EWZ_WEBFORM_TABLE .
-                          "   SET webform_order = $n WHERE webform_id = $webform_id");
+            $wpdb->query( $wpdb->prepare( "UPDATE " . EWZ_WEBFORM_TABLE .
+                                          "   SET webform_order = %d WHERE webform_id = %d ", $n, $webform_id ) );
             ++$n;
         }
     }
@@ -199,7 +199,7 @@ class Ewz_Webform extends Ewz_Base {
      *
      * Calls parent::base_set_data with the list of variables and the data structure
      *
-     * @param  array  $data: input data.
+     * @param  array  $data input data.
      * @return none
      */
     public function set_data( $data ) {
@@ -250,7 +250,7 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Create a new webform object from the webform_id by getting the data from the database
      *
-     * @param  int  $id: the webform id
+     * @param  int  $id the webform id
      * @return none
      */
     protected function create_from_id( $id ) {
@@ -445,6 +445,7 @@ class Ewz_Webform extends Ewz_Base {
         }
         pclose($fp);
         if ( self::BOTH == $inclusion ){
+            $matches = array();
             preg_match( '/ ([^ ]+) *$/', $fnames, $matches );
             if( is_file( $matches[1]  ) ) {
                 unlink( $matches[1] );
@@ -502,8 +503,6 @@ class Ewz_Webform extends Ewz_Base {
         $msg = '';
         $this->files_done = array();
                             
-        $fields = Ewz_Field::get_fields_for_layout( $this->layout_id, 'ss_column' );
-
         $fnames = '';
         foreach ( $items as $item ) {
             foreach ( $item->item_files as $item_file ) {
@@ -888,10 +887,10 @@ class Ewz_Webform extends Ewz_Base {
                 // could be done more succinctly using $$display[$xcol]['dobject']
                 // but harder to understand, and fools an ide into generating a warning
                 // $rows[$n][$sscol] = Ewz_Layout::get_extra_data_item( $$display[$xcol]['dobject'], $display[$xcol]['value'] );
-                assert( empty( $customrow[$sscol] ) );
                 $datasource = '';
                 // dont crash on undefined custom data
                 if( isset( $display[$xcol] ) ){
+                    assert( empty( $customrow[$sscol] ) );
                     switch ( $display[$xcol]['dobject'] ) {
                     case 'wform':
                         $datasource = $wform;
@@ -1018,7 +1017,7 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Schedule the closing of this webform for uploads  
      * 
-     * @param    string  $date_time_str   time in Y-m-d H:i:s format at which to close the webform
+     * @param    string  $close_time   time in Y-m-d H:i:s format at which to close the webform
      * @return   none
      */
     public function schedule_closing( $close_time ){
@@ -1028,12 +1027,17 @@ class Ewz_Webform extends Ewz_Base {
         }
         // Remove existing cron event for this webform if one exists
         wp_clear_scheduled_hook( 'ewz_do_close_webform', array( $this->webform_id) );
+        $curr_tz = date_default_timezone_get();
         $tz_opt = get_option('timezone_string');
         if( $tz_opt ){
             date_default_timezone_set( $tz_opt );
         }
         $ctime = strtotime ( $close_time );
         wp_schedule_single_event(  $ctime, 'ewz_do_close_webform', array( $this->webform_id ) );
+        if( $tz_opt ){
+            date_default_timezone_set( $curr_tz );
+        }
+            
     }
 
     public function unschedule_closing( ){
@@ -1081,10 +1085,11 @@ class Ewz_Webform extends Ewz_Base {
         $nexttime = wp_next_scheduled('ewz_do_close_webform', array( $this->webform_id ) );
         if( $nexttime ){
             $dateformat = get_option('date_format');
-            $tz_opt = get_option('timezone_string');
-            if( $tz_opt ){
-                date_default_timezone_set( $tz_opt );
-            }
+            $curr_tz = date_default_timezone_get();
+            $tz_opt = get_option('timezone_string'); 
+            if( $tz_opt ){ 
+                date_default_timezone_set( $tz_opt ); 
+            } 
             $this->auto_close = true;
             // format
             //$this->auto_date = strftime ( self::toStrftimeFormat( $dateformat ), $nexttime );
@@ -1092,6 +1097,9 @@ class Ewz_Webform extends Ewz_Base {
             //$this->auto_time = strftime ( '%H:%M:%S', $nexttime );
             $this->auto_time = date( 'H:i:s', $nexttime );
             $this->close_at =  $nexttime;
+            if( $tz_opt ){ 
+                date_default_timezone_set( $curr_tz );
+            }
         } else {
             $this->auto_close = false;
             $this->auto_date = '';
@@ -1181,7 +1189,7 @@ class Ewz_Webform extends Ewz_Base {
     /**
      * Make substitutions in the prefix for some expressions
      *
-     * @param   array   $data:    data required to generate the substitute values
+     * @param   array   $data    data required to generate the substitute values
      * @return  changed $prefix
      */
     public function generated_prefix( $data ) {
@@ -1412,7 +1420,7 @@ class Ewz_Webform extends Ewz_Base {
                 }
             }
 
-            $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_WEBFORM_TABLE . " where webform_id = %d", $this->webform_id ) );
+            $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_WEBFORM_TABLE . " WHERE webform_id = %d", $this->webform_id ) );
             if ( 1 == $rowsaffected ) {
                 self::renumber_webforms($this->webform_order);
                 return "1 webform deleted.";

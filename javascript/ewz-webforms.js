@@ -571,7 +571,7 @@ function add_new_webform(){
     newform.prefix = '';
     newform.apply_prefix = true;
     newform.gen_fname = false;
-    newid = 'X'+num
+    newid = 'X'+num;
     jQnew = jQuery(ewz_management(num, newid, newform));
     jQuery('#ewz_management').append(jQnew);
     jQnew.find('span[id^="tpg_header"]').first().html("New Web Form: <i>To make it permanent, set the options and save</i>");
@@ -602,7 +602,7 @@ function save_webform_order(){
         ewznonce:   wf_nonce,
         ewzmode:  'wf_set',
         wforder: new Object()
-    }
+    };
     if( jQuery('input[id^="edit_wfid"][value=""]').length > 0 ){
         alert("Please save your unsaved Webform before trying to rearrange them");
         return;

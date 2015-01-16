@@ -19,6 +19,8 @@ class Ewz_Setup
         if( !defined( 'EWZ_LAYOUT_TABLE' ) ){
             ewz_init_globals();
         }
+        
+        $curr_tz = date_default_timezone_get();
         $tz_opt = get_option('timezone_string');
         if( $tz_opt ){
             date_default_timezone_set( $tz_opt );
@@ -60,6 +62,11 @@ class Ewz_Setup
         self::create_sample_data1( EWZ_IMG_UPLOAD_DIR, $webform_id1, "example", $ids1 );
         self::create_sample_data2( EWZ_IMG_UPLOAD_DIR, $webform_id2, "pair", $ids2 );
         self::set_initial_permissions();
+
+        if( $tz_opt ){ 
+            date_default_timezone_set( $curr_tz );
+        }
+        
     }
 
     /** ***************************************************

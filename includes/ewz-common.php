@@ -78,7 +78,7 @@ function ewz_html_esc( $data ) {
 /**
  * Generate an html option list from an array, escaped for display
  *
- * @param   array  $opts, each element being an array of the form
+ * @param   array  $opts each element being an array of the form
  *                   ('value'=>XXX, 'display'=>YYY, ['selected'=>true/false])
  * @return  string html option list
  */

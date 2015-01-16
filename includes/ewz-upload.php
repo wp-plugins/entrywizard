@@ -588,7 +588,7 @@ function ewz_get_layout_info( $layout )
 /**
  * Return the html for the "current status" display, plus an array of the data
  *
- * @param   array   $stored_data  --  contents of an item table row
+ * @param   array   $stored_items  --  contents of an item table row
  * @param   array   $fields
  * @param   string  $name -- current user name
  * @param   string  $webform_id -- id of webform being used for upload
@@ -951,8 +951,8 @@ function ewz_handle_img_upload( $filename,  $row,  $field, $appendU ){
 /**
  * Check an uploaded image file for size, dimensions, etc
  *
- * @param   array   $imgfile    uploaded data for the file
- * @param   object  $fielddata  stored characteristics for the field the file was uploaded by
+ * @param   array   $imgfile_data    uploaded data for the file
+ * @param   object  $field_data  stored characteristics for the field the file was uploaded by
  * @return  string  error message or blank
  */
 function ewz_image_file_check( $imgfile_data, $field_data ) {
@@ -1084,7 +1084,7 @@ function ewz_validate_and_upload( )
 /**
  * Check for valid shortcode arguments
  *
- * @param    array   $atts:   arguments "ewz_show_webform" was called with
+ * @param    array   $atts   arguments "ewz_show_webform" was called with
  * @return:  string  message to show to users
  */
 function ewz_check_upload_atts( $atts )

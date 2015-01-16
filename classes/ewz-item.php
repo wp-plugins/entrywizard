@@ -157,18 +157,22 @@ class Ewz_Item extends Ewz_Base {
 
         $filtered = array( );
         $seconds = 3600 * 24 * $days;
+        // upload_date added in 0.9.9 -- use last_change if no value
+        $curr_tz = date_default_timezone_get();
+        $tz_opt = get_option('timezone_string'); 
+        if( $tz_opt ){ 
+            date_default_timezone_set( $tz_opt ); 
+        } 
         foreach ( $items as $item ) {
-            // upload_date added in 0.9.9 -- use last_change if no value
-             $tz_opt = get_option('timezone_string');
-             if( $tz_opt ){
-                   date_default_timezone_set( $tz_opt );
-             }
              // strtotime returns unix timestamp
             $uploadedtime = strtotime( ( empty( $item->upload_date ) ?  $item->last_change : $item->upload_date )  );
             $now = time();  // current unix timestamp
             if ( ( $now - $uploadedtime ) < $seconds ) {
                 array_push( $filtered, $item );
             }
+        }
+        if( $tz_opt ){
+            date_default_timezone_set( $curr_tz );
         }
         return $filtered;
     }
@@ -180,7 +184,7 @@ class Ewz_Item extends Ewz_Base {
      *
      * Calls parent::base_set_data with the list of variables and the data structure
      *
-     * @param  array $data: input data array.
+     * @param  array $data input data array.
      * @return none
      */
     public function set_data( $data ) {
@@ -210,7 +214,7 @@ class Ewz_Item extends Ewz_Base {
     /**
      * Create a new item object from the item_id by getting the data from the database
      *
-     * @param  int  $id: the item id
+     * @param  int  $id the item id
      * @return none
      */
     protected function create_from_id( $id ) {
@@ -310,7 +314,7 @@ class Ewz_Item extends Ewz_Base {
      * This function must also validate, since the input comes from a
      * user-written text file, not a web page which would be validated earlier.
      *
-     * @param $data ( field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ] )
+     * @param $ddata ( field_ident, title,  excerpt, content [, field_ident, title,  excerpt, content,... ] )
      * @return none
      */
     public function set_uploaded_info( $ddata ) {
@@ -415,10 +419,11 @@ class Ewz_Item extends Ewz_Base {
         }
 
         // for saving last_change and upload_date
-        $tz_opt = get_option('timezone_string');
-        if( $tz_opt ){
-            date_default_timezone_set( $tz_opt );
-        }
+        $curr_tz = date_default_timezone_get();
+        $tz_opt = get_option('timezone_string'); 
+        if( $tz_opt ){ 
+            date_default_timezone_set( $tz_opt ); 
+        } 
 
         //**NB: need to stripslashes *before* serialize, otherwise character counts are wrong
         // WP automatically adds slashes for quotes
@@ -494,6 +499,9 @@ class Ewz_Item extends Ewz_Base {
                     throw new EWZ_Exception( "Sorry, there was a problem saving some items, please refresh the page to see your current status.\n", $errors );
                 }
             }
+        }
+        if( $tz_opt ){
+            date_default_timezone_set( $curr_tz );
         }
     }
 

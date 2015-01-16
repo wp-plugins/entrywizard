@@ -98,7 +98,7 @@ class Ewz_Permission {
             global $wpdb;
 
             $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " .
-                                            $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can%'", OBJECT );
+                                            $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can_%'", OBJECT );
             foreach ( $meta_ids as $umeta ) {
                  delete_user_meta( $umeta->user_id, $umeta->meta_key );
             }
@@ -121,7 +121,7 @@ class Ewz_Permission {
         if ( current_user_can( 'manage_options' ) ) {
             $perm = '';
             $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value " .
-                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can%'", OBJECT );
+                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can_%'", OBJECT );
             foreach ( $perms as $key=>$perm ) {
                 $perms[$key]->meta_value = unserialize( $perm->meta_value );
             }

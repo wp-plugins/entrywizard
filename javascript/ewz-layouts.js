@@ -510,7 +510,7 @@ function save_layout_order(){
         ewznonce:   l_nonce,
         ewzmode:  'lset',
         lorder: new Object()
-    }
+    };
     if( jQuery('input[id^="layout_id"][value=""]').length > 0 ){
         alert("Please save your unsaved Layout before trying to rearrange them");
         return;
