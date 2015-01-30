@@ -574,23 +574,21 @@ class Ewz_Layout extends Ewz_Base
             if ( !Ewz_Permission::can_edit_all_layouts() ) {
                 throw new EWZ_Exception( 'Insufficient permissions to create a new layout' );
             }
-            $this->layout_order = self::count_layouts();
         }
         $this->check_errors();
+        // NB: layout_order is not saved here
         $data = stripslashes_deep( array(
                                          'layout_name' => $this->layout_name,          // %s
                                          'max_num_items' => $this->max_num_items,      // %d
                                          'override' => $this->override ? 1 : 0,        // %d
                                          'restrictions' => serialize( stripslashes_deep( $this->restrictions ) ),   // %s
                                          'extra_cols' => serialize( stripslashes_deep( $this->extra_cols ) ),       // %s
-                                         'layout_order' => $this->layout_order,        // %d
                                          ) );
         $datatypes = array( '%s', // = layout_name
                             '%d', // = max_num_items 
                             '%d', // = override
                             '%s', // = restrictions 
                             '%s', // = extra_cols 
-                            '%d', // = layout_order
                             );
 
         // update or insert the layout itself
@@ -603,11 +601,14 @@ class Ewz_Layout extends Ewz_Base
                 throw new EWZ_Exception( 'Problem with update of layout ' . $this->layout_name );
             }
         } else {
+            $n_layouts = self::count_layouts();
             $wpdb->insert( EWZ_LAYOUT_TABLE, $data, $datatypes );
             $this->layout_id = $wpdb->insert_id;
             if ( !$this->layout_id ) {
                 throw new EWZ_Exception( 'Problem with creation of layout ' . $this->layout_name );
             }
+            $wpdb->query($wpdb->prepare( "UPDATE " . EWZ_LAYOUT_TABLE . 
+                                         "   SET layout_order = %d WHERE  layout_id = %d ", $n_layouts, $this->layout_id ) );  
         }
 
         // save the field data and fix up any restrictions ( need field id to do that )

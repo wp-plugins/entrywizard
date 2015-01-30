@@ -213,6 +213,9 @@ function ewz_layout_menu()
                 <img alt="" class="ewz_ihelp" src="<?php print $ewzG['helpIcon']; ?>">.
 
             </div>
+            <p>Layouts may be dragged to rearrange. &nbsp;  &nbsp;
+       <button  type="button" class="button-secondary" id="layouts_save1_" onClick="save_layout_order()">Save Order of Layouts</button>
+            </p>
         <div id="ewz_layouts">
         <br>
         </div>

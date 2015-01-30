@@ -267,7 +267,6 @@ function ewz_webforms_menu()
             $l_options = Ewz_Layout::get_layout_opt_array( 'can_assign_layout',
                                                            $webform->layout_id );
             $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
-            $base_options = $webform->layouts_options;
             $webform->close_time_opts = ewz_option_list(  ewz_html_esc( $webform->get_close_opt_array() ) );
         }
 
@@ -290,7 +289,7 @@ function ewz_webforms_menu()
 
         $ewzG['openform_id'] = $openwebform_id;
         $ewzG['message'] = wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
-        $ewzG['base_options'] = $base_options;
+        $ewzG['base_options'] = ewz_option_list( ewz_html_esc(Ewz_Layout::get_layout_opt_array( 'can_assign_layout' ) ) );
 
         $ewzG['ipp'] = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
 
@@ -330,9 +329,11 @@ function ewz_webforms_menu()
             &nbsp; A regular webform may be inserted into any page using the shortcode &nbsp;
                  <b>&#91;ewz_show_webform&nbsp;&nbsp;identifier="xxx"&#93;</b>
              &nbsp; where xxx is the identifier you created for the form</p>
-
+            <p>Webforms may be dragged to rearrange. &nbsp;  &nbsp;
+       <button  type="button" class="button-secondary" id="webforms_save1_" onClick="save_webform_order()">Save Order of Webforms</button>
+         </p>
              <div id="ewz_management">
-                <br>  
+                  <br>  
              </div>
         <div id="help-text" style="display:none">
 

@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.11
+  Version: 1.2.12
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -28,7 +28,7 @@
 
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_CURRENT_VERSION', '1.2.11' );
+define( 'EWZ_CURRENT_VERSION', '1.2.12' );
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
@@ -48,6 +48,7 @@ if ( is_admin() ) {
 // this is needed for admin, too, because the ajax function runs as admin
 require_once( EWZ_PLUGIN_DIR . '/includes/ewz-upload.php' );
 require_once( EWZ_PLUGIN_DIR . '/includes/ewz-followup.php' );
+
 
 
 /*
@@ -137,7 +138,6 @@ if ( ! is_admin() ) {
  */
 function ewz_check_for_db_updates(){ 
     $ewz_data_version = get_option( 'ewz_data_version', '0.9.1' );
-
     if ( version_compare( $ewz_data_version, EWZ_CURRENT_VERSION,  '<' ) ){
         // 0.9.6 added new apply_prefix column to webforms table 
         // and changed 'min_img_area' to 'min_longest_dim' in fields/fdata
@@ -185,7 +185,7 @@ function ewz_check_for_db_updates(){
             Ewz_Setup::activate_or_install_ewz();
             Ewz_Webform::set_webform_order();
             Ewz_Layout::set_layout_order();
-        }       
+        } 
         update_option( 'ewz_data_version', EWZ_CURRENT_VERSION );
     }
 }
@@ -230,10 +230,13 @@ function ewz_set_dev_env(){
         assert_options( ASSERT_CALLBACK, 'ewz_assert_handler' );
         define( 'EWZ_DBG', true );
         $is_admin = is_admin() ? 'ADMIN' : '';
+        //  stop logging of pwd
+        $p = $_POST;
+        unset($p['pwd']);
         error_log( "EWZ: ~~~~~~~~ Starting entrywizard.php  $is_admin ~~~~~~~ \n"
                    . 'URI:' . $_SERVER['REQUEST_URI'] . "\n" 
                    . 'GET:   ' . print_r( $_GET, true )
-                   . 'POST:  ' . print_r( $_POST, true )
+                   . 'POST:  ' . print_r( $p, true )
                    . 'FILES: ' . print_r( $_FILES, true )
                   );
     } else {

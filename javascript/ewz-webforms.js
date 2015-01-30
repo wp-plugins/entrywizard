@@ -475,7 +475,7 @@ function webform_button_str(){
     var str  = '<div class="clear alignleft">';
     str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'wfsort\')">&nbsp;';
     str += '         <button  type="button" class="button-secondary" id="webform_add_" onClick="add_new_webform()">Add a New Web Form</button> ';
-    str += '         &nbsp; <button  type="button" class="button-secondary" id="webforms_save_" onClick="save_webform_order()">Save Order of Webforms</button> ';
+    str += '         &nbsp; <button  type="button" class="button-secondary" id="webforms_save2_" onClick="save_webform_order()">Save Order of Webforms</button> ';
     str += '    </div> ';
     return str;
 }

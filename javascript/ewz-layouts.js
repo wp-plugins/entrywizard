@@ -248,7 +248,7 @@ function new_restriction_str(lnum, button) {
 function add_layout_button_str() {
     var str = '<div class="alignleft">';
     str += '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'lsort\')">&nbsp;';
-    str += '         &nbsp; <button  type="button" class="button-secondary" id="layouts_save_" onClick="save_layout_order()">Save Order of Layouts</button> &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp;  &nbsp;  &nbsp; &nbsp; ';
+    str += '         &nbsp; <button  type="button" class="button-secondary" id="layouts_save2_" onClick="save_layout_order()">Save Order of Layouts</button> &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp;  &nbsp;  &nbsp; &nbsp; ';
     str += '       <button  type="button" id="add_layout" class="button-secondary" onClick="add_layout_copy()">Add a New Layout</button>';
     str += '           &nbsp; with options copied from: ';
     str += '       <select id="ewz_addlayout" >';

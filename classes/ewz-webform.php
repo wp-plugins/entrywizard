@@ -1339,18 +1339,17 @@ class Ewz_Webform extends Ewz_Base {
             if ( !Ewz_Permission::can_edit_all_webforms() ) {
                 throw new EWZ_Exception( 'No changes saved. Insufficient permissions to create a webform' );
             }
-            $this->webform_order = self::count_webforms();
         }
         // ok, we have all the permissions, go ahead
 
         $this->check_errors();
 
+        // NB: webform_order is not updated here
         $data = stripslashes_deep( array(
                                          'layout_id' => $this->layout_id,               // %d
                                          'num_items' => $this->num_items,               // %d
                                          'webform_title' => $this->webform_title,       // %s
                                          'webform_ident' => $this->webform_ident,       // %s
-                                         'webform_order' => $this->webform_order,       // %d
                                          'upload_open' => $this->upload_open ? 1 : 0,   // %d
                                          'open_for' => serialize( $this->open_for ),    // %s
                                          'prefix' => $this->prefix,                     // %s
@@ -1361,7 +1360,6 @@ class Ewz_Webform extends Ewz_Base {
                             '%d',   // = num_items
                             '%s',   // = webform_title
                             '%s',   // = webform_ident
-                            '%d',   // = webform_order
                             '%d',   // = upload_open
                             '%s',   // = open_for
                             '%s',   // = prefix
@@ -1377,11 +1375,14 @@ class Ewz_Webform extends Ewz_Base {
                 throw new EWZ_Exception( "Problem updating the webform '$this->webform_title'" );
             }
         } else {
+            $n_webforms = self::count_webforms();
             $wpdb->insert( EWZ_WEBFORM_TABLE, $data, $datatypes );
-            $inserted = $wpdb->insert_id;
-            if ( !$inserted ) {
+            $this->webform_id = $wpdb->insert_id;
+            if ( !$this->webform_id ) {
                 throw new EWZ_Exception( "Problem creating the webform '$this->webform_title'" );
             }
+            $wpdb->query($wpdb->prepare( "UPDATE " . EWZ_WEBFORM_TABLE . 
+                                         "   SET webform_order = %d WHERE  webform_id = %d ", $n_webforms, $this->webform_id ) );  
         }
     }
 
