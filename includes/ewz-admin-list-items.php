@@ -681,7 +681,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     $listurl = admin_url( "admin.php" );
 
     $webformsurl = admin_url( 'admin.php?page=entrywizard' . "&openwebform=$webform_id" );
-    $formtitle = $webform->webform_title;
+    $formtitle = esc_html( $webform->webform_title );
     $ipp = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
     $help_icon = plugins_url( 'images/help.png' , dirname(__FILE__) );
 
