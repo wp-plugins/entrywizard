@@ -88,7 +88,7 @@ class Ewz_Layout extends Ewz_Base
               );
 
     /*
-     * Return an array of all the headers for the spreadsheet
+     * Return an array of all the headers for the spreadsheet or item list
      */
     public static function get_all_display_headers(){
         $data = array_merge( self::$display_data_item, self::$display_data_user );
@@ -103,7 +103,7 @@ class Ewz_Layout extends Ewz_Base
     }
 
     /*
-     * Return all the data for the spreadsheet
+     * Return all the data for the spreadsheet or item list
      */
     public static function get_all_display_data(){
         $data = array_merge( self::$display_data_item, self::$display_data_user );
@@ -236,7 +236,7 @@ class Ewz_Layout extends Ewz_Base
                     $is_sel = false;
                 }
                 array_push( $options, array( 'value' => $layout->layout_id ,
-                                             'display' => $layout->layout_name ,
+                                             'display' => esc_html( $layout->layout_name ),
                                              'selected' => $is_sel ) );
             }
         }

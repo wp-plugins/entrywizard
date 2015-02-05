@@ -297,6 +297,8 @@ function ewz_get_img_cols( $fields )
  * @param $wform        Ewz_Webform
  *
  * @return 2-D array of strings containing the html content of the item table
+ *
+ * NB: Because it contains html, needs to be cleaned up and escaped
  */
 function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
  {
@@ -343,24 +345,24 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                     if( in_array( $field->field_type, array( 'rad', 'chk' ) ) ){
                         $rows[$n][$col] =  $field_value_arr['value'] ? 'checked' : '';
                     } else {
-                        $rows[$n][$col] = ( string ) $field_value_arr['value'];
+                        $rows[$n][$col] = esc_html( ( string ) $field_value_arr['value'] );
                     }
                 }
                 // append the uploaded info from the .csv file if it exists
                 // NB: <b> tag does not work here, it is overridden by the jquery dialog css
                 $info = '';
                 if ( isset( $item->item_data[$field_id]['ptitle'] ) ) {
-                    $info .= '<p><span class="ui-priority-primary">Title:</span> ' . $item->item_data[$field_id]['ptitle'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Title:</span> ' . esc_html( $item->item_data[$field_id]['ptitle'] ) . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pexcerpt'] ) ) {
-                    $info .= '<p><span class="ui-priority-primary">Excerpt:</span> ' .  $item->item_data[$field_id]['pexcerpt'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Excerpt:</span> ' .  esc_html( $item->item_data[$field_id]['pexcerpt'] ) . "</p>";
                 }
                 if ( isset( $item->item_data[$field_id]['pcontent'] ) ) {
-                    $info .= '<p><span class="ui-priority-primary">Content:</span> ' .  $item->item_data[$field_id]['pcontent'] . "</p>";
+                    $info .= '<p><span class="ui-priority-primary">Content:</span> ' .  esc_html( $item->item_data[$field_id]['pcontent'] ) . "</p>";
                 }
                 if ( $info ) {
                     // this gets passed through echo, so needs extra escaping for single quotes (?)
-                    $info = str_replace( '&#039;', '\\&#039;', $info);
+                    $info = str_replace( '&#039;', '\\&#039;', esc_html( $info ));
                     $info =  '&#039;'. str_replace( "'", '&#039;', $info) . '&#039;';
                     // return false to stop it going to top of page when popup is closed
                     $rows[$n][$col] .= "<br><a href='#' onClick='ewz_info( $info ); return false;'>Item Info</a>";
@@ -395,7 +397,7 @@ function ewz_get_item_rows( $items, $fields, $extra_cols, $wform )
                         default:
                             throw new EWZ_Exception( 'Invalid data source ' .  $display[$xcol]['dobject'] );
                     }
-                    $rows[$n][$ssc] = Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] );
+                    $rows[$n][$ssc] = esc_html( Ewz_Layout::get_extra_data_item( $datasource, $display[$xcol]['value'] ) );
                 }
             }
         }
@@ -512,7 +514,10 @@ function ewz_list_items() {
  *
  * @param    $field_opts   array of fields and their selected values
  * @param    $extra_opts   show only items uploaded within the last $uploaddays
+ *
  * @return   html
+ *
+ * NB: needs escaping here because it contains html
  */
 function  ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts ){
     assert( is_array(  $field_opts ) ) || empty( $field_opts );
@@ -524,14 +529,14 @@ function  ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts ){
     if ( isset( $field_opts ) ) {
         foreach( $field_opts as $field_id=>$fval ){
             $field = new Ewz_Field($field_id);
-            $optname[$field_id] = $field->field_header;
-            $optval[$field_id] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', $fval ) ) );
+            $optname[$field_id] = esc_html( $field->field_header );
+            $optval[$field_id] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', esc_html( $fval ) ) ) );
         }
     }
     if ( isset( $custom_opts ) ) {
         foreach( $custom_opts as $custom_name=>$cval ){
-            $optname[$custom_name] = Ewz_Custom_Data::$data[$custom_name];
-            $optval[$custom_name] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', $cval ) ) );
+            $optname[$custom_name] = esc_html( Ewz_Custom_Data::$data[$custom_name] );
+            $optval[$custom_name] = str_replace( '~*~', 'Any', str_replace( '~+~', 'Not Blank', str_replace( '~-~', 'Blank', esc_html( $cval ) ) ) );
         }
     }
 
@@ -640,7 +645,7 @@ function  ewz_display_list_page( $message, $requestdata ){
     $webform_id = $requestdata['webform_id'];
 
     $webform = new Ewz_Webform( $webform_id );
-    $fields = Ewz_Field::get_fields_for_layout( $webform->layout_id, 'ss_column' );
+    $fields = Ewz_Field::get_fields_for_layout( $webform->layout_id, 'ss_column' ) ;
 
     $field_opts = array();
     if ( isset( $requestdata['fopt'] ) ) {
@@ -655,43 +660,37 @@ function  ewz_display_list_page( $message, $requestdata ){
     if( isset( $requestdata['uploaddays'] ) ){
         $extra_opts['uploaddays'] = $requestdata['uploaddays'];
     }
-    $opt_display_string = ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts );
-
 
     $items = Ewz_Item::filter_items( $field_opts, $custom_opts, $extra_opts,
                                      Ewz_Item::get_items_for_webform( $webform_id, false ) );
     $extra_cols = Ewz_Layout::get_extra_cols( $webform->layout_id );
 
     $headers = ewz_get_headers( $fields, $extra_cols );
-    $rows = ewz_get_item_rows( $items, $fields, $extra_cols, $webform );
+    $rows = ewz_get_item_rows( $items, $fields, $extra_cols, $webform );        // has been html-escaped
     if( isset( $requestdata['orderby'] ) && isset( $requestdata['order'] ) ){
           uasort( $rows, ewz_item_list_sort( $requestdata['orderby'], $requestdata['order'] ) );
     }
     $item_ids = array_map( function($v){ return $v->item_id; },  $items );
 
     $ewzG = array(
-                  'message'    => $message,
+                  'message'    => esc_html( $message ),
                   'load_gif'   => plugins_url( 'images/loading1.gif', dirname(__FILE__) ),
                   'helpIcon'   => plugins_url( 'images/help.png' , dirname(__FILE__) ),
                   );
     wp_localize_script( 'ewz-admin-list-items', 'ewzG',  $ewzG  );
                                            // script name set above in ewz_item_list_scripts
 
-    $ewz_item_list = new Ewz_Item_List( $item_ids, $headers, $rows );
-    $listurl = admin_url( "admin.php" );
+    // needed to generate html below: 
+    $attach_prefs       = ewz_html_esc( $webform->get_attach_prefs() );
+    $ewz_item_list      = new Ewz_Item_List( $item_ids, ewz_html_esc($headers), $rows );
+    $fields             = ewz_html_esc($fields);
+    $formtitle          = esc_html( $webform->webform_title );
+    $help_icon          = plugins_url( 'images/help.png' , dirname(__FILE__) );
+    $ipp                = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
+    $listurl            = admin_url( "admin.php" );
+    $opt_display_string = ewz_get_opt_display_string( $field_opts, $custom_opts, $extra_opts );
+    $webformsurl        = admin_url( 'admin.php?page=entrywizard' . "&openwebform=$webform_id" );
 
-    $webformsurl = admin_url( 'admin.php?page=entrywizard' . "&openwebform=$webform_id" );
-    $formtitle = esc_html( $webform->webform_title );
-    $ipp = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
-    $help_icon = plugins_url( 'images/help.png' , dirname(__FILE__) );
-
-    // set the attachment preferences
-    $attach_prefs = $webform->get_attach_prefs();
-
-
-    // needed to generate html below: $webform_id; $image_columns; $ewz_item_list; $webformsurl; $formtitle; $ipp; $ewzG;$selectedPage
-    //                                $size_args; $commentChecked; $field_opts; $extra_opts;$listurl
-    // must pass *all* args needed to generate page, because of pagination links
    ?>
 
     <div class="ewz_showlist">

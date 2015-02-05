@@ -643,8 +643,7 @@ class Ewz_Setup
                             "wfm" => -1,//~~
                             "wft" => 9,//~~
                             "wid" => -1,//~~
-                            "custom1" => 13,//~~
-                            "custom2" => 6,//~~
+                            "custom1" => 6,//~~
                             );
 
         $wpdb->update( $layout_table,

@@ -22,7 +22,7 @@ class EWZ_Exception extends Exception {
         } else {
             $data1 = serialize( esc_attr( $data1 ) );
         }
-
+        
         // format in one line for error log. ~ is replaced with newline for js alerts
         $logmsg = sprintf( "%s ;; %s", $user_message, $data1 );
 
@@ -31,6 +31,7 @@ class EWZ_Exception extends Exception {
         error_log( "EWZ: $logmsg~{ $file, line " . parent::getLine() . " }~" );
 
         $preamble = "*** EntryWizard ERROR ***\n";
-        parent::__construct( "$preamble $user_message", 0, null );
+        $message = esc_html(  $user_message );
+        parent::__construct( "$preamble $message", 0, null );
     }
 }

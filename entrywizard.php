@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.13
+  Version: 1.2.14
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -28,7 +28,7 @@
 
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_CURRENT_VERSION', '1.2.13' );
+define( 'EWZ_CURRENT_VERSION', '1.2.14' );
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );

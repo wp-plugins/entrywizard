@@ -236,7 +236,7 @@ function ewz_webforms_menu()
             $layout = new Ewz_Layout( $webform->layout_id );
 
             // easier in Javascript if this is set
-            $webform->layout_name = $layout->layout_name;
+            $webform->layout_name = esc_html( $layout->layout_name );
             $webform->canOverride = $layout->override;
             $webform = ewz_html_esc( $webform );
 
@@ -584,7 +584,7 @@ function ewz_webforms_menu()
                 </p>
 
                 <p>
-                   The prefix may contain the  following expressions, which will be replaced as indicated here:
+                   The prefix may contain only letters, digits, dashes or underscores, plus the  following expressions, which will be replaced as indicated here:
                <table class="ewz_border">
                    <thead><tr><th class="b">Expression</th><th class="b">Replacement</th></tr></thead>
                    <tbody>

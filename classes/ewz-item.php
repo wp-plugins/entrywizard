@@ -265,6 +265,8 @@ class Ewz_Item extends Ewz_Base {
      * @return none
      */
     protected function check_errors() {
+        global $wpdb;
+
         if ( isset( $this->item_files ) ) {
             if ( is_string( $this->item_files ) ) {
                 $this->item_files = unserialize( $this->item_files );
@@ -286,6 +288,23 @@ class Ewz_Item extends Ewz_Base {
                 }
             }
         }
+
+        // check for change of owner or webform ( should not happen )
+        if( $this->item_id ) {
+            $dbitem = $wpdb->get_row(
+                    $wpdb->prepare( "SELECT user_id, webform_id" .
+                            " FROM " . EWZ_ITEM_TABLE . " WHERE item_id=%d", $this->item_id ), ARRAY_A );
+            
+            if ( !$dbitem ) {
+                throw new EWZ_Exception( 'Unable to find matching item', $this->item_id );
+            } 
+            if ( $dbitem['user_id'] != $this->user_id ){
+              throw new EWZ_Exception( 'Invalid user for item', "Uploaded by {$this->user_id}, owner " . $dbitem['user_id'] );
+            }   
+            if ( $dbitem['webform_id'] != $this->webform_id ){
+              throw new EWZ_Exception( 'Invalid webform for item', "Uploaded by {$this->user_id}, owner " . $dbitem['user_id'] );
+            }
+        }               
     }
 
     /******************** Utilities  *******************************/

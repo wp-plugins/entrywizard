@@ -137,7 +137,7 @@ function ewz_get_webform_data( $atts )
 
     if( !$webform->open_for_current_user() ){
         $data['failmsg'] = '<div class="ewz-err"><h2>' . 
-            $webform->webform_title . 
+            esc_html( $webform->webform_title ) . 
             "</h2>\n\n<p>Sorry, this form is not currently open for uploads.</p></div>";
         return $data;
     }
@@ -738,7 +738,7 @@ function ewz_process_upload( $postdata, $user_id, $webform_id )
         }
         if( $data ){
             try {
-                $item_obj = new Ewz_Item( $data );     
+                $item_obj = new Ewz_Item( $data );  
                 $item_obj->save();
             } catch( Exception $e ) {
                 $errs .= $e->getMessage();
@@ -1072,7 +1072,6 @@ function ewz_validate_and_upload( )
         }
 
         $input = new Ewz_Upload_Input( stripslashes_deep( $_POST ), $_FILES, $webformdata['layout'] );
-
         // return error messages
         return ewz_process_upload( $input->get_input_data(), $webformdata['user_id'],
                                    $webformdata['webform']->webform_id );

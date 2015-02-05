@@ -95,10 +95,9 @@ function ewz_followup( $atts ) {
             $message .= "\n";
         }
     }
-
     $ewzF = array( 'webforms' => array(),
                    'errmsg'   => $message,
-                   'f_field'  => $followup_data,
+                   'f_field'  => ewz_html_esc( $followup_data ),
                    );
 
 
@@ -117,7 +116,7 @@ function ewz_followup( $atts ) {
         $layout = $layouts[$ident];
         $webform->layout = $layout;
         $items = Ewz_Item::get_items_for_webform( $webform->webform_id, true );
-        $output .= "<h2>$webform->webform_title</h2>\n";
+        $output .= "<h2>" . esc_html( $webform->webform_title ) . "</h2>\n";
 
         if( $items ){
             $output .= ewz_followup_display(

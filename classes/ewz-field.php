@@ -304,8 +304,19 @@ class Ewz_Field extends Ewz_Base
                                      ' The value may contain only letters, digits, dashes or underscores' );
        }
 
-        // check for key duplication
-       
+        if( $this->field_id ){
+            // check for change of layout ( should not happen ) 
+            $query = "SELECT layout_id  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = $this->field_id";
+
+            $db_layout_id = $wpdb->get_var( $wpdb->prepare( "SELECT layout_id  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
+                                                            $this->field_id ) );
+            if( $db_layout_id && ( $db_layout_id != $this->layout_id ) ){
+                throw new EWZ_Exception( 'Invalid layout for field ', 
+                "field ~{$this->field_id}~ layout ~{$this->layout_id}~ uploaded by user " . get_current_user_id() . " layout should be ~{$db_layout_id}~"   );
+            }
+        }
+
+        // check for key duplication        
         $existing = $wpdb->get_results( $wpdb->prepare( "SELECT field_header, field_ident  FROM " . EWZ_FIELD_TABLE .
                                                         " WHERE layout_id = %d AND field_id != %d",
                                                         $this->layout_id, $this->field_id ), ARRAY_A );
