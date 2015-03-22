@@ -4,8 +4,11 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
    error_log( 'EWZ: Attempt to uninstall without WP_UNINSTALL_PLUGIN defined' );
    exit();
 }
+if ( ! current_user_can( 'activate_plugins' ) ){
+   exit();
+}
 
-   global $wpdb;
+global $wpdb;
 
    $prefix = $wpdb->prefix;
 
@@ -36,10 +39,22 @@ if ( !defined( 'WP_UNINSTALL_PLUGIN' ) ) {
    }
 
 
-   $meta_ids = $wpdb->get_col( 'SELECT umeta_id FROM ' . $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_%'" );
-   foreach ( $meta_ids as $umeta_id ) {
-      delete_metadata_by_mid( 'user', $umeta_id );
+   $meta_rows = $wpdb->get_results( 'SELECT umeta_id, meta_key FROM ' . $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_%'" );
+   foreach ( $meta_rows as $meta_row ) {
+       if( ( $meta_row->meta_key == 'ewz_itemsperpage' ) || ( strpos( $meta_row->meta_key, 'ewz_can_' ) === 0 ) ){
+           delete_metadata_by_mid( 'user', $meta_row->umeta_id );
+       }
    }
+
+
+   $options = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . " WHERE option_name LIKE 'ewz_%'" );
+
+   foreach ( $options as $option_name ) {
+       if( ( in_array( $option_name, array('ewz_data_version', 'ewz_db_version') ) ) || preg_match( '/^ewz_[0-9]+_/', $option_name ) ){
+           delete_option( $option_name );
+       }
+   }
+
 
    // remove the uploaded images folder
     error_log( 'EWZ: removing images' );
