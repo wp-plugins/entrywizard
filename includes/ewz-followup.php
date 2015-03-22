@@ -227,28 +227,36 @@ function ewz_followup_display( $init_rownum, $stored_items, $fields, $webform_id
             $output .= '<tr>';
             // admin_data column
             if( $show_admin_data ){
-                $output .=  ewz_display_admin_data( $item );
-            }
+                $output .= ewz_display_admin_data( $item );   // outputs the <td> with class if needed
+            }            
             foreach ( $fields_arr as  $field ) {
                 if(  strpos( $field->field_ident, 'XFQ' ) === false ){
-                    $output .= '<td>';
 
                     // the special followup field, which is the only input on the form now
                     if( $field->field_ident == 'followupQ' ){
                         $savedval = ewz_get_saved_value( $field, $item );
+                        $output .= '<td>';
                         $output .= ewz_display_followup_field( $rownum, $webform_id, $savedval, $field, $item->item_id );
+                        $output .= '</td>';
                     }  else {
                         // display the other fields the same way we do for the upload feedback
                         if ( 'img' == $field->field_type ) {
                             // an image field
+                            if(  $show_data  ){
+                                $output .= '<td class="admin_data">';
+                            } else {
+                                $output .= '<td>';
+                            }    
                             $output .=  ewz_display_image_field_with_data( $field, $item, $show_data );
+                            $output .= '</td>';
                         } else {
                             // a data field
+                            $output .= '<td>';
                             if ( isset( $item->item_data[$field->field_id] ) ) {
                                 $output .= esc_html( ewz_display_item( $field, $item->item_data[$field->field_id]['value'] ) );
                             }
+                            $output .= '</td>';
                         }
-                        $output .= '</td>';
                     }
                 }
             }

@@ -25,7 +25,7 @@ tinymce.create('tinymce.plugins.EWZShortcodes', {
                            value: identlist,
                            onclick : function() {
                                alert("Displays to each user a read-only summary of what they uploaded using the listed webforms. \n\nBy default, it includes all webforms. Edit the 'idents' to remove some, being careful to keep the commas correct and leave no spaces. \n\nBy default, it includes all possible admin-uploaded data.  Edit the 'show' list to remove.");
-                               tinymce.execCommand( 'mceInsertContent',false, '[ewz_followup idents="' + this._value + '" show="title","excerpt","content","item_data"]');                  
+                               tinymce.execCommand( 'mceInsertContent',false, '[ewz_followup idents="' + this._value + '" show="title,excerpt,content,item_data"]');                  
                            }} );
                
         editor.addButton( 'ewz_shortcodes', {

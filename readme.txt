@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.1
-Stable tag: 1.2.14
+Stable tag: 1.2.15
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,10 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.15 =
+* fixed some minor issues with the followup code
+* fixed a bug that appeared when the first image is uploaded and the whole filename is generated
+* handle the case where popen and/or exec is disallowed
 = 1.2.14 =
 * removed some potential vulnerabilities that could be exploited by webform managers. Thanks to Gastón Quintana for finding them.
 = 1.2.13 =
@@ -258,6 +262,8 @@ CHANGE: Require a minimum longest dimension for uploaded images instead of a min
 == To Do ==
 
 Enhancements planned eventually (in no particular order):
+
+* Add a shortcode for a customisable form to be used for judging the uploaded images
 
 * Copy restrictions when copying a layout
 

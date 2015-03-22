@@ -300,10 +300,13 @@ function ewz_webforms_menu()
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname(__FILE__) ) ;
         $ewzG['helpIcon'] = plugins_url( 'images/help.png' , dirname(__FILE__) ) ;
         $ewzG['maxUploadMb'] = EWZ_MAX_SIZE_MB;
-        $status = '';
-        system("zip --version > /dev/null 2>&1;", $status );
-
-        $ewzG['canzip'] =  !( $status );   // command returns 0 for success, non-zero for failure
+        if( function_exists('popen') && function_exists('exec') ){
+            $status = '';
+            system("zip --version > /dev/null 2>&1;", $status );
+            $ewzG['canzip'] =  !( $status );   // command returns 0 for success, non-zero for failure
+        } else {
+            $ewzG['canzip'] = false;
+        }
 
         $ewzG['errmsg'] = array(
             'warn' => '*** WARNING ***' ,

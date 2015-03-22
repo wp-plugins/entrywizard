@@ -1140,7 +1140,8 @@ function ewz_get_fname_num( $in_fname, $ext, $dir ){
         return '';
     }
     if( !is_dir( $dir ) ){
-        throw new EWZ_Exception( 'Directory for upload does not exist');
+        // first image, no dups
+        return "1";
     }
        
     $num = 1;
