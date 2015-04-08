@@ -9,7 +9,7 @@ require_once( EWZ_PLUGIN_DIR . "classes/validation/ewz-input.php");
 class Ewz_Field_Input extends Ewz_Input
 {
 
-    function __construct( $form_data ) { 
+    function __construct( $form_data ) {
         parent::__construct( $form_data );
         assert( is_array( $form_data ) );
         $this->rules = array(

@@ -358,22 +358,23 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field, $fi
 
     $name    = "rdata[$rownum][" . $field->field_id . "]";
 
-    $display = '';
+    $display = '<div class="fdisplay">';
 
     switch ( $field->field_type ) {
-    case 'str': $display = ewz_display_str_form_field( $name, $webform_id, $savedval, $field );
+    case 'str': $display .= ewz_display_str_form_field( $name, $webform_id, $savedval, $field );
             break;
-    case 'opt': $display = ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed );
+    case 'opt': $display .= ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed );
             break;
-    case 'img': $display = ewz_display_img_form_field( $name, $webform_id, $savedval, $field );
+    case 'img': $display .= ewz_display_img_form_field( $name, $webform_id, $savedval, $field );
             break;
-    case 'rad': $display = ewz_display_rad_form_field( $name, $webform_id, $savedval, $field );
+    case 'rad': $display .= ewz_display_rad_form_field( $name, $webform_id, $savedval, $field );
             break;
-    case 'chk': $display = ewz_display_chk_form_field( $name, $webform_id, $savedval );
+    case 'chk': $display .= ewz_display_chk_form_field( $name, $webform_id, $savedval );
             break;
     default:
         throw new EWZ_Exception( "Invalid field type " . $field->field_type );
     }
+    $display .= '</div>';
     return $display;
 }
 

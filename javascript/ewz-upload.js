@@ -342,7 +342,7 @@ function clear_row(button, webform_id) {
     jrow.find("input[id^='rdata'][type='file'], img[id^='rdata']").each(function() {
         var oldid = jQuery(this).attr("id"),
         oldname = jQuery(this).attr("name"),
-        jcell = jQuery(this).closest('td');
+        jcell = jQuery(this).closest('div[class="fdisplay"]');
         jcell.html(empty_img_info(oldid, oldname,webform_id ));
     });
 

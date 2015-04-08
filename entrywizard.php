@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.15
+  Version: 1.2.16
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -28,7 +28,7 @@
 
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_CURRENT_VERSION', '1.2.15' );
+define( 'EWZ_CURRENT_VERSION', '1.2.16' );
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
@@ -48,8 +48,6 @@ if ( is_admin() ) {
 // this is needed for admin, too, because the ajax function runs as admin
 require_once( EWZ_PLUGIN_DIR . '/includes/ewz-upload.php' );
 require_once( EWZ_PLUGIN_DIR . '/includes/ewz-followup.php' );
-
-
 
 /*
  * HOOKS
@@ -228,6 +226,11 @@ function ewz_set_dev_env(){
             error_log( "EWZ: Assertion Failed at $file: $line: $code" );
         }
         assert_options( ASSERT_CALLBACK, 'ewz_assert_handler' );
+
+         
+        /* 
+         * LOGGING 
+         */
         define( 'EWZ_DBG', true );
         $is_admin = is_admin() ? 'ADMIN' : '';
         //  stop logging of pwd
@@ -239,11 +242,28 @@ function ewz_set_dev_env(){
                    . 'POST:  ' . print_r( $p, true )
                    . 'FILES: ' . print_r( $_FILES, true )
                   );
+
+        /*
+         * TESTING
+         */
+        if( is_file( plugin_dir_path( __FILE__ ). 'GD_ENV' ) ){
+            add_filter( 'wp_image_editors', 'ewz_qa_image_editor' );
+        }                
+
     } else {
         define( 'EWZ_DBG', false );
         assert_options( ASSERT_ACTIVE, 0 );
     }
 }
+    
+/*
+ * For testing only -- allows for testing with either image editor
+ */
+function ewz_qa_image_editor( $editors ) {
+    // no assert
+    return array('WP_Image_Editor_GD', 'WP_Image_Editor_Imagick');
+}
+
 
 
 function ewz_init_globals(){

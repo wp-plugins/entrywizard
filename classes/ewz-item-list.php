@@ -16,7 +16,8 @@ class Ewz_Item_List extends WP_List_Table
     public $is_read_only;       // not currently used, may be needed later
                                 //   -- if true, show data but no controls
                                 //   -- but data may also need to be filtered
-
+    private $field_headers;           
+ 
     function __construct( $in_item_ids, $in_headers, $in_rows, $is_read_only=false )
     {
         assert( is_array( $in_item_ids ) );
@@ -31,7 +32,7 @@ class Ewz_Item_List extends WP_List_Table
             'plural' => 'items',        //plural name of the listed records
             'ajax' => false             //does this table support ajax?
         ) );
-        $this->headers = $in_headers;
+        $this->field_headers = $in_headers;
         $this->ewz_rows = $in_rows;
         $this->ewz_item_ids = $in_item_ids;
         $this->is_read_only = $is_read_only;
@@ -84,7 +85,7 @@ class Ewz_Item_List extends WP_List_Table
     {
         $columns = array();
         $columns[0] = '<input type="checkbox" />';
-        foreach ( $this->headers as $n => $header ) {
+        foreach ( $this->field_headers as $n => $header ) {
             if ( $n > 0 ) {
                 $columns[$n] = $header;
             }
@@ -94,7 +95,7 @@ class Ewz_Item_List extends WP_List_Table
 
    function get_sortable_columns() {
        $sortable_columns = array();
-       foreach ( $this->headers as $n => $header ) {
+       foreach ( $this->field_headers as $n => $header ) {
            if ( $n > 0 ) { 
                $sortable_columns[$n] = array( $n, false ); 
                ++$n;

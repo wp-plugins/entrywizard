@@ -3,7 +3,7 @@ Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
 Tested up to: 4.1
-Stable tag: 1.2.15
+Stable tag: 1.2.16
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,9 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.16 =
+* Fixed a display issue that occurred when an image field was appended to the previous column in the layout
+* Changed to work with Wordpress 4.2
 = 1.2.15 =
 * fixed some minor issues with the followup code
 * fixed a bug that appeared when the first image is uploaded and the whole filename is generated
