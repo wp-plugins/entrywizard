@@ -111,6 +111,10 @@ public static function toStrftimeFormat( $dateFormat ) {
                     case 'object':
                         if ( is_string( $data[$key] ) ) {
                             $this->$key = unserialize( $data[$key] );
+                            if( !is_object( $this->$key ) ){  
+                                $this->$key = (object)[];
+                                error_log("EWZ: failed to unserialize $key as $type") ; 
+                            }
                         } else {
                             $this->$key = (object) $data[$key];
                         }
@@ -121,6 +125,10 @@ public static function toStrftimeFormat( $dateFormat ) {
                         } else {
                             if ( is_string( $data[$key] ) ) {
                                 $this->$key = unserialize( $data[$key] );
+                                if( !is_array( $this->$key ) ){  
+                                    $this->$key = array();
+                                    error_log("EWZ: failed to unserialize $key as $type: $data[$key]") ; 
+                                }
                             } else {
                                 $this->$key = (array) $data[$key];
                             }

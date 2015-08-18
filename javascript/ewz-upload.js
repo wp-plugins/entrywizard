@@ -37,10 +37,10 @@ function init_ewz_upload(ewz_win) {
             }
         }
     } else {
-        //window.console && console.log( ewz_win );
+        // window.console && console.log( ewz_win );
         for (wkey1 in ewz_win) {
             if (ewz_win.hasOwnProperty(wkey1)) {
-                if (wkey1.substring(0, 4) === 'ewzG') {
+                if (wkey1.substring(0, 5) === 'ewzG_') {
                     // window.console && console.log( 'this: ', wkey1, typeof ewz_win[wkey1], ' >>> ',  ewz_win[wkey1] );
                     do_setup(ewz_win[wkey1]);
                 }
@@ -258,7 +258,7 @@ function restrictions_check( ewzG, fvalues, use_row ){
 
 /* validation                                           */
 function check_data(ewzG, webform_id) {
-    var status, fvalues, use_row, row, field_id;
+    var status, fvalues, use_row, row, field_id, except;
     fvalues = get_values(ewzG, webform_id );
     use_row = {};
     for (row = 0; row < ewzG.num_items; ++row) {

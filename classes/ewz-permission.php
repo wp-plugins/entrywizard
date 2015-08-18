@@ -97,8 +97,8 @@ class Ewz_Permission {
         if ( current_user_can( 'delete_plugins' ) ) {
             global $wpdb;
 
-            $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " .
-                                            $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can_%'", OBJECT );
+            $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " . $wpdb->usermeta . 
+                                            " WHERE meta_key LIKE 'ewz_can_%'", OBJECT );
             foreach ( $meta_ids as $umeta ) {
                  delete_user_meta( $umeta->user_id, $umeta->meta_key );
             }
@@ -120,10 +120,14 @@ class Ewz_Permission {
         global $wpdb;
         if ( current_user_can( 'manage_options' ) ) {
             $perm = '';
-            $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value " .
-                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can_%'", OBJECT );
+            $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value FROM $wpdb->usermeta " .
+                                         " WHERE meta_key like 'ewz_can_%'", OBJECT );
             foreach ( $perms as $key=>$perm ) {
                 $perms[$key]->meta_value = unserialize( $perm->meta_value );
+                if( !is_array( $perms[$key]->meta_value ) ){  
+                    $perms[$key]->meta_value = array();
+                    error_log("EWZ: failed to unserialize permission") ; 
+                }   
             }
             return $perms;
         } else {
@@ -146,16 +150,20 @@ class Ewz_Permission {
             $user_id = get_current_user_id();
         }
         if ( current_user_can( 'manage_options' ) || get_current_user_id() == $user_id  ) {
-            $perms = $wpdb->get_results( "SELECT meta_key, meta_value
-                    FROM $wpdb->usermeta
-                    WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'", OBJECT );
+            $perms = $wpdb->get_results( "SELECT meta_key, meta_value FROM $wpdb->usermeta " .
+                                         " WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'", OBJECT );
 
             $allowed = array( );
             foreach ( self::$ewz_caps as $cap ) {
                 $allowed[$cap] = array( );
             }
             foreach ( $perms as $perm ) {
-                foreach ( unserialize( $perm->meta_value ) as $seq ) {
+                $perm_arr = unserialize( $perm->meta_value );
+                if( !is_array( $perm_arr ) ){  
+                    $perm_arr = array();
+                    error_log("EWZ: failed to unserialize permission for user $user_id") ; 
+                }  
+                foreach ( $perm_arr as $seq ) {
                     array_push( $allowed[$perm->meta_key], $seq );
                 }
             }
@@ -310,7 +318,7 @@ class Ewz_Permission {
                 return true;
             }
         } else {
-            if ( in_array( self::get_layout_id( $webform_id ), $perms_for_user['ewz_can_download_webform_L'] ) ) {
+            if ( in_array( Ewz_Webform::get_layout_id( $webform_id ), $perms_for_user['ewz_can_download_webform_L'] ) ) {
                 return true;
             }
         }
@@ -394,7 +402,7 @@ class Ewz_Permission {
                 return true;
             }
         } else {
-            if ( in_array( self::get_layout_id( $webform_id ), $perms_for_user['ewz_can_manage_webform_L'] ) ) {
+            if ( in_array( Ewz_Webform::get_layout_id( $webform_id ), $perms_for_user['ewz_can_manage_webform_L'] ) ) {
                 return true;
             }
         }   
@@ -428,7 +436,7 @@ class Ewz_Permission {
      * Is the current user allowed to assign the specified layout to a webform
      *        (permission is also required to edit the webform)
      *
-     * @param  int       $layout_id )
+     * @param  int       $layout_id 
      * @return boolean
      */
     public static function can_assign_layout( $layout_id ) {
@@ -450,16 +458,6 @@ class Ewz_Permission {
     public static function truefunc()
     {
         return true;
-    }
-
-    public static function get_layout_id( $webform_id )
-    {
-        assert( Ewz_Base::is_nn_int( $webform_id ) );
-        global $wpdb;
-        $layout_id = $wpdb->get_var( $wpdb->prepare( "SELECT layout_id  FROM " .
-                EWZ_WEBFORM_TABLE . " WHERE webform_id = %d",
-                $webform_id ) );
-        return $layout_id;
     }
 
    /**

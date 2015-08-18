@@ -15,7 +15,7 @@ function init_ewz_layouts() {
         for (i = 0; i < ewzG.layouts.length; ++i) {
             // error message, page titles, fields
             var lid = ewzG.layouts[i].layout_id;
-            jQuery('#ewz_layouts').append(layout_str(i, lid, ewzG.layouts[i]));
+            jQuery('#ewz_layouts').append(layout_str( lid, ewzG.layouts[i]));
 
             // restrictions (one blank for each existing - will fill out later
             for (restr = 0; restr < ewzG.layouts[i].restrictions.length; ++restr) {
@@ -44,7 +44,7 @@ function init_ewz_layouts() {
 /************************ Functions Returning an HTML String ****************************************/
 
 /* Returns the html string for a postbox containing a single layout */
-function layout_str(i, lnum, fObj) {
+function layout_str( lnum, fObj) {
 
     var i, key, str, kvalue, khead, korigin;
     /*********** Postbox *************/
@@ -72,7 +72,9 @@ function layout_str(i, lnum, fObj) {
         }
         str += '      </div>';
     }
-    str += '                <p class="ewz_sect_title"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'layout\')">&nbsp;General Information</p>';
+    str += '                <p class="ewz_sect_title"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'layout\')">';
+    str += '                   &nbsp;General Information';
+    str += '                </p>';
     str += '                <table>';
     str += '                    <tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'name\')">&nbsp;Name for this layout</td>';
     str += '                        <td>' + textinput_str('f' + lnum + '_layout_name_', 'layout_name', 50, fObj.layout_name) + '</td>';
@@ -88,7 +90,8 @@ function layout_str(i, lnum, fObj) {
     str += '             <div class="ewz_data ewz_95">';
     str += '                <span class="ewz_sect_title"><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'field\')">';
     str += '                   Fields to be entered/uploaded for each item</span> &nbsp; &nbsp; &nbsp; ';
-    str += '                      ( <i>Items affected by restrictions are outlined in red and may not be edited</i> <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'restr\')"> &nbsp;)</p>';
+    str += '                      ( <i>Items affected by restrictions are outlined in red and may not be edited</i>';
+    str += '                        <img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'restr\')"> &nbsp;)';
     str += '                <div class="ewz_95">';
     str += '                   <div  id="ewz_sortable_f' + lnum + '_" >';
     // <br> needed at top and bottom to drag a field to the top or bottom
@@ -110,7 +113,7 @@ function layout_str(i, lnum, fObj) {
     str += '                          A Radio Button</button>';
     str += '                      <button type="button" class="button-secondary" id="addChkBtn_f' + lnum + '_" onClick="add_field( this, ' + "'chk'" + ')">';
     str += '                          A Check Box</button>';
-    str += '                  </p>';
+    str += '                   </p>';
     str += '                </div>';
     str += '             </div>';
 
@@ -159,19 +162,18 @@ function layout_str(i, lnum, fObj) {
 
     /*********** Save/Delete *************/
     str += '                <div class="ewz_numc"></div>';
-    str += '                   <button type="submit" id="lsub_f' + lnum + '_" class="button-primary">Save Changes to <i>' + fObj.layout_name + '</i></button> &nbsp;  &nbsp;  &nbsp;  &nbsp;';
+    str += '                   <button type="submit" id="lsub_f' + lnum + '_" class="button-primary">Save Changes to <i>' + fObj.layout_name + '</i>';
+    str +=                    '</button> &nbsp;  &nbsp;  &nbsp;  &nbsp;';
 
     if (ewzG.can_do) {
         str += '               <button type="button" id="ldel_f' + lnum + '_" class="button-secondary" ';
         str += 'onClick="delete_layout(this, ' + fObj.n_webforms + ', ' + fObj.n_items + ' )">Delete <i>' + fObj.layout_name + '</i>';
         str += '               </button>';
     }
-    str += '                </p>';
     str += '          <div id="waitmessage"></div></div>';
     str += '          </form>';
     str += '       </div>';
     str += '    </div>';
-//    str +=   '  </div>';
     str += '</div>';
     return str;
 }
@@ -209,8 +211,8 @@ function new_restriction_str(lnum, button) {
             isreq = inside.find('input[id$="_required_"]').filter(":checked").length;
             fieldtype = jQuery("option:selected", this).val();
 
-            txt += '   <tr><td class="ewz_leftpad">' + ewz_esc(fieldname) + ":</td>";
-            txt += '       <td>';
+            txt += '      <tr><td class="ewz_leftpad">' + ewz_esc(fieldname) + ":</td>";
+            txt += '          <td>';
 
             // do this in javascript instead of getting from db so it will reflect current changes
             if ('opt' === fieldtype) {
@@ -228,18 +230,19 @@ function new_restriction_str(lnum, button) {
         }
     });
    
-    txt += '       </td>';
-    txt += '   </tr>';
-    txt += '   <tr><td ><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'rmsg\')">&nbsp;Message: ';
-    msgnm = 'restrictions[' + rnum + '][msg]';
-    txt += '               </td><td><input type="text" name="' + msgnm + '" id="f' + lnum + '_restrictions_' + rnum + '__msg_">';
-    txt += '               </td>';
+    txt += '                 </td>';
     txt += '             </tr>';
-    txt += '          </table>';
-    txt += '   </div>';
-    txt += '   <p style="text-align:right">';
-    txt += '       <button type="button" class="button-secondary" id="x' + rid + '" onClick="delete_restr(this)">Remove Restriction</button>';
-    txt += '   </p>';
+    txt += '             <tr><td ><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'rmsg\')">&nbsp;Message: ';
+    msgnm = 'restrictions[' + rnum + '][msg]';
+    txt += '                 </td><td><input type="text" name="' + msgnm + '" id="f' + lnum + '_restrictions_' + rnum + '__msg_">';
+    txt += '                 </td>';
+    txt += '             </tr>';
+    txt += '           </table>';
+    txt += '       </div>';
+    txt += '       <p style="text-align:right">';
+    txt += '          <button type="button" class="button-secondary" id="x' + rid + '" onClick="delete_restr(this)">Remove Restriction</button>';
+    txt += '       </p>';
+    txt += '    </div>';
     txt += '</div>';
 
     return txt;
@@ -349,8 +352,15 @@ function text_fields_str(lnum, fdid, fdld, tObj)
 {
     var str = '';
     if (tObj) {
-        str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxchar\')">&nbsp;Maximum number of characters: </td><td>' + numinput_str(fdid + 'maxstringchars_', fdld + '[maxstringchars]', '', 1, 200, Number(tObj.maxstringchars)) + '</td></tr>';
-        str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxvis\')">&nbsp;Number of characters visible in input: </td><td>' + numinput_str(fdid + 'fieldwidth_', fdld + '[fieldwidth]', '', 1, 100, Number(tObj.fieldwidth)) + '</td></tr>';
+
+        str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxchar\')">&nbsp;Maximum number of Characters: </td><td>' + numinput_str(fdid + 'maxstringchars_', fdld + '[maxstringchars]', '', 1, 200, Number(tObj.maxstringchars)) + '</td></tr>';
+
+        str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'maxvis\')">&nbsp;Number of Characters Visible in Input: </td><td>' + numinput_str(fdid + 'fieldwidth_', fdld + '[fieldwidth]', '', 1, 100, Number(tObj.fieldwidth)) + '</td></tr>';
+
+        str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'textrows\')">&nbsp;Number of Lines of Visible Text:';
+        str += '</td><td>';
+        str += numinput_str(fdid + 'textrows_', fdld + '[textrows]',  '', 1, 100, Number(tObj.textrows, 'ssc' + lnum )) + '</td></tr>';
+
         str += '<tr><td><img alt="" class="ewz_ihelp" src="' + ewzG.helpIcon + '" onClick="ewz_help(\'frmtstr\')">&nbsp;Spreadsheet Column for Formatted Text:</td><td>' + colinput_str(fdid + 'ss_col_fmt_', fdld + '[ss_col_fmt]', tObj.ss_col_fmt, 'ssc' + lnum) + '</td></tr>';
     }
     return str;
@@ -502,6 +512,7 @@ function colinput_str(idstring, namestring, vval, uniq_class) {
 }
 
 /************************ Functions That Actually Do Something  ****************************************/
+
 
 function save_layout_order(){
     var l_nonce = jQuery('input[name="ewznonce"]').val();
@@ -1127,7 +1138,7 @@ function get_layout_num(element) {
 
 /* called on submit, err_alert disables submit */
 function ewz_check_layout_input(form, do_check) {
-    var ok, jform, lnum, maxnumitems, maxs;
+    var ok, jform, lnum, maxnumitems, maxs, except1, except2;
     ok = true;
     jform = jQuery(form);
     lnum = jform.attr("id").replace('cfg_form_f', '').replace('_', '');

@@ -5,7 +5,7 @@ if ( !class_exists( 'WP_List_Table' ) ) {
     require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
-/* class modified from custom-list-table-example/list-table-example.php */
+/* class modified from plugin custom-list-table-example/list-table-example.php */
 
 class Ewz_Item_List extends WP_List_Table
 {
@@ -24,7 +24,6 @@ class Ewz_Item_List extends WP_List_Table
         assert( is_array( $in_headers ) );
         assert( is_array( $in_rows ) );
         assert( is_bool( $is_read_only ) );
-
         assert( count( $in_item_ids ) === count( $in_rows ) );
         //Set parent defaults
         parent::__construct( array(
@@ -68,10 +67,10 @@ class Ewz_Item_List extends WP_List_Table
      **************************************************************************/  
     function column_cb( $row )
     {
-        assert( Ewz_Base::is_pos_int( $row[0] ) );
         if( $this->is_read_only ){
             return '';
         } else {
+            assert( Ewz_Base::is_pos_int( $row[0] ) );
             // override column default, show a checkbox
             return sprintf(
                         '<input type="checkbox" name="%1$s[]" id="ewz_check%2$s_" value="%2$s" />',
@@ -84,7 +83,7 @@ class Ewz_Item_List extends WP_List_Table
     function get_columns()
     {
         $columns = array();
-        $columns[0] = '<input type="checkbox" />';
+        $columns[0] = $this->is_read_only ? '' : '<input type="checkbox" />';
         foreach ( $this->field_headers as $n => $header ) {
             if ( $n > 0 ) {
                 $columns[$n] = $header;
@@ -131,14 +130,17 @@ class Ewz_Item_List extends WP_List_Table
     {
         $user_id = get_current_user_id();
         assert( Ewz_Base::is_pos_int( $user_id ) );
-        $per_page = get_user_meta( $user_id, 'ewz_itemsperpage', true );
+        if( $this->is_read_only){
+            $per_page = 500;
+        } else {           
+            $per_page = get_user_meta( $user_id, 'ewz_itemsperpage', true );
 
-        if ( empty( $per_page ) || $per_page < 1 ) {
-            // set and use the default value if none is set
-            update_user_meta( $user_id,'ewz_itemsperpage', $this->default_ipp );
-            $per_page = $this->default_ipp;
+            if ( empty( $per_page ) || $per_page < 1 ) {
+                // set and use the default value if none is set
+                update_user_meta( $user_id,'ewz_itemsperpage', $this->default_ipp );
+                $per_page = $this->default_ipp;
+            }
         }
-
         // headers
         $columns = $this->get_columns();
         assert( is_array( $columns ) );
@@ -149,7 +151,7 @@ class Ewz_Item_List extends WP_List_Table
         $data = $this->ewz_rows;
 
         // pagination
-        $current_page = $this->get_pagenum();
+        $current_page = $this->is_read_only ? 1 : $this->get_pagenum();
         assert( Ewz_Base::is_pos_int( $current_page )  );
         $total_items = count( $data );
         $dataslice = array_slice( $data, (($current_page - 1) * $per_page ), $per_page );

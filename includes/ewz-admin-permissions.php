@@ -55,14 +55,14 @@ function ewz_permissions_menu()
     $perms = Ewz_Permission::get_all_ewz_permissions();
 
     // Layouts, and the options string for a "select layout" drop-down
-    $layouts_options = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array() ) );
+    $layouts_options = ewz_option_list( Ewz_Layout::get_layout_opt_array() );
     $layouts_sz = min( 10, substr_count( $layouts_options, '<option' ) + 2 );
 
     // Webforms, and the options string for a "select webform" drop-down
     $webforms = Ewz_Webform::get_all_webforms();
     $webforms_options = '';
     foreach ( $webforms as $webform ) {
-	$webforms_options .= '<option value="' . esc_attr( $webform->webform_id ) . '">' .
+    $webforms_options .= '<option value="' . esc_attr( $webform->webform_id ) . '">' .
             esc_html( $webform->webform_title . ' (' . $webform->webform_ident . ')' ) .'</option>';
     }
     $webforms_sz = min( 15, sizeof( $webforms ) + 2 );
@@ -70,14 +70,14 @@ function ewz_permissions_menu()
 
     // the options strings for "select user"
     $all_users = Ewz_User::get_user_opt_array();
-    $users_options = ewz_option_list( ewz_html_esc( $all_users ) );
+    $users_options = ewz_option_list( $all_users );
     $ewz_users = array();
     foreach( $all_users as $usr ){
         if( array_search( $usr['value'], array_map( function($p) { return $p->user_id; }, $perms ) ) ){
             array_push( $ewz_users, $usr );
         }
     }
-    $ewz_users_options = ewz_option_list( ewz_html_esc( $ewz_users ) );
+    $ewz_users_options = ewz_option_list(  $ewz_users );
 
 
 
@@ -103,10 +103,10 @@ function ewz_permissions_menu()
         <form action=""  method="POST" onSubmit="return ewz_check_perm_input(this);" >
          <input type="hidden" name="ewzmode" value="permission">
          <div class="ewzform">
-	    <?php
+        <?php
                wp_nonce_field( 'ewzadmin', 'ewznonce' );
-	    ?>
-    	<h3>Select A User</h3>
+        ?>
+        <h3>Select A User</h3>
         <div class="ewz_leftpad ewz_bottompad">
             <b>From All Users</b><br />
                <select name="ewz_user_perm" id="ewz_user_perm" onChange="ewz_show_perms();" >
@@ -121,98 +121,98 @@ function ewz_permissions_menu()
                </select>
                <div id="uperms"> </div>
          </div>
-    	<h3>Layout Permissions</h3>
-    	<div class="ewz_boxed">
-    	    <p><i>"Edit"</i> a layout means change any of its data.  "Edit Any Layout" is required to create or delete layouts.</p>
-    	    <p><i>"Assign"</i> a layout means set it as the layout for a web form. Permission to edit the web form is also required.</p>
-    	</div>
-    	<table class="form-table">
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_edit_layoutT">Edit Layouts</th>
-    		<td>
-    		    <select name="ewz_can_edit_layout[]" id="ewz_can_edit_layout" multiple="multiple" size="<?php print esc_attr( $layouts_sz );  ?>">
-    			<option value="0"> -- None -- </option>
-    			<option value="-1">** Edit Any Layout **</option>
-			    <?php print $layouts_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_assign_layoutT">Assign  Layouts</th>
-    		<td>
-    		    <select name="ewz_can_assign_layout[]" id="ewz_can_assign_layout" multiple="multiple" size="<?php print esc_attr( $layouts_sz ); ?>">
-    			<option value="0"> -- None -- </option>
-    			<option value="-1">** Assign Any Layout **</option>
-			    <?php print $layouts_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	</table>
-    	<br />
-    	<h3>Web Form Permissions</h3>
-    	<div class="ewz_boxed">
-    	    <p><i>"Manage"</i> &nbsp; a form means change it's name or identifier, open/close it for uploads,
+        <h3>Layout Permissions</h3>
+        <div class="ewz_boxed">
+            <p><i>"Edit"</i> a layout means change any of its data.  "Edit Any Layout" is required to create or delete layouts.</p>
+            <p><i>"Assign"</i> a layout means set it as the layout for a web form. Permission to edit the web form is also required.</p>
+        </div>
+        <table class="form-table">
+            <tr valign="top">
+            <th scope="row" id="ewz_can_edit_layoutT">Edit Layouts</th>
+            <td>
+                <select name="ewz_can_edit_layout[]" id="ewz_can_edit_layout" multiple="multiple" size="<?php print esc_attr( $layouts_sz );  ?>">
+                <option value="0"> -- None -- </option>
+                <option value="-1">** Edit Any Layout **</option>
+                <?php print $layouts_options ?>
+                </select>
+            </td>
+            </tr>
+            <tr valign="top">
+            <th scope="row" id="ewz_can_assign_layoutT">Assign  Layouts</th>
+            <td>
+                <select name="ewz_can_assign_layout[]" id="ewz_can_assign_layout" multiple="multiple" size="<?php print esc_attr( $layouts_sz ); ?>">
+                <option value="0"> -- None -- </option>
+                <option value="-1">** Assign Any Layout **</option>
+                <?php print $layouts_options ?>
+                </select>
+            </td>
+            </tr>
+        </table>
+        <br />
+        <h3>Web Form Permissions</h3>
+        <div class="ewz_boxed">
+            <p><i>"Manage"</i> &nbsp; a form means change it's name or identifier, open/close it for uploads,
                    and view, attach to pages or remove items.</p>
-    	    <p><i>"Edit"</i> &nbsp; a form means do any of the above plus assign it's layout.</p>
-    	    <p><i>"Edit Any Web Form"</i> &nbsp; is required to create or delete a web form.</p>
-    	</div>
-    	<table class="form-table">
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_edit_webformT">Edit Web Forms</th>
-    		<td>
-    		    <select name="ewz_can_edit_webform[]" id="ewz_can_edit_webform" multiple="multiple"
+            <p><i>"Edit"</i> &nbsp; a form means do any of the above plus assign it's layout.</p>
+            <p><i>"Edit Any Web Form"</i> &nbsp; is required to create or delete a web form.</p>
+        </div>
+        <table class="form-table">
+            <tr valign="top">
+            <th scope="row" id="ewz_can_edit_webformT">Edit Web Forms</th>
+            <td>
+                <select name="ewz_can_edit_webform[]" id="ewz_can_edit_webform" multiple="multiple"
                             size="<?php print esc_attr( $webforms_sz ); ?>">
-    			<option value="0"> -- None -- </option>
-    			<option value="-1">** Edit Any Web Form **</option>
-			    <?php print $webforms_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_manage_webformT">Manage Web Forms</th>
-    		<td>
-    		    <select name="ewz_can_manage_webform[]" id="ewz_can_manage_webform" multiple="multiple"
+                <option value="0"> -- None -- </option>
+                <option value="-1">** Edit Any Web Form **</option>
+                <?php print $webforms_options ?>
+                </select>
+            </td>
+            </tr>
+            <tr valign="top">
+            <th scope="row" id="ewz_can_manage_webformT">Manage Web Forms</th>
+            <td>
+                <select name="ewz_can_manage_webform[]" id="ewz_can_manage_webform" multiple="multiple"
                             size="<?php print esc_attr( $webforms_sz ); ?>">
-    			<option value="0"> -- None -- </option>
-    			<option value="-1">** Manage Any Web Form **</option>
-			    <?php print $webforms_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	    <tr valign="top" >
-    		<th scope="row" id="ewz_can_manage_webform_LT">Manage Web Forms With Selected Layouts </th>
-    		<td>
-    		    <select name="ewz_can_manage_webform_L[]" id="ewz_can_manage_webform_L" multiple="multiple"
+                <option value="0"> -- None -- </option>
+                <option value="-1">** Manage Any Web Form **</option>
+                <?php print $webforms_options ?>
+                </select>
+            </td>
+            </tr>
+            <tr valign="top" >
+            <th scope="row" id="ewz_can_manage_webform_LT">Manage Web Forms With Selected Layouts </th>
+            <td>
+                <select name="ewz_can_manage_webform_L[]" id="ewz_can_manage_webform_L" multiple="multiple"
                             size="<?php print esc_attr( $layouts_sz - 2 ); ?>">
-    			    <option value="0"> -- None -- </option>
-			    <?php print $layouts_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_download_webformT">Download Data From Web Forms</th>
-    		<td>
-    		    <select name="ewz_can_download_webform[]" id="ewz_can_download_webform" multiple="multiple"
+                    <option value="0"> -- None -- </option>
+                <?php print $layouts_options ?>
+                </select>
+            </td>
+            </tr>
+            <tr valign="top">
+            <th scope="row" id="ewz_can_download_webformT">Download Data From Web Forms</th>
+            <td>
+                <select name="ewz_can_download_webform[]" id="ewz_can_download_webform" multiple="multiple"
                             size="<?php print esc_attr( $webforms_sz ); ?>">
-    			<option value="0"> -- None -- </option>
-    			<option value="-1">** Download From Any Web Form **</option>
-			    <?php print $webforms_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	    <tr valign="top">
-    		<th scope="row" id="ewz_can_download_webform_LT">Download Data From Any Web Form With Selected Layouts</th>
-    		<td>
-    		    <select name="ewz_can_download_webform_L[]" id="ewz_can_download_webform_L" multiple="multiple"
+                <option value="0"> -- None -- </option>
+                <option value="-1">** Download From Any Web Form **</option>
+                <?php print $webforms_options ?>
+                </select>
+            </td>
+            </tr>
+            <tr valign="top">
+            <th scope="row" id="ewz_can_download_webform_LT">Download Data From Any Web Form With Selected Layouts</th>
+            <td>
+                <select name="ewz_can_download_webform_L[]" id="ewz_can_download_webform_L" multiple="multiple"
                             size="<?php print esc_attr( $layouts_sz - 2 ); ?>">
-    			    <option value="0"> -- None -- </option>
-			    <?php print $layouts_options ?>
-    		    </select>
-    		</td>
-    	    </tr>
-    	</table>
-    	<br />
-    	<input type="submit" class="button-primary" value="Save Changes"  id="submit">
+                    <option value="0"> -- None -- </option>
+                <?php print $layouts_options ?>
+                </select>
+            </td>
+            </tr>
+        </table>
+        <br />
+        <input type="submit" class="button-primary" value="Save Changes"  id="submit">
         </div>
         </form>
     </div> <!-- wrap -->

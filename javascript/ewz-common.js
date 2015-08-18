@@ -30,7 +30,7 @@ function disable_ss_options(uniq_class) {
 }
 
 /* returns html for a select element with positive integer options start .. end */
-/* and a blank option with value "0" */
+/* and a blank option with value "0",   with optional onChange function */
 /**
  *  Returns html for a select element with positive integer options start .. end
  *
@@ -42,13 +42,17 @@ function disable_ss_options(uniq_class) {
  * @param  vval   selected value
  * @return string
  */
-function numinput_str(idstring, namestring, nosel, start, end, vval)
+function numinput_str(idstring, namestring, nosel, start, end, vval, func)
 {
    var qidstring, qnmstring, code, sel, i;
 
    qidstring = "'" + idstring + "'";
    qnmstring = "'" + namestring + "'";
-   code = '<select id=' + qidstring + 'name=' + qnmstring + '>';
+   code = '<select id=' + qidstring + 'name=' + qnmstring;
+   if (   func  !== undefined ){
+      code += ' ' + func + ' ';
+   }
+   code += '>';
    sel = '';
    if( nosel ){
         code = code + '<option value="0">' + nosel + '</option>';

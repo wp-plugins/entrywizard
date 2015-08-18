@@ -19,6 +19,10 @@ require_once( EWZ_PLUGIN_DIR . 'classes/validation/ewz-followup-input.php' );
  */
 function ewz_followup( $atts ) {
     assert( is_array( $atts ) );
+
+    // enqueue here so the javascript is only loaded if the shortcode is used ( WP 3.3 + )
+    wp_enqueue_script( 'ewz-followup' );
+
     $layouts = array();
     $webforms = array();
 

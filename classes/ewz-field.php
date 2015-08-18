@@ -26,6 +26,7 @@ class Ewz_Field extends Ewz_Base
     public $required;           // item is required on web form
     public $pg_column;          // column on web page
     public $ss_column;          // column in spreadsheet
+    public $append;             // append this field to the previous cell in the row 
     public $fdata;              // serialized data structure of parameters specific to the field type
                                 //   -- TODO: make each type a sub-class of  Ewz_Field
 
@@ -180,6 +181,50 @@ class Ewz_Field extends Ewz_Base
         return $list;
     }
 
+   /**
+     * Return a string consisting of the html options for selecting possible values for the field
+     *
+     * @param   array    array of selected id's   defaults to empty array
+     *
+     * @return  string consisting of the html options for selecting possible values for the field
+     */
+    public function get_field_opt_array( $selected = array() )
+    {
+        assert( is_array( $selected ) );
+        $list = array();
+        $any_ok   =  array( 'value'=>'~*~', 'display' => 'Any',       'selected' => in_array( '~*~', $selected ) );
+        $blank_ok =  array( 'value'=>'~-~', 'display' => 'Blank',     'selected' => in_array( '~-~', $selected ) );
+        $isset_ok =  array( 'value'=>'~+~', 'display' => 'Not Blank', 'selected' => in_array( '~+~', $selected ) );
+        $uncheck_ok = array( 'value'=>'~-~', 'display' => 'Not Checked','selected' => in_array( '~-~', $selected ) );
+        $check_ok =  array( 'value'=>'~+~', 'display' => 'Checked', 'selected' => in_array( '~+~', $selected ) );
+
+        if ( 'opt' == $this->field_type ) {
+            array_push( $list, $any_ok );
+            if ( !$this->required ) {
+                array_push( $list, $blank_ok );
+                array_push( $list, $isset_ok );
+            }
+            foreach ( $this->fdata['options'] as $dat ) {
+                array_push( $list, array( 'value'=>$dat['value'], 'display'=> $dat['label'], 'selected' => in_array( $dat['value'], $selected ) ) );
+            }
+        } elseif( 'rad' == $this->field_type || 'chk' == $this->field_type ) {
+                array_push( $list, $any_ok );
+                array_push( $list, $uncheck_ok );
+                array_push( $list, $check_ok );           
+        } else {
+            if ( !$this->required ) {
+                array_push( $list, $any_ok );
+                array_push( $list, $blank_ok );
+                array_push( $list, $isset_ok );
+            }
+        }
+        if( count($list) > 1 ){
+            return $list;
+        } else {
+            return array();
+        }
+    }
+
 
     /******************** Construction **************************/
 
@@ -222,7 +267,6 @@ class Ewz_Field extends Ewz_Base
                      && !isset( $init['field_type'] )
                      && !isset( $init['fdata'] )
                      )
-                || is_string( $init )
                 );
         if ( Ewz_Base::is_pos_int( $init ) ) {
             $this->create_from_id( $init );
@@ -287,6 +331,11 @@ class Ewz_Field extends Ewz_Base
         global $wpdb;
         if ( is_string( $this->fdata ) ) {
             $this->fdata = unserialize( $this->fdata );
+            if( !is_array( $this->fdata ) ){
+                $this->fdata = array();
+                error_log("EWZ: failed to unserialize fdata for field $this->field_id") ; 
+            }
+
         }
         foreach ( self::$varlist as $key => $type ) {
             settype( $this->$key, $type );
@@ -306,8 +355,6 @@ class Ewz_Field extends Ewz_Base
 
         if( $this->field_id ){
             // check for change of layout ( should not happen ) 
-            $query = "SELECT layout_id  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = $this->field_id";
-
             $db_layout_id = $wpdb->get_var( $wpdb->prepare( "SELECT layout_id  FROM " . EWZ_FIELD_TABLE . " WHERE field_id = %d",
                                                             $this->field_id ) );
             if( $db_layout_id && ( $db_layout_id != $this->layout_id ) ){
@@ -401,8 +448,7 @@ class Ewz_Field extends Ewz_Base
             }
             return 0;
         } else {
-           $layout_ok = $wpdb->get_var( $wpdb->prepare( "SELECT count(*) FROM " . EWZ_LAYOUT_TABLE . " WHERE layout_id = %d",
-                                                  $this->layout_id ) );
+            $layout_ok = Ewz_Layout::get_count( $this->layout_id );
             if ( $layout_ok != 1 ) {
                 throw new EWZ_Exception( 'Failed to update layout', $this->layout_id );
             }
@@ -428,6 +474,9 @@ class Ewz_Field extends Ewz_Base
         if ( !Ewz_Permission::can_edit_layout( $this->layout_id ) ) {
             throw new EWZ_Exception( 'Insufficient permissions to edit the layout', $this->layout_id );
         }
+
+        do_action( 'ewz_before_delete_field', $this->field_id );
+
         $webforms = Ewz_Webform::get_webforms_for_layout( $this->layout_id );
         foreach($webforms as $webform){
             foreach( Ewz_Item::get_items_for_webform( $webform->webform_id, false ) as $item ){

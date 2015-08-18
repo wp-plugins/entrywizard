@@ -2,8 +2,8 @@
 Contributors: Josie Stauffer
 Tags: upload, image, competition, spreadsheet, camera club, photography
 Requires at least: 3.5
-Tested up to: 4.1
-Stable tag: 1.2.16
+Tested up to: 4.3
+Stable tag: 1.2.17
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,13 @@ Administrators may, if required, add a prefix to this filename, or even generate
 
 
 == Changelog ==
+= 1.2.17 =
+* updated the shortcodes menu in the TinyMCE editor for compatibility with Wordpress 4.3
+* removed the no-longer-needed 'jquery-form' requirement, which was clashing with some other plugins.
+* several minor bugfixes and code improvements
+* some code changes to improve speed
+* new multiline option for text fields
+* some minor code changes required for the planned EWZ-Rating plugin for on-line judging of images uploaded via EntryWizard.
 = 1.2.16 =
 * Fixed a display issue that occurred when an image field was appended to the previous column in the layout
 * Changed to work with Wordpress 4.2
@@ -255,26 +262,18 @@ make sure local time is used for automatic webform closing
 * only ask for confirmation of a deletion if the item has been saved
 * ensure an option field has at least 1 option before saving
 
-== Upgrade Notice ==
-
-= 0.9.6 =
-
-CHANGE: Optionally apply the prefix to the filenames on upload instead of on download, to facilitate download via ftp.
-CHANGE: Require a minimum longest dimension for uploaded images instead of a minimum area
 
 == To Do ==
 
 Enhancements planned eventually (in no particular order):
 
-* Add a shortcode for a customisable form to be used for judging the uploaded images
+* Add a shortcode for a customisable form to be used for judging the uploaded images ( may be a separate plugin )
 
 * Copy restrictions when copying a layout
 
 * Customize the "Upload closed" message, thumbnail height, font colors and some other parameters
 
 * Optional overall upload fields in addition to those attached to each image
-
-* Text-area field
 
 * Some sort of archiving mechanism, so webforms that will no longer be used do not show up on the administration page, even if the images are still on the server.
 

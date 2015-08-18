@@ -77,7 +77,7 @@ class Ewz_Field_Input extends Ewz_Input
         assert( is_array( $field ) );
 
         $req_field_data = array('maxstringchars');
-        $all_field_data = array('maxstringchars', 'fieldwidth', 'ss_col_fmt');
+        $all_field_data = array('maxstringchars', 'fieldwidth', 'ss_col_fmt', 'textrows');
         foreach ( $req_field_data as $req ) {
             if ( !array_key_exists( $req, $field )|| preg_match( '/^ *$/', $field[$req] ) ) {
                 throw new EWZ_Exception( "Missing required item $req for a text input" );
@@ -107,6 +107,15 @@ class Ewz_Field_Input extends Ewz_Input
                 }
                 if( !$val ){
                     $field[$name] = EWZ_MAX_FIELD_WIDTH;  // changing, cant use $val on left
+                }
+                $field[$name] = ( int )$val;   // changing, cant use $val
+            }
+            if ( ( 'textrows' == $name ) ) {
+                if ( !preg_match( '/^\d*$/', $val ) ) {
+                    throw new EWZ_Exception( "Invalid value for $name: '$val'" );
+                }
+                if( !$val ){
+                    $field[$name] =1;  // changing, cant use $val on left
                 }
                 $field[$name] = ( int )$val;   // changing, cant use $val
             }

@@ -1,5 +1,4 @@
 html, body {position: relative}
-
 #overlay {
    position: fixed; 
     top: 0;
@@ -74,6 +73,8 @@ table.ewz_border{ border-collapse: collapse;
                 }
 input[id^="itmcsv_data"]{ background: #f9f9f9; }
 input[id^="csv_data"]{ background: #f9f9f9; }
+
+div[id^="restricts_f"]{ padding-bottom: 7px; }
 .ewz_centered
 {
     padding: 10px;
@@ -161,7 +162,7 @@ input[id^="csv_data"]{ background: #f9f9f9; }
               margin-bottom:15px;
             }
 
-.wp-dialog .ui-dialog-content{ padding: 15px !important; }
+.wp-dialog .ui-dialog-content{ padding: 15px !important; font-size: 13px; font-weight: normal; }
 .wp-dialog ul { padding-left: 10px;
                 list-style: disc; }
 
@@ -270,12 +271,12 @@ select[id^="auto_time"] option {
 }
 
 .ewzform {
-	font-size: 90%;
+        font-size: 90%;
 }
 
 .ewzform .ui-widget {
-	font-family: "Helvetica Neue","Trebuchet MS",Tahoma,Verdana,Arial,sans-serif;
-	background: #fff;
+        font-family: "Helvetica Neue","Trebuchet MS",Tahoma,Verdana,Arial,sans-serif;
+        background: #fff;
 }
 
 /* Settings for the calendar popup *
@@ -489,7 +490,8 @@ select[id^="auto_time"] option {
 .ui-icon-minus { background-position: -48px -128px; }
 .ui-icon-minusthick { background-position: -64px -128px; }
 .ui-icon-close { background-position: -80px -128px; }
-.ui-icon-closethick { background-position: -96px -128px; }
+.ui-icon-closethick { display: none !important; }
+/*background-position: -96px -128px; }*/
 .ui-icon-key { background-position: -112px -128px; }
 .ui-icon-lightbulb { background-position: -128px -128px; }
 .ui-icon-scissors { background-position: -144px -128px; }
@@ -595,7 +597,7 @@ select[id^="auto_time"] option {
  *
  * http://docs.jquery.com/UI/Autocomplete#theming
  */
-.ui-autocomplete { position: absolute; cursor: default; }	
+.ui-autocomplete { position: absolute; cursor: default; }       
 
 /* workarounds */
 * html .ui-autocomplete { width:1px; } /* without this, the menu expands to 100% in IE6 */
@@ -610,34 +612,34 @@ select[id^="auto_time"] option {
  * http://docs.jquery.com/UI/Menu#theming
  */
 .ui-menu {
-	list-style:none;
-	padding: 2px;
-	margin: 0;
-	display:block;
-	float: left;
+        list-style:none;
+        padding: 2px;
+        margin: 0;
+        display:block;
+        float: left;
 }
 .ui-menu .ui-menu {
-	margin-top: -3px;
+        margin-top: -3px;
 }
 .ui-menu .ui-menu-item {
-	margin:0;
-	padding: 0;
-	zoom: 1;
-	float: left;
-	clear: left;
-	width: 100%;
+        margin:0;
+        padding: 0;
+        zoom: 1;
+        float: left;
+        clear: left;
+        width: 100%;
 }
 .ui-menu .ui-menu-item a {
-	text-decoration:none;
-	display:block;
-	padding:.2em .4em;
-	line-height:1.5;
-	zoom:1;
+        text-decoration:none;
+        display:block;
+        padding:.2em .4em;
+        line-height:1.5;
+        zoom:1;
 }
 .ui-menu .ui-menu-item a.ui-state-hover,
 .ui-menu .ui-menu-item a.ui-state-active {
-	font-weight: normal;
-	margin: -1px;
+        font-weight: normal;
+        margin: -1px;
 }
 /*!
  * jQuery UI Button 1.8.22
@@ -689,7 +691,7 @@ button.ui-button::-moz-focus-inner { border: 0; padding: 0; } /* reset extra pad
 .ui-dialog { position: absolute; padding: .2em; width: 300px; overflow: hidden; }
 .ui-dialog .ui-dialog-titlebar { padding: .4em 1em; position: relative;  }
 .ui-dialog .ui-dialog-title { float: left; margin: .1em 16px .1em 0; } 
-.ui-dialog .ui-dialog-titlebar-close { position: absolute; right: .3em; top: 50%; width: 19px; margin: -10px 0 0 0; padding: 1px; height: 18px; }
+/*.ui-dialog .ui-dialog-titlebar-close { position: absolute; right: .3em; top: 50%; width: 19px; margin: -10px 0 0 0; padding: 1px; height: 18px; }*/
 .ui-dialog .ui-dialog-titlebar-close span { display: block; margin: 1px; }
 .ui-dialog .ui-dialog-titlebar-close:hover, .ui-dialog .ui-dialog-titlebar-close:focus { padding: 0; }
 .ui-dialog .ui-dialog-content { position: relative; border: 0; padding: .5em 1em; background: none; overflow: auto; zoom: 1; }

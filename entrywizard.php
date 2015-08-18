@@ -4,7 +4,7 @@
   Plugin Name: EntryWizard
   Plugin URI: http:
   Description:  Uploading by logged-in users of sets of image files and associated data. Administrators may download the images together with the data in spreadsheet form.
-  Version: 1.2.16
+  Version: 1.2.17
   Author: Josie Stauffer
   Author URI:
   License: GPL2
@@ -25,10 +25,9 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-
 defined( 'ABSPATH' ) or exit;   // show a blank page if try to access this file directly
 
-define( 'EWZ_CURRENT_VERSION', '1.2.16' );
+define( 'EWZ_CURRENT_VERSION', '1.2.17' );
 
 define( 'EWZ_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EWZ_CUSTOM_DIR', plugin_dir_path( __FILE__ ) );
@@ -110,7 +109,6 @@ function ewz_admin_head(){
 /* pass the button data to mce_buttons filter */
 function ewz_mce_button( $buttons ) {
     assert( is_array( $buttons ) );
-
     array_push( $buttons,'ewz_shortcodes');
     return $buttons;
 }
@@ -118,7 +116,6 @@ function ewz_mce_button( $buttons ) {
 /* pass the javascript file name to mce_external_plugins filter */
 function ewz_mce_plugin( $plugins ) {
     assert( is_array( $plugins ) );
-
     $plugins['ewz_shortcodes'] = plugins_url() . '/entrywizard/javascript/ewz-shortcodes.js?ewzv=' . EWZ_CURRENT_VERSION;
     return $plugins;
 }
@@ -193,20 +190,23 @@ function ewz_add_stylesheet() {
     wp_register_style( 'ewz-style', plugins_url( 'styles/entrywizard.css', __FILE__ ), array(), EWZ_CURRENT_VERSION );
     wp_enqueue_style( 'ewz-style' );
 
-    wp_enqueue_script(
+    // only register the shortcode scripts here, enqueue them within the shortcode so they are only 
+    // loaded when required
+    wp_register_script(
                        'ewz-upload',
                        plugins_url( 'javascript/ewz-upload.js', __FILE__ ),
-                       array( 'jquery', 'jquery-form' ),
+                       array( 'jquery' ),
                        EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
-    wp_enqueue_script(
+    wp_register_script(
                        'ewz-followup',
                        plugins_url( 'javascript/ewz-followup.js', __FILE__ ),
-                       array( 'jquery', 'jquery-form' ),
+                       array( 'jquery' ),
                        EWZ_CURRENT_VERSION,
                        true      // in footer, so $ewzG has been defined
                       );
+
  }
 
 function ewz_set_dev_env(){
@@ -314,7 +314,6 @@ function ewz_init_globals(){
     define( 'EWZ_MAX_TOTAL_MB', ewz_to_mb( $postmaxsize ) );      // default max total post size in MB
     define( 'EWZ_MAX_SIZE_MB',  ewz_to_mb( $maxfilesize ) );      // default max upload image size in MB
     define( 'EWZ_MAX_SIZE_BYTES', ewz_to_bytes( $maxfilesize ) ); // default max upload image size in bytes
-
 }
 
 
@@ -451,4 +450,3 @@ function ewzdbg( $str, $in_obj = null )
         }
     }
 }
-

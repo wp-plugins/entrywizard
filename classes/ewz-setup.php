@@ -33,6 +33,9 @@ class Ewz_Setup
 
         // will just update if they already exist
         self::create_db_tables();
+            
+        // update the db version option
+        update_option( 'ewz_data_version', EWZ_CURRENT_VERSION );
 
         $rowcount = $wpdb->get_var( "SELECT count(*) FROM $layout_table" );
 
@@ -66,7 +69,6 @@ class Ewz_Setup
         if( $tz_opt ){ 
             date_default_timezone_set( $curr_tz );
         }
-        
     }
 
     /** ***************************************************
@@ -836,6 +838,7 @@ class Ewz_Setup
                     }
                 }
             }
+            closedir($dh);
         }
     }
 

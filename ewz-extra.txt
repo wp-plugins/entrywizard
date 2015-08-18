@@ -67,6 +67,7 @@ function ewz_extra_custom_class(){
             $this->custom2 = #4;  
 
             /* if needed, add more lines here for "custom3", "custom4", etc. */
+            /* ( but note that too many items put an extra load on your server ) */
         }
 
 

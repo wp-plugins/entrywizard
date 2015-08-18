@@ -1,4 +1,5 @@
 'use strict';
+var ewzG;
 /*************** Functions for the List page ************************************/
 
 function processForm(formId) {

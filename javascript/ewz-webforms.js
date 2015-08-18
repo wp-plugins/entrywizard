@@ -3,7 +3,7 @@
 jQuery(document).ready(function() {
     init_ewz_webforms();
 });
-var ewzG;
+var ewzG, ewzG1;
 /* toggle visibility of hideable controls in the same form */
 function toggle_hidden_controls(checkbox){
     fixConsole();
@@ -339,8 +339,8 @@ function read_only_info_str( eObj ){
     } else {
         str += 'Prefix formula applied <br> &nbsp;  &nbsp; to filename ' + when;
     }
-    str +=   '</td>';
-    str +=   '                     <td>' +  eObj.prefix + '</td>';
+    str +=                        '</td>';
+    str +=   '                     <td>' +  eObj.prefix + '</td></tr>';
         
     str +=   '                 <tr><td>Open for Uploads: </td>';
     if(eObj.upload_open ){
@@ -475,7 +475,7 @@ function webform_button_str(){
     var str  = '<div class="clear alignleft">';
     str +=   '    <img alt="" class="ewz_ihelp" src="' +  ewzG.helpIcon + '" onClick="ewz_help(\'wfsort\')">&nbsp;';
     str += '         <button  type="button" class="button-secondary" id="webform_add_" onClick="add_new_webform()">Add a New Web Form</button> ';
-    str += '         &nbsp; <button  type="button" class="button-secondary" id="webforms_save2_" onClick="save_webform_order()">Save Order of Webforms</button> ';
+    str += '         &nbsp; <button  type="button" class="button-secondary" id="webforms_save2_" onClick="save_webform_order()">TODO: Save Order of Webforms</button> ';
     str += '    </div> ';
     return str;
 }
@@ -649,8 +649,7 @@ function ewz_check_csv_input(ftype, evnum, file_input_id){
 }
 
 function ewz_check_webform_input(form, evnum, do_js_check){
-    var jform,
-    pref;
+    var jform, except, pref;
     jform = jQuery(form);
     if( jform.find('input[id^="apply_prefix"]').is(':checked') &&
         !jform.find('input[id^="prefix_"]').val().trim( ).length ){

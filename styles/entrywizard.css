@@ -1,10 +1,43 @@
+ .ewz_new {
+    border: 1px solid  #555555;
+}
+.ewz_status {
+           background: #f5f5f5;
+           padding: 15px;
+           margin: 15px;
+           width: 40%;
+           border: 1px solid #DFDFDF;
+           border-radius: 5px 5px 5px 5px;
+           display:inline-block;
+}
+.ewz_status td{
+    padding: 2px 5px 2px 5px;
+}
+
+.ewz_done{
+           text-align: center;
+           width: 45%;
+           float: right;
+           background: #f5f5f5;
+           padding: 15px;
+           margin: 15px;
+           border: 1px solid #DFDFDF;
+           border-radius: 5px 5px 5px 5px;
+           display:inline-block;
+         }
+
+#donebutton{ padding: 5px; margin-top: 15px;}
+#datatable {clear: both;}
+
+.sortarrow { border: 1px dotted #999999;  font-size: 1.3em;}
+.ewz_status p { text-align: center; }
 .ewz_upload_table {
     margin: auto;
     border-collapse: separate !important;
     border-spacing: 0px;
 }
 .ewz_overflow {
-    white-space: auto;
+    white-space: normal;
     overflow: auto;
     padding: 8px;
     height: 100%;
@@ -38,7 +71,7 @@
 
 .ewz_upload_table >tbody> tr > td {
     word-wrap:  break-word;
-    white-space: auto;
+    white-space: normal;
     padding: 10px;
     text-align: left;
     font-size: 90%;
@@ -48,7 +81,7 @@
     font-weight: bold;
     font-size: 100%;
 }
-#ewz_stored{ padding:  15px 5px 15px 5px; }
+div[id^="ewz_stored"]{ padding:  15px 5px 15px 5px; }
 
 .ewz_padded td { padding: 20px 10px 20px 10px !important;}
 

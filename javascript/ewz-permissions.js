@@ -1,4 +1,5 @@
 "use strict";
+var ewzG1;
 
 /* Set the selections to reflect the  permissions stored for the selected user */
 /* Show a summary of these permissions */
@@ -52,6 +53,7 @@ function ewz_show_perms(){
 
 /* validation and removal of "none" options */
 function ewz_check_perm_input(the_form){
+    var except;
     jQuery('#submit').prop("disabled", true);
     try{
         var user = jQuery("#ewz_user_perm option:selected").val();

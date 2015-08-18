@@ -166,7 +166,7 @@ function f_options_check( field){
 
 /* validation                                           */
 function f_check_missing( ) {
-    var status = true;
+    var status = true, except;
     jQuery('#foll_form').find('[id^="rdata_"]').each(function() {
         try {
             var fval = f_get_value( jQuery(this) );

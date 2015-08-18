@@ -45,6 +45,7 @@ class Ewz_Webform extends Ewz_Base {
     public $auto_close;
     public $auto_date;
     public $auto_time;
+    public $layout;
 
     private $files_done;     // files added to zipfile for download
 
@@ -65,6 +66,34 @@ class Ewz_Webform extends Ewz_Base {
                                    );
 
     /**
+     * Return the number of  webforms using the input layout
+     *
+     * @param   int  $layout_id   id of the layout
+     * @return  int  number of webforms
+     */
+    public static function get_count_for_layout( $layout_id ) {
+        global $wpdb;
+        assert( Ewz_Base::is_pos_int( $layout_id ) );
+        return $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_WEBFORM_TABLE .
+                                               " WHERE layout_id = %d", $layout_id ) );
+    }
+
+    /**
+     * Return the number of items in webforms using the input layout
+     *
+     * @param   int  $layout_id   id of the layout
+     * @return  int  number of items
+     */
+    public static function get_item_count_for_layout( $layout_id ) {
+        global $wpdb;
+        assert( Ewz_Base::is_pos_int( $layout_id ) );
+        return $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_WEBFORM_TABLE . " frm, " .
+                                                                          EWZ_ITEM_TABLE . " itm " .  
+                                               " WHERE frm.layout_id = %d AND frm.webform_id = itm.webform_id",
+                                                 $layout_id ) );
+    }
+
+    /**
      * Return an array of all webforms using the input layout
      *
      * @param   int  $layout_id   id of the layout
@@ -82,6 +111,29 @@ class Ewz_Webform extends Ewz_Base {
             array_push( $webforms, $webform );
         }
         return $webforms;
+    }
+
+    /**
+     * Return an array of all webform titles using the input layout
+     *
+     * @param   string  $filter  optional function used to filter the titles
+     * @return  array of all webform titles using $layout_id
+     */
+    public static function get_webform_titles( $filter = 'truefunc' ) {
+        assert( is_string( $filter ) );
+        global $wpdb;
+
+        $list = $wpdb->get_results( "SELECT webform_id, layout_id, webform_title  FROM " . EWZ_WEBFORM_TABLE .
+                                " ORDER by webform_order"  );
+        $titles = array();
+        foreach ( $list as $wf ) { 
+            if( call_user_func( array( 'Ewz_Permission',  $filter ), $wf->webform_id, $wf->layout_id ) ) {
+                array_push( $titles, array( 'webform_id' => $wf->webform_id, 
+                                            'layout_id' =>  $wf->layout_id, 
+                                            'webform_title' => $wf->webform_title ) );
+            }
+        }
+        return $titles;
     }
 
     /**
@@ -192,6 +244,30 @@ class Ewz_Webform extends Ewz_Base {
     }
 
 
+    /**
+     * Return the num_items field for the input webform 
+     * 
+     */
+    public static function get_num_items( $webform_id ){
+        global $wpdb;
+        assert( Ewz_Base::is_nn_int( $webform_id ) );
+        $n = $wpdb->get_var( $wpdb->prepare( "SELECT num_items  FROM " . EWZ_WEBFORM_TABLE . 
+                                                     " WHERE webform_id = %d",  $webform_id ) );   
+        return $n;
+    }
+
+    /**
+     * Return the layout_id for a webform_id.
+     **/
+    public static function get_layout_id( $webform_id )
+    {
+        assert( Ewz_Base::is_nn_int( $webform_id ) );
+        global $wpdb;
+        $layout_id = $wpdb->get_var( $wpdb->prepare( "SELECT layout_id  FROM " . EWZ_WEBFORM_TABLE . 
+                                                     " WHERE webform_id = %d",  $webform_id ) );
+        return $layout_id;
+    }
+
     /*     * ****************** Construction ************************* */
 
     /**
@@ -213,31 +289,57 @@ class Ewz_Webform extends Ewz_Base {
      * @param  mixed  $init  webform_id or array of data
      * @return none
      */
-    public function __construct( $init ) {
+    public function __construct( $init, $layout = null ) {
         assert( Ewz_Base::is_pos_int( $init ) || is_string( $init ) || is_array( $init ) );
-        if ( is_numeric( $init ) ){
-            if( Ewz_Base::is_pos_int( $init ) ) {
-                $this->create_from_id( $init );
+        assert( $layout == null || is_object( $layout ) );
+        if( $layout ){
+            $this->construct_with_layout( $init, $layout );
+        } else {
+            if ( is_numeric( $init ) ){
+                if( Ewz_Base::is_pos_int( $init ) ) {
+                    $this->create_from_id( $init );
+                } else {
+                    $this->create_from_id( intval( $init, 10 ) );
+                } 
+            } elseif ( is_string( $init ) ) {
+                $this->create_from_ident( $init );
+            } elseif ( is_array( $init ) ) {
+                $this->create_from_data( $init );
             } else {
-                $this->create_from_id( intval( $init, 10 ) );
-            } 
-        } elseif ( is_string( $init ) ) {
-            $this->create_from_ident( $init );
-        } elseif ( is_array( $init ) ) {
-            $this->create_from_data( $init );
-        } else {
-            throw new EWZ_Exception( 'Invalid webform constructor' );
-        }
-        if ( $this->webform_id ) {
-            $this->itemcount = Ewz_Item::get_itemcount_for_webform( $this->webform_id );
-        } else {
-            // no webform_id means creating a new one
-            if ( !Ewz_Permission::can_manage_all_webforms() ) {
-                throw new EWZ_Exception( "No permission" );
+                throw new EWZ_Exception( 'Invalid webform constructor' );
             }
-            $this->itemcount = 0;
-        }
+            if ( $this->webform_id ) {
+                $this->itemcount = Ewz_Item::get_itemcount_for_webform( $this->webform_id );
+            } else {
+                // no webform_id means creating a new one
+                if ( !Ewz_Permission::can_manage_all_webforms() ) {
+                    throw new EWZ_Exception( "No permission" );
+                }
+                $this->itemcount = 0;
+            }
 
+            // variables required for javascript
+            if ( $this->open_for ) {
+                $this->open_for_string = 'Currently open for ' .
+                    implode( ', ', array_map( function($v){ return get_userdata($v)->user_login; }, 
+                                              $this->open_for ) ) .
+                    ' only';
+            }
+        }
+    }
+
+    /**
+     * Constructor
+     *
+     * @param  mixed  $init  webform_id or array of data
+     * @return none
+     */
+    public function construct_with_layout( $id, $layout ) {
+        assert( Ewz_Base::is_pos_int( $id ) );
+        assert( is_object( $layout ) );
+        $this->create_from_id_layout( $id, $layout );
+        $this->itemcount = Ewz_Item::get_itemcount_for_webform( $this->webform_id );
+         
         // variables required for javascript
         if ( $this->open_for ) {
             $this->open_for_string = 'Currently open for ' .
@@ -245,6 +347,36 @@ class Ewz_Webform extends Ewz_Base {
                                           $this->open_for ) ) .
                 ' only';
         }
+    }
+    /**
+     * Create a new webform object from the webform_id and layout by getting the data from the database
+     *
+     * @param  int  $id the webform id
+     * @param  int  $layout the layout
+     * @return none
+     */
+        protected function create_from_id_layout( $id, $layout ) {
+        global $wpdb;
+        assert( Ewz_Base::is_pos_int( $id ) );
+        assert( is_object( $layout ) );
+        $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " . implode( ',', array_keys( self::$varlist ) ) .
+                                                      " FROM " . EWZ_WEBFORM_TABLE . 
+                                                     " WHERE webform_id=%d", $id ), ARRAY_A );
+        if ( !$dbwebform ) {
+            throw new EWZ_Exception( 'Unable to find matching webform for id', $id );
+        }
+        if( $dbwebform['layout_id'] != $layout->layout_id ){
+            throw new EWZ_Exception( 'Attempt to create webform with invalid layout', $id );
+        }
+        $this->layout = $layout;
+        $this->can_download = Ewz_Permission::can_download( $id, $dbwebform['layout_id'] );
+        $this->can_edit_webform = Ewz_Permission::can_edit_webform( $id );
+        $this->can_manage_webform = Ewz_Permission::can_manage_webform( $id, $dbwebform['layout_id'] );
+        if( !$this->layout->override ||  !$dbwebform['num_items'] ){
+            $dbwebform['num_items'] = $this->layout->max_num_items;
+        }
+        $this->set_data( $dbwebform );
+        $this->set_auto_time();
     }
 
     /**
@@ -256,20 +388,18 @@ class Ewz_Webform extends Ewz_Base {
     protected function create_from_id( $id ) {
         global $wpdb;
         assert( Ewz_Base::is_pos_int( $id ) );
-
-        $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " .
-                                                     implode( ',', array_keys( self::$varlist ) ) .
-                                                     " FROM " .
-                                                     EWZ_WEBFORM_TABLE . " WHERE webform_id=%d", $id ), ARRAY_A );
+        $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " . implode( ',', array_keys( self::$varlist ) ) .
+                                                      " FROM " . EWZ_WEBFORM_TABLE . 
+                                                     " WHERE webform_id=%d", $id ), ARRAY_A );
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform for id', $id );
         }
         $this->can_download = Ewz_Permission::can_download( $id, $dbwebform['layout_id'] );
         $this->can_edit_webform = Ewz_Permission::can_edit_webform( $id );
         $this->can_manage_webform = Ewz_Permission::can_manage_webform( $id, $dbwebform['layout_id'] );
-        $layout = new Ewz_Layout( $dbwebform['layout_id'] );
-        if( !$layout->override ||  !$dbwebform['num_items'] ){
-            $dbwebform['num_items'] = $layout->max_num_items;
+        $this->layout = new Ewz_Layout( $dbwebform['layout_id'] );
+        if( !$this->layout->override ||  !$dbwebform['num_items'] ){
+            $dbwebform['num_items'] = $this->layout->max_num_items;
         }
         $this->set_data( $dbwebform );
         $this->set_auto_time();
@@ -284,10 +414,9 @@ class Ewz_Webform extends Ewz_Base {
     protected function create_from_ident( $ident ) {
         global $wpdb;
         assert( is_string( $ident ) );
-        $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " .
-                                                     implode( ',', array_keys( self::$varlist ) ) .
-                                                     " FROM " .
-                                                     EWZ_WEBFORM_TABLE . " WHERE webform_ident=%s", $ident ), ARRAY_A );
+        $dbwebform = $wpdb->get_row( $wpdb->prepare( "SELECT webform_id, " . implode( ',', array_keys( self::$varlist ) ) .
+                                                      " FROM " .  EWZ_WEBFORM_TABLE . 
+                                                     " WHERE webform_ident=%s", $ident ), ARRAY_A );
         if ( !$dbwebform ) {
             throw new EWZ_Exception( 'Unable to find matching webform for identifier', $ident );
         }
@@ -295,9 +424,9 @@ class Ewz_Webform extends Ewz_Base {
         $this->can_edit_webform = Ewz_Permission::can_edit_webform( $dbwebform['webform_id'] );
         $this->can_manage_webform = Ewz_Permission::can_manage_webform( $dbwebform['webform_id'], $dbwebform['layout_id']  );
 
-        $layout = new Ewz_Layout( $dbwebform['layout_id'] );
-        if( !$layout->override ||  !$dbwebform['num_items'] ){
-            $dbwebform['num_items'] = $layout->max_num_items;
+        $this->layout = new Ewz_Layout( $dbwebform['layout_id'] );
+        if( !$this->layout->override ||  !$dbwebform['num_items'] ){
+            $dbwebform['num_items'] = $this->layout->max_num_items;
         }
         $this->set_data( $dbwebform );
         $this->set_auto_time();
@@ -328,9 +457,9 @@ class Ewz_Webform extends Ewz_Base {
         } else {
             $data['layout_id'] = intval( $data['layout_id'], 10 );
         }
-        $layout = new Ewz_Layout( $data['layout_id'] );
-        if( !$layout->override || !$data['num_items'] ){
-            $data['num_items'] = $layout->max_num_items;
+        $this->layout = new Ewz_Layout( $data['layout_id'] );
+        if( !$this->layout->override || !$data['num_items'] ){
+            $data['num_items'] = $this->layout->max_num_items;
         }
         $this->set_data( $data );
         $this->can_download = Ewz_Permission::can_download( $data['webform_id'], $data['layout_id'] );
@@ -1174,17 +1303,6 @@ class Ewz_Webform extends Ewz_Base {
         }
     }
 
-    /**
-     * Create a variable "items" in the object, which is an array of all items attached to the webform
-     * Don't do this routinely - could be slow and may not be needed
-     *
-     * @param  none
-     * @return none
-     */
-    protected function get_items() {
-        $this->items = Ewz_Item::get_items_for_webform( $this->webform_id, false );
-    }
-
 
     /**
      * Make substitutions in the prefix for some expressions
@@ -1234,6 +1352,10 @@ class Ewz_Webform extends Ewz_Base {
         global $wpdb;
         if ( is_string( $this->open_for ) ) {
             $this->open_for = unserialize( $this->open_for );
+            if( !is_array( $this->open_for ) ){
+                error_log( "EWZ: failed to unserialize open_for for webform  $this->webform_id");
+                $this->open_for = array();
+            }
         }
         foreach ( self::$varlist as $key => $type ) {
             settype( $this->$key, $type );
@@ -1271,20 +1393,39 @@ class Ewz_Webform extends Ewz_Base {
     public function get_attach_prefs() {
         global $wpdb;
 
-        $prefs = array( 'ewz_page_sel' => 0, 'img_size' => 'thumbnail', 'img_comment' => false, 'dups_ok' => false );
+        $base_prefs = array( 'ewz_page_sel' => 0, 'img_size' => 'thumbnail', 'img_comment' => false, 'dups_ok' => false );
+        $wf_prefs = $base_prefs;
         if ( $this->webform_id ) {
 
-            $wf_prefs = unserialize( $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
-                                                                  " WHERE  webform_id = %d", $this->webform_id ) ) );
-            if( $wf_prefs ){
-                $prefs =  $wf_prefs;
+            $wf_tmp =  $wpdb->get_var( $wpdb->prepare( "SELECT attach_prefs FROM " . EWZ_WEBFORM_TABLE .
+                                                                  " WHERE  webform_id = %d", $this->webform_id ) );
+            if( $wf_tmp ){
+                $wf_prefs = unserialize( $wf_tmp );
+                if( !is_array( $wf_prefs ) ){
+                    error_log( "EWZ: failed to unserialize wf_prefs for webform $this->webform_id");
+                    $wf_prefs = $base_prefs;
+                }
+                if( !isset($wf_prefs['dups_ok']) ){
+                    $wf_prefs = $base_prefs;
+                }
             }
         }
-        return $prefs;
+        return $wf_prefs;
     }
 
     /*     * ******************  Database Updates ********************* */
 
+    /**
+     * Set num_items to the input value
+     **/
+    public function update_num_items( $numitems ){
+        assert( Ewz_Base::is_pos_int( $numitems ) );
+        global $wpdb;
+
+        $wpdb->query( "UPDATE " . EWZ_WEBFORM_TABLE . 
+                        " SET num_items = {$numitems} " .
+                       "WHERE webform_id = {$this->webform_id}" );
+    }
 
     /**
      * Save the options for attaching images to pages
@@ -1401,10 +1542,12 @@ class Ewz_Webform extends Ewz_Base {
                 throw new EWZ_Exception( "No changes saved. Insufficient permissions to delete webform '$this->webform_title'" );
             }
 
-            $this->get_items();
+            do_action( 'ewz_before_delete_webform', $this->webform_id );
+
+            $all_items = Ewz_Item::get_items_for_webform( $this->webform_id, false );
             $errmsg = '';
             if ( $delete_items == self::DELETE_ITEMS ) {
-                foreach ( $this->items as $item ) {
+                foreach ( $all_items as $item ) {
                     try { 
                         $item->delete();
                     } catch( EWZ_Exception $e ) {
@@ -1415,11 +1558,12 @@ class Ewz_Webform extends Ewz_Base {
                     throw new EWZ_Exception( $errmsg );
                 } 
             } else {
-                $n = count( $this->items );
+                $n = count( $all_items);
                 if ( $n > 0 ) {
                     throw new EWZ_Exception( "Webform has $n items attached." );
                 }
             }
+
 
             $rowsaffected = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_WEBFORM_TABLE . " WHERE webform_id = %d", $this->webform_id ) );
             if ( 1 == $rowsaffected ) {

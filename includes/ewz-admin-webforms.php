@@ -43,9 +43,11 @@ function ewz_process_uploaded_admin_data( $webform_id )
    if ( !is_readable($file_tmp_name) ) {
        throw new EWZ_Exception( 'Failed to read uploaded .csv file of item data' );
    }
-   if ( false === ($fh = fopen($file_tmp_name, 'r')) ) {
+   $fh = fopen($file_tmp_name, 'r');
+   if ( false === $fh ) {
        throw new EWZ_Exception( 'Failed to open uploaded .csv file of item data' );
    }
+   fclose( $fh );
 
    $f_h = fopen($file_tmp_name, "r");
    $n = 0;
@@ -109,9 +111,11 @@ function ewz_process_uploaded_csv( $webform_id )
    if ( !is_readable($file_tmp_name) ) {
        throw new EWZ_Exception( 'Failed to read uploaded .csv file of image data' );
    }
-   if ( false === ($fh = fopen($file_tmp_name, 'r')) ) {
+   $fh = fopen($file_tmp_name, 'r');
+   if ( false === $fh ) {
        throw new EWZ_Exception( 'Failed to open uploaded .csv file of image data' );
    }
+   fclose($fh);
 
    $f_h = fopen($file_tmp_name, "r");
    $n = 0;
@@ -233,22 +237,20 @@ function ewz_webforms_menu()
                 }
             }
 
-            $layout = new Ewz_Layout( $webform->layout_id );
-
             // easier in Javascript if this is set
-            $webform->layout_name = esc_html( $layout->layout_name );
-            $webform->canOverride = $layout->override;
+            $webform->layout_name = esc_html( $webform->layout->layout_name );
+            $webform->canOverride = $webform->layout->override;
             $webform = ewz_html_esc( $webform );
 
             // has to be escaped separately because it contains html
-            $webform->user_options = ewz_option_list( ewz_html_esc( $webform->user_options ) );
+            $webform->user_options = ewz_option_list( $webform->user_options );
 
             // generate the options lists for each field of the selected layout
-            foreach ( $layout->fields as $field ) {
+            foreach ( $webform->layout->fields as $field ) {
                 $webform->field_idents[$field->field_id] = $field->field_ident;
                 $webform->field_types[$field->field_id] = $field->field_type;
                 $webform->field_names[$field->field_id] = ewz_html_esc( $field->field_header );
-                $webform->field_options[$field->field_id] = ewz_option_list( ewz_html_esc( $field->get_field_list_array() ) );
+                $webform->field_options[$field->field_id] = ewz_option_list( $field->get_field_list_array() );
             }
             if( method_exists( 'Ewz_Custom_Data', 'selection_list' ) ){
                 foreach ( Ewz_Custom_Data::$data as $key => $name ){
@@ -260,14 +262,14 @@ function ewz_webforms_menu()
                             $x =  array( 'value' => $val, 'display' => $val );
                             array_push( $opts, $x );
                         }
-                        $webform->custom_options[$key] = ewz_option_list( ewz_html_esc( $opts ) );
+                        $webform->custom_options[$key] = ewz_option_list( $opts );
                     }
                 }
             }
             $l_options = Ewz_Layout::get_layout_opt_array( 'can_assign_layout',
                                                            $webform->layout_id );
-            $webform->layouts_options = ewz_option_list( ewz_html_esc( $l_options ) );
-            $webform->close_time_opts = ewz_option_list(  ewz_html_esc( $webform->get_close_opt_array() ) );
+            $webform->layouts_options = ewz_option_list( $l_options  );
+            $webform->close_time_opts = ewz_option_list(   $webform->get_close_opt_array()  );
         }
 
         /*******************************/
@@ -289,7 +291,7 @@ function ewz_webforms_menu()
 
         $ewzG['openform_id'] = $openwebform_id;
         $ewzG['message'] = wp_kses( $message, array( 'br' => array(), 'b' => array() ) );
-        $ewzG['base_options'] = ewz_option_list( ewz_html_esc(Ewz_Layout::get_layout_opt_array( 'can_assign_layout' ) ) );
+        $ewzG['base_options'] = ewz_option_list( Ewz_Layout::get_layout_opt_array( 'can_assign_layout' ) );
 
         $ewzG['ipp'] = get_user_meta( get_current_user_id(), 'ewz_itemsperpage', true );
 

@@ -78,8 +78,8 @@ class Ewz_Item extends Ewz_Base {
             $clause = " AND user_id = " . get_current_user_id();
         }
         $list = $wpdb->get_results( $wpdb->prepare(
-               "SELECT item_id  FROM " .
-                EWZ_ITEM_TABLE . " WHERE webform_id = %d" . $clause . " ORDER BY item_id",
+               "SELECT item_id  FROM " . EWZ_ITEM_TABLE . 
+               " WHERE webform_id = %d" . $clause . " ORDER BY item_id",
                $webform_id ), OBJECT );
         $items = array( );
         foreach ( $list as $itm ) {
@@ -220,17 +220,18 @@ class Ewz_Item extends Ewz_Base {
     protected function create_from_id( $id ) {
         global $wpdb;
         assert( Ewz_Base::is_pos_int( $id ) );
-        $dbitem = $wpdb->get_row(
-                $wpdb->prepare( "SELECT item_id, " .
-                        implode( ',', array_keys( self::$varlist ) ) .
-                        " FROM " . EWZ_ITEM_TABLE . " WHERE item_id=%d", $id ), ARRAY_A );
-        if ( !$dbitem ) {
-            throw new EWZ_Exception( 'Unable to find matching item', $id );
-        } else {
-            $this->set_data( $dbitem );
+        if( !$dbitem = wp_cache_get( $id, 'ewz_item' ) ){
+            $dbitem = $wpdb->get_row(
+                    $wpdb->prepare( "SELECT  w.layout_id, i.item_id, " . implode( ',i.', array_keys( self::$varlist ) ) .
+                                     " FROM " . EWZ_ITEM_TABLE . " i, " . EWZ_WEBFORM_TABLE . " w ".
+                                    " WHERE w.webform_id = i.webform_id AND item_id=%d", $id ), ARRAY_A );
+            if ( !$dbitem ) {
+                throw new EWZ_Exception( 'Unable to find matching item', $id );
+            } 
+            wp_cache_add( $id, $dbitem, 'ewz_item');      
         }
-        $webform = new Ewz_Webform( $this->webform_id );
-        $this->layout_id = $webform->layout_id;
+        $this->set_data( $dbitem );
+        $this->layout_id = $dbitem['layout_id'];
     }
 
     /**
@@ -245,16 +246,10 @@ class Ewz_Item extends Ewz_Base {
             $data['item_id'] = 0;
         }
         $this->set_data( $data );
-        $webform = new Ewz_Webform( $this->webform_id );
-        $this->layout_id = $webform->layout_id;
+        $this->layout_id = Ewz_Webform::get_layout_id ( $this->webform_id );
         $this->check_errors();
     }
 
-
-    protected function get_num_items_allowed(){
-        $webform = new Ewz_Webform( $this->webform_id);
-        return $webform->num_items;
-    }
 
     /********************  Validation  *******************************/
 
@@ -270,6 +265,10 @@ class Ewz_Item extends Ewz_Base {
         if ( isset( $this->item_files ) ) {
             if ( is_string( $this->item_files ) ) {
                 $this->item_files = unserialize( $this->item_files );
+                if( !is_array( $this->item_files ) ){
+                    $this->item_files = array();
+                    error_log("EWZ: failed to unserialize item files");
+                }
             }
         } 
         foreach ( self::$varlist as $key => $type ) {
@@ -292,8 +291,8 @@ class Ewz_Item extends Ewz_Base {
         // check for change of owner or webform ( should not happen )
         if( $this->item_id ) {
             $dbitem = $wpdb->get_row(
-                    $wpdb->prepare( "SELECT user_id, webform_id" .
-                            " FROM " . EWZ_ITEM_TABLE . " WHERE item_id=%d", $this->item_id ), ARRAY_A );
+                    $wpdb->prepare( "SELECT user_id, webform_id FROM " . EWZ_ITEM_TABLE .
+                                    " WHERE item_id=%d", $this->item_id ), ARRAY_A );
             
             if ( !$dbitem ) {
                 throw new EWZ_Exception( 'Unable to find matching item', $this->item_id );
@@ -409,10 +408,8 @@ class Ewz_Item extends Ewz_Base {
         $allowed_html = $allowedtags;
         $allowed_html['br'] = array();   
 
-        // this is needed because the strings are single-quoted in some javascript
-        $admin_data = str_replace( "'", '&#039;', $admin_data);
-
-        $this->item_data['admin_data']   = wp_kses( $admin_data, $allowed_html );
+        // the replace is needed because the strings are single-quoted in some javascript
+        $this->item_data['admin_data']   = wp_kses( str_replace( "'", '&#039;', $admin_data), $allowed_html );
         
         $this->save();
     }
@@ -436,6 +433,8 @@ class Ewz_Item extends Ewz_Base {
             throw new EWZ_Exception( 'Insufficient permissions to edit item',
                     "item $this->item_id in webform $this->webform_id" );
         }
+
+        wp_cache_delete( $this->item_id, 'ewz_item' );
 
         // for saving last_change and upload_date
         $curr_tz = date_default_timezone_get();
@@ -489,7 +488,8 @@ class Ewz_Item extends Ewz_Base {
             $num = $wpdb->get_var( $wpdb->prepare( "SELECT count(*)  FROM " . EWZ_ITEM_TABLE .
                                                    " WHERE user_id = %d AND webform_id = %d ",
                                                    $this->user_id, $this->webform_id ) );
-            if( $this->get_num_items_allowed() < ( $num + 1 ) ){
+               
+            if( Ewz_Webform::get_num_items( $this->webform_id ) < ( $num + 1 ) ){
                 if ( isset( $this->item_files ) ){
                     foreach( $this->item_files as $item_file ){
                         $errors .= $this->delete_file( $item_file );
@@ -540,7 +540,11 @@ class Ewz_Item extends Ewz_Base {
             throw new EWZ_Exception( 'Insufficient permissions to edit item', "item $this->item_id in webform $this->webform_id" );
         }
 
+        do_action( 'ewz_before_delete_item', $this->item_id );
+
         $errors = '';
+        wp_cache_delete( $this->item_id, 'ewz_item' );
+
         $rows_deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM " . EWZ_ITEM_TABLE . " WHERE item_id = %d ", $this->item_id ) );
         assert( is_int($rows_deleted));
         if ( $rows_deleted > 1 ) {

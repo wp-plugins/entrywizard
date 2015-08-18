@@ -38,11 +38,6 @@ class Ewz_Upload_Input extends Ewz_Input
     }
 
 
-    public function is_valid_ident( $identifier ){
-        assert( is_string(  $identifier ) );
-        return self::ident( $identifier );
-    }
-
   //****** All v_.... functions must return a boolean **************/
 
 /**
@@ -155,7 +150,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   $fval    the field value uploaded
      * @return  Boolean
      */
-    private static function field_matches_restr( $field_id, $restr, $fval )
+    public static function field_matches_restr( $field_id, $restr, $fval )
     {
         assert( Ewz_Base::is_pos_int( $field_id ) );
         assert( is_array( $restr ) );
@@ -187,7 +182,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   string  $val  input value
      * @return  $val
      */
-    private static function validate_img_data( $val )
+    public static function validate_img_data( $val )
     {
         assert( is_string( $val ) );
 
@@ -207,11 +202,11 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   string  $val    input value
      * @return  string  $msg  Error message, empty if no error.
      */
-    private static function validate_str_data( $fdata, &$val )
+    public static function validate_str_data( $fdata, &$val )
     {
         assert( is_string( $val ) );
         assert( is_array( $fdata ) );
-        if( !self::to_string( $val, '' ) ){               // also encodes the string
+        if( !self::to_string( $val, '' ) ){               // also html_entity_decodes the string
             throw new EWZ_Exception( "Invalid format for text input" );
         }
         $val = str_replace('\\', '', $val );  // messes up stripslashes and serialize. Its hard
@@ -237,7 +232,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   int     $optcount    number of previously processed items with this value 
      * @return  $val
      */
-    private static function validate_opt_data( $field, $val, $optcount )
+    public static function validate_opt_data( $field, $val, $optcount )
     {
         assert( is_string( $val ) );
         assert( is_object( $field ) );
@@ -274,7 +269,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   string  $count  input integer    count of checks for this checkbox before this item is counted
      * @return  boolean
      */
-    private static function validate_chk_data( $field, $val, $count )
+    public static function validate_chk_data( $field, $val, $count )
     {
         assert( is_object( $field ) );
         assert( is_string( $val ) );
@@ -298,7 +293,7 @@ class Ewz_Upload_Input extends Ewz_Input
      * @param   int     $count  count of items with this button checked  before this item is counted
      * @return  boolean
      */
-    private static function validate_rad_data(  $val, $count )
+    public static function validate_rad_data(  $val, $count )
     {
         assert( is_string( $val ) );
         assert( Ewz_Base::is_nn_int( $count ) );

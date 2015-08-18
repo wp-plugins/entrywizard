@@ -123,7 +123,7 @@ function ewz_layout_menu()
         $ewzG['can_do'] = Ewz_Permission::can_edit_all_layouts();
 
         // get option list of editable layouts sorted by layout_id to match the order of the layout objects
-        $ewzG['layouts_options'] = ewz_option_list( ewz_html_esc( Ewz_Layout::get_layout_opt_array( 'can_edit_layout' ) ) );
+        $ewzG['layouts_options'] = ewz_option_list( Ewz_Layout::get_layout_opt_array( 'can_edit_layout'  ) );
         $ewzG['nonce_string'] = $nonce_string;
         $ewzG['message'] =  wp_strip_all_tags( $message );   // alerts cant show html tags
         $ewzG['load_gif'] = plugins_url( 'images/loading.gif', dirname( __FILE__ ) );
@@ -254,14 +254,13 @@ function ewz_layout_menu()
 
             <!-- HELP POPUP image size -->
             <div id="imgsize_help" class="wp-dialog" >
-                <p>Your web hosting company also puts three limits on uploaded items:<br>
+                <p>Your web hosting company also puts three limits on uploaded items:</p>
                     <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?></li>
                         <li>The total size of the whole upload including all items may not be bigger than
                             <?php print $ewzG['maxTotalMb']; ?></li>
                         <li>The maximum number of items that may be uploaded simultaneously is
                             <?php print $ewzG['maxNumitems']; ?></li>
                     </ol>
-                </p>
                 <p>For the technically-minded, these limits are set in <i>php.ini</i>, and more
                     details may be obtained from the php documentation website
                     http://php.net/manual/en/ini.core.php
@@ -285,7 +284,7 @@ function ewz_layout_menu()
                    you have set a larger maximum for one of the options in a drop-down field.</p>
 
                 <p>Note that your environment or your web hosting company puts three limits on
-                    uploaded items.  These have been detected to be:<br>
+                    uploaded items.  These have been detected to be:</p>
                     <ol><li>No individual item may be bigger than <?php print $ewzG['maxUploadMb']; ?>M</li>
 
                         <li>The total size of the whole upload including all items may not be bigger than
@@ -294,7 +293,6 @@ function ewz_layout_menu()
                         <li>The maximum number of items that may be uploaded simultaneously is
                             <?php print $ewzG['maxNumitems']; ?></li>
                     </ol>
-                </p>
                 <p>( For the technically-minded, these limits are set in <i>php.ini</i>, and more
                     details may be obtained from the php documentation website
                     http://php.net/manual/en/ini.core.php )
@@ -527,14 +525,23 @@ function ewz_layout_menu()
             <!-- HELP POPUP max visible chars -->
             <div id="maxvis_help" class="wp-dialog" >
                 <p>The number of characters that will be visible at any one time - ie the width of
-                    the text box.
+                the text box. 
                 </p>
                 <p>If you have many fields, you may need to keep the total width of your form in mind
                     when setting this value.
                 </p>
                 <p>On the other hand, a box that is smaller than the number of characters the user
-                    wishes to type is not very comfortable to use.
+                wishes to type is not very comfortable to use. If you need many more characters
+                than the width of your form allows, try setting the "Number of Lines" to something
+                bigger than 1. That creates a "textarea" instead of a normal text input.
                 </p>
+            </div>
+
+            <!-- HELP POPUP text rows -->
+            <div id="textrows_help" class="wp-dialog" >
+                <p>A normal html text input is a single line only. Setting this value to something 
+                greater than 1 creates a "textarea" instead, with the assigned number of rows, and 
+                number of columns equal to the "Number of Characters Visible in Input". </p>
             </div>
 
             <!-- HELP POPUP reformatted text -->
@@ -560,7 +567,8 @@ function ewz_layout_menu()
                     other items of information in the spreadsheet that you download.
                 </p>
                 <p>The source of the data is shown in parentheses.
-                     <ul><li><b>"WP User data"</b> is information you control via the Wordpress Users menu. </li>
+                     <ul><li><b>"WP User data"</b> is information you control via the Wordpress Users menu. 
+                          <u>Note that this data is only visible to admins with the right permission</u>.</li>
                       <li><b>"EWZ Item data"</b> is information about an item stored by this plugin but not
                           actually set by the user.<br>
                           It may include data uploaded by the administrator via a .csv file

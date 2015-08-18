@@ -27,6 +27,7 @@ function ewz_show_webform( $atts )
     //error_log("EWZ: showing webform for " . $_SERVER["REMOTE_ADDR"]);
     assert( is_array( $atts ) );
 
+    wp_enqueue_script( 'ewz-upload' );
     try{
         // need webformdata whether or not we need to process an upload
         $webformdata = ewz_get_webform_data( $atts );
@@ -356,20 +357,21 @@ function ewz_display_webform_field( $rownum, $webform_id, $savedval, $field, $fi
     assert( is_string( $savedval ) || is_bool( $savedval ) || $savedval === null || $savedval === 1 || $savedval === 0 );
     assert( is_bool($fixed));
 
-    $name    = "rdata[$rownum][" . $field->field_id . "]";
+    $ename  = esc_attr( "rdata[$rownum][" . $field->field_id . "]" );
+    $id =  str_replace( '[', '_', str_replace( ']', '_', $ename ) ) . '_' . esc_attr( $webform_id );
 
     $display = '<div class="fdisplay">';
 
     switch ( $field->field_type ) {
-    case 'str': $display .= ewz_display_str_form_field( $name, $webform_id, $savedval, $field );
+    case 'str': $display .= ewz_display_str_form_field( $ename, $id, $savedval, $field );
             break;
-    case 'opt': $display .= ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed );
+    case 'opt': $display .= ewz_display_opt_form_field( $ename, $id, $savedval, $field, $fixed );
             break;
-    case 'img': $display .= ewz_display_img_form_field( $name, $webform_id, $savedval, $field );
+    case 'rad': $display .= ewz_display_rad_form_field( $ename, $id, $savedval, $field );
             break;
-    case 'rad': $display .= ewz_display_rad_form_field( $name, $webform_id, $savedval, $field );
+    case 'chk': $display .= ewz_display_chk_form_field( $ename, $id, $savedval );
             break;
-    case 'chk': $display .= ewz_display_chk_form_field( $name, $webform_id, $savedval );
+    case 'img': $display .= ewz_display_img_form_field( $ename, $id, $savedval, $field, $webform_id );
             break;
     default:
         throw new EWZ_Exception( "Invalid field type " . $field->field_type );
@@ -402,149 +404,6 @@ function ewz_get_saved_value( $field, $item ){
 }
 
 
-/**
- * Return the html for displaying a single text-input field
- *
- * @param   string  $name        js name of field
- * @param   int     $webform_id
- * @param   string  $savedval    data currently stored for the field
- * @param   array   $field       field info
- * @return  string   -- the html
- */
-function ewz_display_str_form_field( $name, $webform_id, $savedval, $field )
-{
-    assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( is_string( $name ) );
-    assert( is_string( $savedval ) );
-    assert( Ewz_Base::is_nn_int( $field->fdata['fieldwidth'] ) );
-
-    $ename = esc_attr( $name );
-    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-    return '<input type="text" name="' . $ename .
-                   '" id="' . $iname . '_' . esc_attr( $webform_id ) .
-                   '" size="' . esc_attr( $field->fdata['fieldwidth'] ) .
-                   '" maxlength="' . esc_attr( $field->fdata['maxstringchars'] ) .
-                   '" value="' . esc_attr( $savedval ) .
-            '">';
-}
-
-/**
- * Return the html for displaying a single image field
- *
- * @param   string  $name        js name of field
- * @param   int     $webform_id
- * @param   string  $savedval    data currently stored for the field
- * @param   array   $field       field info
- * @return  string   -- the html
- */
-function ewz_display_img_form_field( $name, $webform_id, $savedval, $field )
-{
-    assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( is_string( $name ) );
-    assert( is_string( $savedval ) || $savedval === null );
-    assert( Ewz_Base::is_pos_int( $field->field_id ) );
-
-    // for an image file, don't want it changed, so only have an input if no savedval
-    $ename = esc_attr( $name );
-    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-    $esc_wid = esc_attr( $webform_id );
-    if ( $savedval ) {
-        $ret  = '<input type="hidden" name="' . $ename . '" value="ewz_img_upload" >';
-        $ret .= '<img id="' . $iname . '_' . $esc_wid . '" src="' . esc_url( $savedval ) . '">';
-        return $ret;
-    } else {
-        $qname = "'" . $iname . "_$esc_wid'";
-        $fid = esc_attr( $field->field_id );
-        $imginfo = '<input type="file"  name="' . $ename .  '" id="' . $iname . '_' . $esc_wid .
-                           '" onchange="fileSelected(' . $fid . ', ' . $qname . ', ' . $webform_id . ' );">';
-        // watch no spaces here - they put newlines between the divs
-        $imginfo .= '<div id="dv_' . $iname . '_' . $esc_wid . '" style="display:none">';
-        $imginfo .= '<div id="nm_' . $iname . '_' . $esc_wid . '"></div>';
-        $imginfo .= '<div id="sz_' . $iname . '_' . $esc_wid . '"></div>';
-        $imginfo .= '<div id="tp_' . $iname . '_' . $esc_wid . '"></div>';
-        $imginfo .= '<div id="wh_' . $iname . '_' . $esc_wid . '"></div>';
-        $imginfo .= '</div>';
-        return $imginfo;
-    }
-}
-
-/**
- * Return the html for displaying a single option field
- *
- * @param   string $name        js name of field
- * @param   int    $webform_id
- * @param   mixed  $savedval    data currently stored for the field
- * @param   array  $field       field info
- * @return  string   -- the html
- */
-function ewz_display_opt_form_field( $name, $webform_id, $savedval, $field, $fixed )
-{
-    assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( is_string( $name ) );
-    assert( is_string( $savedval ) );
-    assert( Ewz_Base::is_pos_int( $field->field_id ) );
-    assert( is_bool( $fixed ) );
-
-    $ename = esc_attr( $name );
-    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-    $txt = '<select name="' . $ename . '" id="' . $iname . '_' . esc_attr( $webform_id ) .'">';
-    $txt .= '  <option value="" ' .  ( $fixed ? ' disabled="disabled"' : '' ) . '></option>' ;
-    foreach ( $field->fdata['options'] as $n => $dataval ) {
-        $txt .= '<option value="' . esc_attr( $dataval['value'] ) . '"';
-        if ( $dataval['value'] === $savedval ) {
-            $txt .=         ' selected="selected" ';
-        } elseif( $fixed ){
-            $txt .=         ' disabled="disabled"';
-        }
-        $txt .= '>' . esc_attr( $dataval['label'] ) . '</option>';
-    }
-    $txt .= '</select>';
-    return $txt;
-}
-/**
- * Display a radio button
- *
- * Radios in the same column must have the same name, so use the field id for that.
- * Give the button a value equal to the name we would normally have used.
- * If it is checked, when submitting, Javascript disables it and creates a new hidden
- * input with name equal to the value of the radio button and value '1'.
- *
- * @param
- * @return
- */
-function ewz_display_rad_form_field( $name,  $webform_id, $savedval, $field )
-{
-    assert( is_string( $name ) );
-    assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( in_array( $savedval, array( null, 1, 0 ) ) );
-    assert( is_object( $field ) );
-
-    $ename = esc_attr( $name );
-    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-
-
-    return '<input type="radio"  name="radio' . $field->field_id . '"' .
-                   ' id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
-                   ' value="' . $ename .'" ' .
-                   ($savedval ? ' checked="checked" ' : '') .
-            '>';
-}
-
-
-function ewz_display_chk_form_field( $name, $webform_id, $savedval )
-{
-    assert( Ewz_Base::is_pos_int( $webform_id ) );
-    assert( is_string( $name ) );
-    assert( in_array( $savedval, array( null, 1, 0 ) ) );
-
-    $ename = esc_attr( $name );
-
-    $iname = str_replace( '[', '_', str_replace( ']', '_', $ename ) );
-      return '<input type="checkbox"  name="' . $ename .
-                   '" value="1"  id="' . $iname . '_' . esc_attr( $webform_id ) . '"' .
-          ($savedval ? ' checked="checked" ' : '') .
-            '>';
-}
 
 /**
  * Generate a javascript array to store info needed in client
@@ -869,19 +728,6 @@ function ewz_create_thumbfile( $img_filepath ){
     return $thumb_filepath;
 }
 
-/**
- * Return an html string for display when the webform is closed
- *
- * @param   string  $form_name  name of webform for display to user
- * @return  string  html
- */
-function ewz_upload_closed( $form_name )
-{
-    assert( is_string( $form_name ) );
-    $html = '<h2>Sorry, ' . esc_html( $form_name ) . ' is not open for upload at the moment</h2>';
-
-    return $html;
-}
 
 /**
  * Save the uploaded image file in the correct folder and generate the thumbnail

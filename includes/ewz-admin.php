@@ -340,7 +340,7 @@ function ewz_gen_zipfile_callback() {
         }
     } else {
         echo "Insufficient permissions - may have expired";
-        error_log( "EWZ: ewz_del_layout_callback, check_admin_referer failed" );
+        error_log( "EWZ: ewz_gen_zipfile_callback, check_admin_referer failed" );
     }
     exit();
 }
