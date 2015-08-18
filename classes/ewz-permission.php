@@ -91,14 +91,14 @@ class Ewz_Permission {
     }
 
     /**
-     * Remove ALL permissions ( when plugin is deleted )
+     * Remove ALL permissions ( called by uninstall_ewz )
      */
     public static function remove_all_ewz_perms() {
         if ( current_user_can( 'delete_plugins' ) ) {
             global $wpdb;
 
-            $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " .
-                    $wpdb->usermeta . " WHERE meta_key LIKE 'ewz_can%'" );
+            $meta_ids = $wpdb->get_results( "SELECT user_id, meta_key FROM " . $wpdb->usermeta . 
+                                            " WHERE meta_key LIKE 'ewz_can_%'", OBJECT );
             foreach ( $meta_ids as $umeta ) {
                  delete_user_meta( $umeta->user_id, $umeta->meta_key );
             }
@@ -120,10 +120,14 @@ class Ewz_Permission {
         global $wpdb;
         if ( current_user_can( 'manage_options' ) ) {
             $perm = '';
-            $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value " .
-                "FROM $wpdb->usermeta WHERE meta_key like 'ewz_can%'" );
+            $perms = $wpdb->get_results( "SELECT user_id, meta_key, meta_value FROM $wpdb->usermeta " .
+                                         " WHERE meta_key like 'ewz_can_%'", OBJECT );
             foreach ( $perms as $key=>$perm ) {
                 $perms[$key]->meta_value = unserialize( $perm->meta_value );
+                if( !is_array( $perms[$key]->meta_value ) ){  
+                    $perms[$key]->meta_value = array();
+                    error_log("EWZ: failed to unserialize permission") ; 
+                }   
             }
             return $perms;
         } else {
@@ -146,16 +150,20 @@ class Ewz_Permission {
             $user_id = get_current_user_id();
         }
         if ( current_user_can( 'manage_options' ) || get_current_user_id() == $user_id  ) {
-            $perms = $wpdb->get_results( "SELECT meta_key, meta_value
-                    FROM $wpdb->usermeta
-                    WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'" );
+            $perms = $wpdb->get_results( "SELECT meta_key, meta_value FROM $wpdb->usermeta " .
+                                         " WHERE user_id = $user_id AND meta_key LIKE 'ewz_can_%'", OBJECT );
 
             $allowed = array( );
             foreach ( self::$ewz_caps as $cap ) {
                 $allowed[$cap] = array( );
             }
             foreach ( $perms as $perm ) {
-                foreach ( unserialize( $perm->meta_value ) as $seq ) {
+                $perm_arr = unserialize( $perm->meta_value );
+                if( !is_array( $perm_arr ) ){  
+                    $perm_arr = array();
+                    error_log("EWZ: failed to unserialize permission for user $user_id") ; 
+                }  
+                foreach ( $perm_arr as $seq ) {
                     array_push( $allowed[$perm->meta_key], $seq );
                 }
             }
@@ -287,13 +295,13 @@ class Ewz_Permission {
      * Is the current user allowed to download either from the specified webform
      * or from any form with its layout
      *
-     * @param  object   $webform   (needs members webform_id and layout_id)
+     * @param  int   $webform_id  
+     * @param  int   $layout_id    obtained from database if not set
      * @return boolean
      */
-    public static function can_download( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
-        assert( Ewz_Base::is_pos_int( $webform->layout_id ) );
-
+    public static function can_download( $webform_id, $layout_id = 0 ) {
+        assert( Ewz_Base::is_nn_int( $webform_id ));
+        assert( Ewz_Base::is_nn_int( $layout_id ));
         if ( current_user_can( 'manage_options' ) ) {
             return true;
         }
@@ -302,11 +310,17 @@ class Ewz_Permission {
         if ( in_array( -1, $perms_for_user['ewz_can_download_webform'] ) ) {
             return true;
         }
-        if ( in_array( $webform->webform_id, $perms_for_user['ewz_can_download_webform'] ) ) {
+        if ( in_array( $webform_id, $perms_for_user['ewz_can_download_webform'] ) ) {
             return true;
         }
-        if ( in_array( $webform->layout_id, $perms_for_user['ewz_can_download_webform_L'] ) ) {
-            return true;
+        if( 0 < $layout_id ){
+            if ( in_array( $layout_id, $perms_for_user['ewz_can_download_webform_L'] ) ) {
+                return true;
+            }
+        } else {
+            if ( in_array( Ewz_Webform::get_layout_id( $webform_id ), $perms_for_user['ewz_can_download_webform_L'] ) ) {
+                return true;
+            }
         }
         return false;
     }
@@ -314,16 +328,18 @@ class Ewz_Permission {
     /**
      * Is the current user allowed to see the specified webform
      *
-     * @param  object    $webform   (needs member webform_id )
+     * @param  int      $webform_id 
+     * @param  int      $layout_id    obtained from database if not set
      * @return boolean
      */
-    public static function can_view_webform( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
+    public static function can_view_webform( $webform_id, $layout_id = 0 ) {
+        assert( Ewz_Base::is_nn_int( $webform_id ) );
+        assert( Ewz_Base::is_nn_int( $layout_id ));
 
-        if ( self::can_manage_webform( $webform ) ) {
+        if ( self::can_manage_webform( $webform_id, $layout_id ) ) {
             return true;
         }
-        if ( self::can_download( $webform ) ) {
+        if ( self::can_download( $webform_id, $layout_id ) ) {
             return true;
         }
         return false;
@@ -332,11 +348,11 @@ class Ewz_Permission {
     /**
      * Is the current user allowed to edit the specified webform
      *
-     * @param  object    $webform   (needs member webform_id )
+     * @param  int    $webform_id  
      * @return boolean
      */
-    public static function can_edit_webform( $webform ) {
-        assert( Ewz_Base::is_nn_int( $webform->webform_id ) );
+    public static function can_edit_webform( $webform_id ) {
+        assert( Ewz_Base::is_nn_int( $webform_id ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -345,7 +361,7 @@ class Ewz_Permission {
         if ( in_array( -1, $perms_for_user['ewz_can_edit_webform'] ) ) {
             return true;
         }
-        if ( in_array( $webform->webform_id, $perms_for_user['ewz_can_edit_webform'] ) ) {
+        if ( in_array( $webform_id, $perms_for_user['ewz_can_edit_webform'] ) ) {
             return true;
         }
         return false;
@@ -355,11 +371,13 @@ class Ewz_Permission {
      * Is the current user allowed to manage either the specified webform,
      *        any webform, or any webform with the specified webform's layout
      *
-     * @param  mixed    $webform   ( webform_id or Ewz_Webform )
+     * @param  int    $webform_id  
+     * @param  int    $layout_id    if 0 or null, obtained from database
      * @return boolean
      */
-    public static function can_manage_webform( $in_webform ) {
-        assert( Ewz_Base::is_nn_int( $in_webform ) || Ewz_Base::is_nn_int( $in_webform->webform_id ) );
+    public static function can_manage_webform( $webform_id , $layout_id  = 0 ) {
+        assert( Ewz_Base::is_nn_int( $webform_id ) );
+        assert( Ewz_Base::is_nn_int( $layout_id ));
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
@@ -373,51 +391,42 @@ class Ewz_Permission {
             return true;
         }
 
-        if ( is_object( $in_webform ) ) {
-            $webform = $in_webform;
+        if ( in_array( $webform_id, $perms_for_user['ewz_can_edit_webform'] ) ) {
+            return true;
+        }
+        if ( in_array( $webform_id, $perms_for_user['ewz_can_manage_webform'] ) ) {
+            return true;
+        }
+        if( 0 < $layout_id ){
+            if ( in_array( $layout_id, $perms_for_user['ewz_can_manage_webform_L'] ) ) {
+                return true;
+            }
         } else {
-            $webform = new Ewz_Webform( $in_webform );
-        }
-        if ( !isset( $webform->webform_id ) || !isset( $webform->layout_id ) ) {
-            return false;
-        }
-        $wid = $webform->webform_id;
-        $lid = $webform->layout_id;
-        if ( in_array( $wid, $perms_for_user['ewz_can_edit_webform'] ) ) {
-            return true;
-        }
-        if ( in_array( $wid, $perms_for_user['ewz_can_manage_webform'] ) ) {
-            return true;
-        }
-        if ( in_array( $lid, $perms_for_user['ewz_can_manage_webform_L'] ) ) {
-            return true;
-        }
+            if ( in_array( Ewz_Webform::get_layout_id( $webform_id ), $perms_for_user['ewz_can_manage_webform_L'] ) ) {
+                return true;
+            }
+        }   
         return false;
     }
 
     /**
      * Is the current user allowed to edit the specified layout
      *
-     * @param  object  OR int $layout  ( needs member $layout_id )
+     * @param  int $layout_id 
      *
      * @return boolean
      */
-    public static function can_edit_layout( $layout ) {
-        assert( Ewz_Base::is_nn_int( $layout ) || Ewz_Base::is_nn_int( $layout->layout_id ) );
+    public static function can_edit_layout( $layout_id ) {
+        assert( Ewz_Base::is_nn_int( $layout_id ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
-        }
-        if ( is_object( $layout ) ) {
-            $lid = $layout->layout_id;
-        } else {
-            $lid = $layout;
         }
         $perms_for_user = self::get_ewz_permissions_for_user();
         if ( in_array( -1, $perms_for_user['ewz_can_edit_layout'] ) ) {
             return true;
         }
-        if ( in_array( $lid, $perms_for_user['ewz_can_edit_layout'] ) ) {
+        if ( in_array( $layout_id, $perms_for_user['ewz_can_edit_layout'] ) ) {
             return true;
         }
         return false;
@@ -427,31 +436,31 @@ class Ewz_Permission {
      * Is the current user allowed to assign the specified layout to a webform
      *        (permission is also required to edit the webform)
      *
-     * @param  object  $layout  ( needs member $layout_id )
+     * @param  int       $layout_id 
      * @return boolean
      */
-    public static function can_assign_layout( $layout ) {
-        assert( Ewz_Base::is_pos_int( $layout ) || Ewz_Base::is_pos_int( $layout->layout_id ) );
+    public static function can_assign_layout( $layout_id ) {
+        assert( Ewz_Base::is_nn_int( $layout_id ) );
 
         if ( current_user_can( 'manage_options' ) ) {
             return true;
-        }
-        if ( is_object( $layout ) ) {
-            $lid = $layout->layout_id;
-        } else {
-            $lid = $layout;
         }
         $perms_for_user = self::get_ewz_permissions_for_user();
         if ( in_array( -1, $perms_for_user['ewz_can_assign_layout'] ) ) {
             return true;
         }
-        if ( in_array( $lid, $perms_for_user['ewz_can_assign_layout'] ) ) {
+        if ( in_array( $layout_id, $perms_for_user['ewz_can_assign_layout'] ) ) {
             return true;
         }
         return false;
     }
 
-    /**
+    public static function truefunc()
+    {
+        return true;
+    }
+
+   /**
      * Validate the input $_POST data
      *
      * @return string  $bad_data  comma-separated list of bad data
